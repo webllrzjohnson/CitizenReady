@@ -1,0 +1,1019 @@
+Let me run it now. This will take a moment as I'm producing all 22 outputs in full.
+
+---
+
+# BLUEPRINT.md — CitizenReady
+**Generated from:** CoApp Master Generator Prompt  
+**Date:** April 2026
+
+---
+
+## Output 1 — Project Overview
+
+**Name:** CitizenReady
+
+**Description:** A Canadian citizenship exam prep platform where users practice questions by topic, take timed mock exams modelled on the real IRCC test, and track their improvement over time. Admins manage the question bank through a dedicated panel.
+
+**Target users:**
+- Permanent residents preparing for the Canadian citizenship test
+- Immigration consultants who want to recommend a free prep tool
+- Admins (internal) who maintain the question bank
+
+**Core features:**
+- Browse and practice questions by topic (Discover Canada chapters)
+- Timed mock exam — 20 questions, 30 minutes, 75% pass threshold
+- Score history and progress tracking per user
+- Admin panel — question bank CRUD, topic management, user overview
+- Email confirmation on signup (Resend)
+
+---
+
+## Output 2 — Tech Architecture
+
+```
+Browser
+  └── Next.js 14+ App Router (Vercel)
+        ├── Public pages (SSG): /, /about, /topics
+        ├── Auth pages: /login, /signup
+        ├── User pages (protected): /dashboard/*
+        └── Admin pages (role-protected): /admin/*
+
+Data flow:
+  Public reads     → Supabase anon key, RLS allows SELECT on topics
+  Auth mutations   → Supabase Auth (JWT in cookies via @supabase/ssr)
+  Quiz engine      → Server Actions → Supabase (user session)
+  Admin mutations  → Server Actions → Supabase (role check + RLS)
+  Images/assets    → Vercel public folder (no user uploads needed for MVP)
+```
+
+**Why this structure:**
+- Public topic/landing pages are SSG — fast load, good SEO, zero server cost
+- Quiz engine runs via Server Actions — no separate API layer to maintain
+- RLS enforced at the database level — security independent of app logic
+- No file uploads needed for MVP — simplifies the storage setup significantly
+
+---
+
+## Output 3 — Folder Structure
+
+```
+citizenready/
+├── app/
+│   ├── layout.tsx                        # Root layout, fonts, providers, Toaster
+│   ├── page.tsx                          # Landing page
+│   ├── not-found.tsx
+│   ├── error.tsx
+│   ├── global-error.tsx
+│   ├── login/
+│   │   └── page.tsx
+│   ├── signup/
+│   │   └── page.tsx
+│   ├── auth/
+│   │   └── callback/
+│   │       └── route.ts
+│   ├── dashboard/
+│   │   ├── layout.tsx                    # Sidebar layout
+│   │   ├── page.tsx                      # Overview: stats + topic grid
+│   │   ├── loading.tsx
+│   │   ├── practice/
+│   │   │   ├── page.tsx                  # Topic selection grid
+│   │   │   ├── loading.tsx
+│   │   │   └── [topicSlug]/
+│   │   │       ├── page.tsx              # Practice session
+│   │   │       └── loading.tsx
+│   │   ├── mock-exam/
+│   │   │   ├── page.tsx                  # Exam intro + start
+│   │   │   ├── loading.tsx
+│   │   │   └── [sessionId]/
+│   │   │       ├── page.tsx              # Exam in progress
+│   │   │       └── results/
+│   │   │           └── page.tsx          # Results + pass/fail
+│   │   ├── progress/
+│   │   │   ├── page.tsx                  # Score history + charts
+│   │   │   └── loading.tsx
+│   │   └── settings/
+│   │       └── page.tsx
+│   └── admin/
+│       ├── layout.tsx                    # Admin sidebar
+│       ├── page.tsx                      # Admin dashboard
+│       ├── questions/
+│       │   ├── page.tsx                  # Question bank list
+│       │   ├── loading.tsx
+│       │   ├── new/
+│       │   │   └── page.tsx
+│       │   └── [id]/
+│       │       └── edit/
+│       │           └── page.tsx
+│       ├── topics/
+│       │   ├── page.tsx
+│       │   └── new/
+│       │       └── page.tsx
+│       └── users/
+│           └── page.tsx
+├── components/
+│   ├── ui/                               # shadcn/ui (auto-generated)
+│   ├── layout/
+│   │   ├── Navbar.tsx
+│   │   ├── DashboardSidebar.tsx
+│   │   └── AdminSidebar.tsx
+│   ├── quiz/
+│   │   ├── QuestionCard.tsx
+│   │   ├── AnswerOption.tsx
+│   │   ├── ExamTimer.tsx
+│   │   ├── ProgressBar.tsx
+│   │   └── ResultsSummary.tsx
+│   ├── topics/
+│   │   └── TopicCard.tsx
+│   ├── progress/
+│   │   ├── ScoreChart.tsx
+│   │   └── TopicBreakdown.tsx
+│   └── admin/
+│       ├── QuestionForm.tsx
+│       └── TopicForm.tsx
+├── actions/
+│   ├── auth.ts
+│   ├── quiz.ts                           # startPracticeSession, submitAnswer, completeSession
+│   ├── exam.ts                           # startMockExam, submitMockExam
+│   ├── questions.ts                      # Admin CRUD
+│   └── topics.ts                         # Admin CRUD
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts
+│   │   ├── server.ts
+│   │   └── middleware.ts
+│   ├── validations.ts
+│   └── utils.ts
+├── types/
+│   ├── index.ts
+│   └── database.types.ts                 # Generated by Supabase CLI
+├── hooks/
+│   └── useExamTimer.ts
+├── middleware.ts
+├── next.config.ts
+├── .env.local
+└── .cursorrules
+```
+
+---
+
+## Output 4 — TypeScript Types
+
+**`types/index.ts`**
+```typescript
+export type Role = 'user' | 'admin'
+
+export type Profile = {
+  id: string
+  email: string
+  full_name: string | null
+  role: Role
+  created_at: string
+}
+
+export type Topic = {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  sort_order: number
+  question_count?: number
+}
+
+export type QuestionType = 'single' | 'multiple' | 'boolean' | 'fill' | 'matching'
+export type Difficulty = 'easy' | 'medium' | 'hard'
+
+export type Question = {
+  id: string
+  topic_id: string
+  topic?: Topic
+  type: QuestionType
+  question_text: string
+  options: { key: string; text: string }[]
+  correct_answers: string[]
+  explanation: string | null
+  difficulty: Difficulty
+  is_active: boolean
+  created_at: string
+}
+
+export type SessionType = 'practice' | 'mock_exam'
+
+export type QuizSession = {
+  id: string
+  user_id: string
+  type: SessionType
+  topic_id: string | null
+  topic?: Topic
+  total_q: number
+  score: number | null
+  completed_at: string | null
+  created_at: string
+}
+
+export type QuestionAttempt = {
+  id: string
+  session_id: string
+  question_id: string
+  question?: Question
+  user_answer: string[]
+  is_correct: boolean
+  time_spent_ms: number | null
+  created_at: string
+}
+
+export type SessionWithAttempts = QuizSession & {
+  attempts: QuestionAttempt[]
+}
+
+export type TopicProgress = {
+  topic: Topic
+  sessions_count: number
+  best_score: number | null
+  last_attempted: string | null
+}
+```
+
+---
+
+## Output 5 — Database Design
+
+Run these in order in the Supabase SQL Editor.
+
+```sql
+-- 1. Profiles
+CREATE TABLE profiles (
+  id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email      TEXT NOT NULL,
+  full_name  TEXT,
+  role       TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2. Topics
+CREATE TABLE topics (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL UNIQUE,
+  slug        TEXT NOT NULL UNIQUE,
+  description TEXT,
+  sort_order  INT NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 3. Questions
+CREATE TABLE questions (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  topic_id        UUID NOT NULL REFERENCES topics(id) ON DELETE RESTRICT,
+  type            TEXT NOT NULL CHECK (type IN ('single','multiple','boolean','fill','matching')),
+  question_text   TEXT NOT NULL,
+  options         JSONB NOT NULL DEFAULT '[]',
+  correct_answers JSONB NOT NULL DEFAULT '[]',
+  explanation     TEXT,
+  difficulty      TEXT NOT NULL DEFAULT 'medium' CHECK (difficulty IN ('easy','medium','hard')),
+  is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_questions_topic ON questions(topic_id);
+CREATE INDEX idx_questions_active ON questions(is_active);
+CREATE INDEX idx_questions_type ON questions(type);
+
+-- 4. Quiz sessions
+CREATE TABLE quiz_sessions (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type         TEXT NOT NULL CHECK (type IN ('practice','mock_exam')),
+  topic_id     UUID REFERENCES topics(id) ON DELETE SET NULL,
+  total_q      INT NOT NULL,
+  score        INT,
+  completed_at TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_sessions_user ON quiz_sessions(user_id);
+CREATE INDEX idx_sessions_type ON quiz_sessions(type);
+CREATE INDEX idx_sessions_completed ON quiz_sessions(completed_at);
+
+-- 5. Question attempts
+CREATE TABLE question_attempts (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id    UUID NOT NULL REFERENCES quiz_sessions(id) ON DELETE CASCADE,
+  question_id   UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+  user_answer   JSONB NOT NULL DEFAULT '[]',
+  is_correct    BOOLEAN NOT NULL,
+  time_spent_ms INT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_attempts_session ON question_attempts(session_id);
+CREATE INDEX idx_attempts_question ON question_attempts(question_id);
+
+-- 6. Topic progress view
+CREATE VIEW topic_progress AS
+  SELECT
+    qs.user_id,
+    qs.topic_id,
+    COUNT(DISTINCT qs.id)                           AS sessions_count,
+    MAX(qs.score)                                   AS best_score,
+    MAX(qs.completed_at)                            AS last_attempted
+  FROM quiz_sessions qs
+  WHERE qs.type = 'practice'
+    AND qs.completed_at IS NOT NULL
+  GROUP BY qs.user_id, qs.topic_id;
+```
+
+---
+
+## Output 6 — Authentication & Roles
+
+- **Method:** Supabase Auth, email/password
+- **Roles:** stored in `profiles.role` — `'user'` or `'admin'`
+- **Admin assignment:** manual SQL after first signup
+- **Session:** cookies-based via `@supabase/ssr`
+
+**Profile auto-create trigger:**
+```sql
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, email, full_name, role)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    NEW.raw_user_meta_data->>'full_name',
+    'user'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+```
+
+**Set yourself as admin after signup:**
+```sql
+UPDATE profiles SET role = 'admin' WHERE email = 'your@email.com';
+```
+
+---
+
+## Output 7 — RLS Policies
+
+```sql
+-- PROFILES
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own profile"
+  ON profiles FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Admins can read all profiles"
+  ON profiles FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- TOPICS (public read, admin write)
+ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read topics"
+  ON topics FOR SELECT USING (TRUE);
+
+CREATE POLICY "Admins can insert topics"
+  ON topics FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can update topics"
+  ON topics FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can delete topics"
+  ON topics FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- QUESTIONS (authenticated read active only, admin full access)
+ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read active questions"
+  ON questions FOR SELECT USING (
+    auth.uid() IS NOT NULL AND is_active = TRUE
+  );
+
+CREATE POLICY "Admins can read all questions"
+  ON questions FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can insert questions"
+  ON questions FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can update questions"
+  ON questions FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Admins can delete questions"
+  ON questions FOR DELETE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- QUIZ SESSIONS (users manage own)
+ALTER TABLE quiz_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own sessions"
+  ON quiz_sessions FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own sessions"
+  ON quiz_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own sessions"
+  ON quiz_sessions FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can read all sessions"
+  ON quiz_sessions FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+-- QUESTION ATTEMPTS (users manage own)
+ALTER TABLE question_attempts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own attempts"
+  ON question_attempts FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM quiz_sessions
+      WHERE id = question_attempts.session_id AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can insert own attempts"
+  ON question_attempts FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM quiz_sessions
+      WHERE id = question_attempts.session_id AND user_id = auth.uid()
+    )
+  );
+```
+
+---
+
+## Output 8 — Zod Validation Schemas
+
+**`lib/validations.ts`**
+```typescript
+import { z } from 'zod'
+
+export const LoginSchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+})
+
+export const SignupSchema = z.object({
+  full_name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
+export const TopicSchema = z.object({
+  name: z.string().min(2, 'Topic name is required'),
+  slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug must be lowercase with hyphens only'),
+  description: z.string().optional(),
+  sort_order: z.number().int().min(0).default(0),
+})
+
+export const QuestionSchema = z.object({
+  topic_id: z.string().uuid('Select a topic'),
+  type: z.enum(['single', 'multiple', 'boolean', 'fill', 'matching']),
+  question_text: z.string().min(10, 'Question text is required'),
+  options: z.array(z.object({
+    key: z.string().min(1),
+    text: z.string().min(1),
+  })).min(2, 'Add at least 2 options'),
+  correct_answers: z.array(z.string()).min(1, 'Mark at least one correct answer'),
+  explanation: z.string().optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
+  is_active: z.boolean().default(true),
+})
+
+export const SubmitAnswerSchema = z.object({
+  session_id: z.string().uuid(),
+  question_id: z.string().uuid(),
+  user_answer: z.array(z.string()).min(1, 'Select an answer'),
+  time_spent_ms: z.number().int().min(0).optional(),
+})
+
+export const SubmitExamSchema = z.object({
+  session_id: z.string().uuid(),
+  answers: z.record(z.string().uuid(), z.array(z.string())),
+})
+
+export type LoginInput = z.infer<typeof LoginSchema>
+export type SignupInput = z.infer<typeof SignupSchema>
+export type TopicInput = z.infer<typeof TopicSchema>
+export type QuestionInput = z.infer<typeof QuestionSchema>
+export type SubmitAnswerInput = z.infer<typeof SubmitAnswerSchema>
+export type SubmitExamInput = z.infer<typeof SubmitExamSchema>
+```
+
+---
+
+## Output 9 — Middleware
+
+**`middleware.ts`**
+```typescript
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Redirect unauthenticated users away from protected routes
+  if (!user && (
+    request.nextUrl.pathname.startsWith('/dashboard') ||
+    request.nextUrl.pathname.startsWith('/admin')
+  )) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Redirect non-admins away from admin routes
+  if (user && request.nextUrl.pathname.startsWith('/admin')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  // Redirect logged-in users away from auth pages
+  if (user && (
+    request.nextUrl.pathname === '/login' ||
+    request.nextUrl.pathname === '/signup'
+  )) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/login', '/signup'],
+}
+```
+
+---
+
+## Output 10 — Core Features Step-by-Step
+
+### Module A — Auth
+Files: `app/login/page.tsx`, `app/signup/page.tsx`, `app/auth/callback/route.ts`
+
+Standard Supabase Auth with email/password. Signup collects `full_name`. Profile row auto-created by trigger. See Output 6.
+
+### Module B — Practice Quiz
+
+**`actions/quiz.ts`**
+```typescript
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { SubmitAnswerSchema } from '@/lib/validations'
+import { revalidatePath } from 'next/cache'
+
+export async function startPracticeSession(topicId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Sign in to start a practice session.' }
+
+  // Fetch 10 random active questions for this topic
+  const { data: questions, error: qError } = await supabase
+    .from('questions')
+    .select('id, question_text, type, options, correct_answers, explanation, difficulty')
+    .eq('topic_id', topicId)
+    .eq('is_active', true)
+    .in('type', ['single', 'boolean'])
+    .limit(100) // fetch pool, randomise in JS
+
+  if (qError || !questions?.length) {
+    return { error: 'No questions available for this topic.' }
+  }
+
+  const shuffled = questions.sort(() => Math.random() - 0.5).slice(0, 10)
+
+  const { data: session, error: sError } = await supabase
+    .from('quiz_sessions')
+    .insert({
+      user_id: user.id,
+      type: 'practice',
+      topic_id: topicId,
+      total_q: shuffled.length,
+    })
+    .select()
+    .single()
+
+  if (sError) return { error: 'Failed to start session.' }
+
+  return { success: true, session, questions: shuffled }
+}
+
+export async function submitAnswer(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  const result = SubmitAnswerSchema.safeParse({
+    session_id: formData.get('session_id'),
+    question_id: formData.get('question_id'),
+    user_answer: formData.getAll('user_answer'),
+    time_spent_ms: Number(formData.get('time_spent_ms')) || undefined,
+  })
+
+  if (!result.success) return { error: result.error.errors[0].message }
+
+  // Fetch correct answers
+  const { data: question } = await supabase
+    .from('questions')
+    .select('correct_answers, explanation')
+    .eq('id', result.data.question_id)
+    .single()
+
+  if (!question) return { error: 'Question not found.' }
+
+  const correctSet = new Set(question.correct_answers as string[])
+  const answerSet = new Set(result.data.user_answer)
+  const is_correct =
+    correctSet.size === answerSet.size &&
+    [...correctSet].every(a => answerSet.has(a))
+
+  const { error } = await supabase.from('question_attempts').insert({
+    session_id: result.data.session_id,
+    question_id: result.data.question_id,
+    user_answer: result.data.user_answer,
+    is_correct,
+    time_spent_ms: result.data.time_spent_ms,
+  })
+
+  if (error) return { error: 'Failed to record answer.' }
+
+  return {
+    success: true,
+    is_correct,
+    correct_answers: question.correct_answers,
+    explanation: question.explanation,
+  }
+}
+
+export async function completeSession(sessionId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  const { data: attempts } = await supabase
+    .from('question_attempts')
+    .select('is_correct')
+    .eq('session_id', sessionId)
+
+  const score = attempts?.filter(a => a.is_correct).length ?? 0
+
+  const { error } = await supabase
+    .from('quiz_sessions')
+    .update({ score, completed_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('user_id', user.id)
+
+  if (error) return { error: 'Failed to complete session.' }
+
+  revalidatePath('/dashboard/progress')
+  return { success: true, score, total: attempts?.length ?? 0 }
+}
+```
+
+### Module C — Mock Exam
+
+**`actions/exam.ts`**
+```typescript
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { SubmitExamSchema } from '@/lib/validations'
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+
+export async function startMockExam() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Sign in to take the mock exam.' }
+
+  const { data: questions } = await supabase
+    .from('questions')
+    .select('id, question_text, type, options, correct_answers, difficulty')
+    .eq('is_active', true)
+    .in('type', ['single', 'boolean'])
+    .limit(200)
+
+  if (!questions?.length) return { error: 'No questions available.' }
+
+  const shuffled = questions.sort(() => Math.random() - 0.5).slice(0, 20)
+
+  const { data: session, error } = await supabase
+    .from('quiz_sessions')
+    .insert({
+      user_id: user.id,
+      type: 'mock_exam',
+      topic_id: null,
+      total_q: 20,
+    })
+    .select()
+    .single()
+
+  if (error) return { error: 'Failed to start exam.' }
+
+  return { success: true, session, questions: shuffled }
+}
+
+export async function submitMockExam(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  const session_id = formData.get('session_id') as string
+  const rawAnswers = formData.get('answers') as string
+  const answers = JSON.parse(rawAnswers) as Record<string, string[]>
+
+  const result = SubmitExamSchema.safeParse({ session_id, answers })
+  if (!result.success) return { error: result.error.errors[0].message }
+
+  const questionIds = Object.keys(answers)
+  const { data: questions } = await supabase
+    .from('questions')
+    .select('id, correct_answers, explanation')
+    .in('id', questionIds)
+
+  if (!questions) return { error: 'Failed to fetch questions.' }
+
+  const attempts = questions.map(q => {
+    const userAnswer = answers[q.id] ?? []
+    const correctSet = new Set(q.correct_answers as string[])
+    const answerSet = new Set(userAnswer)
+    const is_correct =
+      correctSet.size === answerSet.size &&
+      [...correctSet].every(a => answerSet.has(a))
+
+    return {
+      session_id,
+      question_id: q.id,
+      user_answer: userAnswer,
+      is_correct,
+    }
+  })
+
+  await supabase.from('question_attempts').insert(attempts)
+
+  const score = attempts.filter(a => a.is_correct).length
+
+  await supabase
+    .from('quiz_sessions')
+    .update({ score, completed_at: new Date().toISOString() })
+    .eq('id', session_id)
+    .eq('user_id', user.id)
+
+  revalidatePath('/dashboard/progress')
+  redirect(`/dashboard/mock-exam/${session_id}/results`)
+}
+```
+
+---
+
+## Output 11 — UI Design
+
+**Landing page (`/`):** Hero with headline, subheadline, "Start Practicing Free" CTA, three feature cards (Practice by Topic, Mock Exam, Track Progress), and a footer.
+
+**Dashboard overview (`/dashboard`):** Stats row (total sessions, average score, mock exam passes), then a topic grid of `TopicCard` components each showing topic name, question count, personal best score, and a "Practice" button.
+
+**Practice session:** Single question fills the screen. Question text at top, answer options as large clickable cards. After answering: option highlights green/red, explanation appears, "Next Question" button. Progress bar across the top showing `3 / 10`.
+
+**Mock exam:** Clean minimal UI — question text, options, question counter top-right, countdown timer top-left. No feedback until submission. Navigation dots at bottom to jump between questions.
+
+**Progress page:** Stats cards at top, line chart (recharts) of last 10 mock exam scores, topic breakdown table with best score per topic.
+
+**Admin panel:** Table-based layout. Sidebar navigation. Questions list is paginated with search and topic filter.
+
+---
+
+## Output 12 — Server Actions Summary
+
+| Action | File | Triggered by |
+|---|---|---|
+| `startPracticeSession` | `actions/quiz.ts` | Topic card "Practice" button |
+| `submitAnswer` | `actions/quiz.ts` | Answer selection + Next button |
+| `completeSession` | `actions/quiz.ts` | Last question answered |
+| `startMockExam` | `actions/exam.ts` | "Start Exam" button |
+| `submitMockExam` | `actions/exam.ts` | "Submit Exam" confirm dialog |
+| `createQuestion` | `actions/questions.ts` | Admin question form |
+| `updateQuestion` | `actions/questions.ts` | Admin edit form |
+| `deleteQuestion` | `actions/questions.ts` | Admin delete dialog |
+| `createTopic` | `actions/topics.ts` | Admin topic form |
+| `updateTopic` | `actions/topics.ts` | Admin edit form |
+
+---
+
+## Output 13 — API Routes
+
+No custom API routes needed for MVP. All mutations go through Server Actions. If Resend email confirmation is added, it hooks into Supabase Auth's built-in email sending — no custom route required.
+
+---
+
+## Output 14 — Error Handling
+
+- `app/not-found.tsx` — shown for any missing route or slug
+- `app/error.tsx` — catches unexpected runtime errors, shows retry button
+- `app/global-error.tsx` — catches root layout errors
+- All Server Actions return `{ success?, data?, error? }` — never throw
+- Quiz engine: if a session is not found or doesn't belong to the user, return `{ error }` and redirect to `/dashboard`
+
+---
+
+## Output 15 — SEO & Metadata
+
+**`app/layout.tsx`** — static metadata:
+```typescript
+export const metadata = {
+  title: { default: 'CitizenReady', template: '%s | CitizenReady' },
+  description: 'Free Canadian citizenship exam practice. Study by topic, take mock tests, track your progress.',
+  openGraph: {
+    title: 'CitizenReady — Canadian Citizenship Exam Prep',
+    description: 'Free practice questions, timed mock exams, and progress tracking.',
+    url: 'https://citizenready.ca',
+    siteName: 'CitizenReady',
+  },
+}
+```
+
+**`app/page.tsx`** — landing page inherits default metadata above.
+
+**Dynamic pages** — `/dashboard/*` and `/admin/*` do not need OpenGraph tags (auth-protected). No `generateMetadata` needed there.
+
+---
+
+## Output 16 — Image Optimization
+
+No user-uploaded images in MVP. All assets (logo, icons, illustrations) go in `/public`. Use `next/image` for any illustrations on the landing page. SVG icons via `lucide-react`.
+
+---
+
+## Output 17 — Third-Party Integrations
+
+**MVP (required):**
+- Resend — welcome email on signup
+
+**Post-MVP (optional):**
+- PostHog — track which topics users practice most
+- Sentry — error monitoring in production
+
+**Not needed:**
+- Stripe — app is free
+- Supabase Storage — no file uploads
+
+---
+
+## Output 18 — Caching Strategy
+
+| Page | Strategy | Revalidation |
+|---|---|---|
+| `/` (landing) | Static (SSG) | Manual redeploy |
+| `/dashboard` | Dynamic (per user) | After session completion |
+| `/dashboard/practice/[slug]` | Dynamic | None (session data) |
+| `/dashboard/progress` | Dynamic | After `completeSession` / `submitMockExam` |
+| `/admin/*` | Dynamic | After every admin mutation |
+| Topics list | Static with revalidation | `revalidatePath('/dashboard')` after topic change |
+
+---
+
+## Output 19 — Environment Variables
+
+**`.env.local`**
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# App
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Resend
+RESEND_API_KEY=re_your_key_here
+```
+
+---
+
+## Output 20 — Deployment Guide
+
+```
+[ ] 1.  Push to GitHub main branch
+[ ] 2.  Vercel → New Project → Import repo
+[ ] 3.  Framework: Next.js (auto-detected)
+[ ] 4.  Add all env vars from Output 19 to Vercel dashboard
+        Set NEXT_PUBLIC_SITE_URL to your production domain
+[ ] 5.  Deploy
+[ ] 6.  Supabase → Auth → URL Configuration:
+        Site URL: https://citizenready.ca (or your Vercel URL)
+        Redirect URL: https://citizenready.ca/auth/callback
+[ ] 7.  Run npm run build locally — fix all errors before final push
+[ ] 8.  Test: signup, login, start practice session, complete session, mock exam
+[ ] 9.  Run this SQL to make yourself admin:
+        UPDATE profiles SET role = 'admin' WHERE email = 'your@email.com';
+[ ] 10. Enable Supabase connection pooling (Supavisor) for production
+```
+
+---
+
+## Output 21 — Sample Seed Data
+
+```sql
+-- Topics (Discover Canada chapters)
+INSERT INTO topics (name, slug, description, sort_order) VALUES
+  ('Rights and Responsibilities', 'rights-and-responsibilities', 'The rights and responsibilities of Canadian citizenship', 1),
+  ('Who We Are', 'who-we-are', 'The people of Canada — diversity and identity', 2),
+  ('Canada''s History', 'canadas-history', 'Key events in Canadian history', 3),
+  ('Modern Canada', 'modern-canada', 'Canada today — government, economy, symbols', 4),
+  ('How Canadians Govern Themselves', 'how-canadians-govern-themselves', 'Federal, provincial, and municipal government', 5),
+  ('Federal Elections', 'federal-elections', 'How elections work in Canada', 6),
+  ('The Justice System', 'justice-system', 'Courts, laws, and rights under the law', 7),
+  ('Canadian Symbols', 'canadian-symbols', 'Flags, anthems, and national emblems', 8);
+
+-- Sample questions
+INSERT INTO questions (topic_id, type, question_text, options, correct_answers, explanation, difficulty) VALUES
+(
+  (SELECT id FROM topics WHERE slug = 'rights-and-responsibilities'),
+  'single',
+  'What is the right of every Canadian citizen that landed immigrants do not have?',
+  '[{"key":"a","text":"Right to vote in federal elections"},{"key":"b","text":"Right to a fair trial"},{"key":"c","text":"Freedom of expression"},{"key":"d","text":"Right to live and work anywhere in Canada"}]',
+  '["a"]',
+  'Canadian citizens have the right to vote in federal, provincial, and territorial elections and to run for elected office. Permanent residents do not have this right.',
+  'easy'
+),
+(
+  (SELECT id FROM topics WHERE slug = 'canadas-history'),
+  'single',
+  'Who were the United Empire Loyalists?',
+  '[{"key":"a","text":"French settlers who came to Canada in the 1600s"},{"key":"b","text":"People who fled the United States after the American Revolution to remain loyal to Britain"},{"key":"c","text":"Indigenous peoples who allied with the British"},{"key":"d","text":"Scottish and Irish immigrants who arrived in the 1800s"}]',
+  '["b"]',
+  'The United Empire Loyalists were colonists who rejected the American Revolution and remained loyal to the British Crown, many settling in Ontario, Quebec, and the Maritimes.',
+  'medium'
+);
+```
+
+---
+
+## Output 22 — Future Improvements
+
+**Phase 2 — Content**
+- Import all 1,001 questions from your existing JSON bank (seed script)
+- Add `fill` and `matching` question type support to the quiz engine
+- Flashcard mode — flip cards per topic
+
+**Phase 3 — User Features**
+- Bookmarked / flagged questions ("Review later")
+- Streak tracking — daily practice streak with badge
+- Welcome email via Resend on signup
+- Study plan — recommended topics based on weakest scores
+
+**Phase 4 — AI**
+- AI explanation generator — use Anthropic API to generate richer explanations per question
+- Weak spot detector — after 3+ sessions, identify which topics need the most work and surface them first
+
+**Phase 5 — Growth**
+- French language support (`next-intl`) — legally required if targeting Canadian users broadly
+- Shareable results card (image generated on pass)
+- Leaderboard — opt-in public ranking by mock exam score
+
+---
+
+Now paste this entire output into your `BLUEPRINT.md` file. Then come back here and we move to **Step 7 — running the SQL in Supabase.**

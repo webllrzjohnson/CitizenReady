@@ -1,0 +1,449 @@
+
+================================================================================
+Rights and Responsibilities (71 total questions)
+================================================================================
+
+1. Question #17 [fill] [Medium]
+Q: The two key documents that contain the rights and freedoms of Canadians are the Charter of Rights and Freedoms and the ________ Act.
+✓ Answer: Canadian Human Rights
+Explanation: The Canadian Human Rights Act complements the Charter by prohibiting discrimination in federal jurisdiction.
+
+
+2. Question #14 [fill] [Medium]
+Q: The right to move freely within Canada is known as ________ rights.
+✓ Answer: mobility
+Explanation: Mobility rights guarantee citizens and permanent residents the right to move and take up residence anywhere in Canada.
+
+
+3. Question #921 [boolean] [Easy]
+Q: Canada has freedom of the press protected by the Charter.
+✓ Answer: True
+Explanation: Freedom of the press is protected under Section 2(b) of the Charter — freedom of thought, belief, opinion, and expression, including freedom of the press.
+
+
+4. Question #368 [fill] [Easy]
+Q: The ________ duty means new citizens should learn about Canada's history, values, and institutions.
+✓ Answer: civic
+Explanation: A key civic duty of citizenship is to learn about and understand Canada's history, values, and how it is governed.
+
+
+5. Question #491 [boolean] [Medium]
+Q: The Canadian government can limit Charter rights if it can justify doing so in a free and democratic society.
+✓ Answer: True
+Explanation: Section 1 (the limitations clause) allows governments to place 'reasonable limits' on Charter rights if they can be 'demonstrably justified in a free and democratic society.'
+
+
+================================================================================
+Who Are Canadians (80 total questions)
+================================================================================
+
+1. Question #570 [single] [Easy]
+Q: Which religion do the majority of Canadians identify with?
+   A. Islam
+   B. Sikhism
+   C. Christianity
+   D. Buddhism
+✓ Answer: C
+Explanation: While Canada is religiously diverse, Christianity remains the most commonly reported religion, though the percentage identifying as non-religious has grown significantly.
+
+
+2. Question #36 [fill] [Medium]
+Q: Canada is described as a cultural ________ because it encourages immigrants to keep their cultural identity.
+✓ Answer: mosaic
+Explanation: Unlike the 'melting pot,' Canada is a 'cultural mosaic' where diversity is celebrated.
+
+
+3. Question #580 [fill] [Medium]
+Q: Canada's ________ community, present since the 1800s, has made major contributions to railway building, mining, and fishing.
+✓ Answer: Chinese-Canadian
+Explanation: Chinese Canadians, many of whom built the CPR and worked in mines and canneries, have a long history in Canada dating to the 1850s gold rushes.
+
+
+4. Question #33 [single] [Medium]
+Q: What were the United Empire Loyalists?
+   A. French settlers supporting the Crown
+   B. Colonists loyal to the British Crown who fled to Canada after the American Revolution
+   C. Scottish immigrants in the 1800s
+   D. Indigenous people allied with the British
+✓ Answer: B
+Explanation: United Empire Loyalists were American colonists who remained loyal to Britain and settled in Canada.
+
+
+5. Question #41 [boolean] [Easy]
+Q: Francophone means someone whose first language is French.
+✓ Answer: True
+Explanation: 'Francophone' refers to someone whose mother tongue or primary language is French.
+
+
+================================================================================
+Canada's History (164 total questions)
+================================================================================
+
+1. Question #83 [boolean] [Easy]
+Q: Newfoundland was the last province to join Confederation, in 1949.
+✓ Answer: True
+Explanation: Newfoundland (now Newfoundland and Labrador) joined Canada in 1949 after a close referendum vote.
+
+
+2. Question #816 [boolean] [Easy]
+Q: The Klondike Gold Rush attracted prospectors from around the world to Canada.
+✓ Answer: True
+Explanation: The 1896 Klondike Gold Rush attracted over 100,000 prospectors from the US, Britain, Australia, and around the world.
+
+
+3. Question #74 [single] [Medium]
+Q: Who was Louis Riel?
+   A. First PM of Manitoba
+   B. A Métis leader who led two resistance movements
+   C. A French explorer who discovered the St. Lawrence
+   D. A famous hockey player
+✓ Answer: B
+Explanation: Louis Riel led the Red River Resistance (1869–70) and Northwest Resistance (1885) to protect Métis rights.
+
+
+4. Question #406 [single] [Medium]
+Q: What was 'Operation Overlord'?
+   A. The Canadian invasion of Sicily in 1943
+   B. The Allied D-Day invasion of Normandy on June 6, 1944
+   C. A Canadian Arctic expedition
+   D. The bombing of German cities by Canadian airmen
+✓ Answer: B
+Explanation: Operation Overlord was the Allied invasion of Nazi-occupied France on June 6, 1944, in which Canadian troops stormed Juno Beach.
+
+
+5. Question #309 [fill] [Hard]
+Q: The ________ Conference (1864) and Quebec Conference (1864) were key steps to Confederation.
+✓ Answer: Charlottetown
+Explanation: The Charlottetown and Quebec Conferences of 1864 established the framework for Canadian Confederation in 1867.
+
+
+================================================================================
+Government (113 total questions)
+================================================================================
+
+1. Question #115 [multiple] [Medium]
+Q: Which of the following are provincial responsibilities?
+   A. Education
+   B. National defence
+   C. Healthcare
+   D. Natural resources
+✓ Answer: A, C, D
+Explanation: Provinces control education, healthcare, and natural resources; defence is federal.
+
+
+2. Question #503 [fill] [Hard]
+Q: The Cabinet operates on the principle of ________ responsibility — all ministers publicly support Cabinet decisions.
+✓ Answer: collective
+Explanation: Collective Cabinet responsibility means all Cabinet ministers must publicly support and defend government decisions, even if they disagreed privately.
+
+
+3. Question #833 [boolean] [Easy]
+Q: The Bloc Québécois is a federal political party that advocates for Quebec's interests in Parliament.
+✓ Answer: True
+Explanation: The Bloc Québécois (BQ) is a federal party that runs candidates only in Quebec and advocates for Quebec's interests and, ultimately, sovereignty.
+
+
+4. Question #111 [boolean] [Hard]
+Q: The Canadian Senate can defeat bills passed by the House of Commons.
+✓ Answer: True
+Explanation: Technically the Senate can defeat bills, though in practice it rarely does.
+
+
+5. Question #120 [single] [Hard]
+Q: What is prorogation in Canadian Parliament?
+   A. The dissolution of Parliament before an election
+   B. A temporary suspension of Parliament between sessions
+   C. The expulsion of a Member of Parliament
+   D. A vote of non-confidence
+✓ Answer: B
+Explanation: Prorogation ends a parliamentary session without dissolving Parliament; a new session can begin later.
+
+
+================================================================================
+Federal Elections (51 total questions)
+================================================================================
+
+1. Question #926 [fill] [Hard]
+Q: Canada's ________ system allows people to make donations to political parties in exchange for a partial tax credit.
+✓ Answer: political contribution (political donation)
+Explanation: Canadians can donate to registered federal political parties and receive a tax credit; donation limits are set by the Canada Elections Act.
+
+
+2. Question #927 [boolean] [Hard]
+Q: Corporations and unions are permitted to donate to federal political parties in Canada.
+✓ Answer: False
+Explanation: The Federal Accountability Act (2006) banned corporate and union donations to federal political parties. Only individuals can donate, with set limits.
+
+
+3. Question #142 [single] [Medium]
+Q: What is a coalition government?
+   A. A single-party majority government
+   B. A government formed by two or more parties working together
+   C. A government formed after a minority defeat
+   D. A government appointed by the GG
+✓ Answer: B
+Explanation: A coalition government forms when two or more parties combine to hold a majority and govern jointly.
+
+
+4. Question #526 [boolean] [Medium]
+Q: Voters must show identification at the polling station in federal elections.
+✓ Answer: True
+Explanation: Since 2007, voters in federal elections must provide proof of identity and address to receive a ballot.
+
+
+5. Question #529 [boolean] [Hard]
+Q: Candidates in federal elections must pay a $1,000 nomination deposit.
+✓ Answer: True
+Explanation: Federal candidates must pay a $1,000 deposit, refundable if they receive at least 10% of valid votes cast in their riding.
+
+
+================================================================================
+Justice System (69 total questions)
+================================================================================
+
+1. Question #914 [fill] [Hard]
+Q: A ________ offense in Canada is one that can be prosecuted as either summary or indictable at the Crown's discretion.
+✓ Answer: hybrid (dual)
+Explanation: Hybrid offences are crimes that can be treated as either summary (minor) or indictable (serious) — the Crown chooses based on the circumstances.
+
+
+2. Question #539 [boolean] [Medium]
+Q: A person can be tried twice for the same crime in Canada.
+✓ Answer: False
+Explanation: The rule of 'double jeopardy' (protection in Section 11(h) of the Charter) prevents a person from being tried twice for the same offence once acquitted or convicted.
+
+
+3. Question #541 [fill] [Hard]
+Q: The ________ Court is the trial court of general jurisdiction in most Canadian provinces.
+✓ Answer: Superior (Provincial Superior Court)
+Explanation: Superior Courts are the main trial courts in each province, handling serious criminal and civil cases.
+
+
+4. Question #543 [single] [Medium]
+Q: What is parole in the Canadian justice system?
+   A. The reduction of a prison sentence for good behaviour during trial
+   B. Conditional early release from prison under supervision
+   C. An alternative to prison for first-time offenders
+   D. A form of community service
+✓ Answer: B
+Explanation: Parole is the supervised conditional release of a prisoner before their full sentence is served, monitored by the Parole Board of Canada.
+
+
+5. Question #544 [fill] [Medium]
+Q: The ________ Board of Canada decides whether federal offenders can be released before the end of their sentence.
+✓ Answer: Parole
+Explanation: The Parole Board of Canada grants, denies, and revokes parole and other forms of conditional release for federal offenders.
+
+
+================================================================================
+Canadian Symbols (76 total questions)
+================================================================================
+
+1. Question #387 [boolean] [Easy]
+Q: The National War Memorial is located in Ottawa.
+✓ Answer: True
+Explanation: Canada's National War Memorial stands in Confederation Square in Ottawa, commemorating Canadians who served in war.
+
+
+2. Question #800 [fill] [Hard]
+Q: The ________ Seal is Canada's official tool for validating state documents.
+✓ Answer: Great Seal of Canada
+Explanation: The Great Seal of Canada is used to authenticate important government documents, orders-in-council, and other state instruments.
+
+
+3. Question #323 [single] [Medium]
+Q: What is the purpose of the Governor General's Awards?
+   A. To award military bravery
+   B. To recognize excellence in Canadian arts and literature
+   C. To honour Olympic athletes
+   D. To celebrate Indigenous heritage
+✓ Answer: B
+Explanation: The Governor General's Awards, established in 1936, recognize outstanding achievement in Canadian arts, literature, and other fields.
+
+
+4. Question #300 [fill] [Easy]
+Q: The RCMP Musical Ride is a famous display of ________ precision riding performed by Mounties.
+✓ Answer: equestrian (horse)
+Explanation: The RCMP Musical Ride is a precision equestrian performance by RCMP officers and horses, performed across Canada and internationally.
+
+
+5. Question #169 [single] [Medium]
+Q: What does the fleur-de-lys represent in Canada?
+   A. British heritage
+   B. French-Canadian heritage and culture
+   C. Indigenous peoples
+   D. The Canadian military
+✓ Answer: B
+Explanation: The fleur-de-lys is a symbol of French heritage, prominent on Quebec's flag and coat of arms.
+
+
+================================================================================
+Canada's Regions (128 total questions)
+================================================================================
+
+1. Question #214 [single] [Easy]
+Q: What is the capital of New Brunswick?
+   A. Saint John
+   B. Moncton
+   C. Fredericton
+   D. Bathurst
+✓ Answer: C
+Explanation: Fredericton is the capital of New Brunswick. Saint John is the largest city.
+
+
+2. Question #201 [fill] [Medium]
+Q: The Great Lakes include Lake Superior, Michigan, Huron, Erie, and Lake ________.
+✓ Answer: Ontario
+Explanation: The five Great Lakes (Superior, Michigan, Huron, Erie, Ontario) form the world's largest freshwater system.
+
+
+3. Question #873 [fill] [Hard]
+Q: The ________ Mountains, found in British Columbia's interior, run parallel to the Rocky Mountains.
+✓ Answer: Columbia (or Selkirk / Monashee / Purcell)
+Explanation: BC's interior features several mountain ranges including the Columbia, Selkirk, Monashee, and Purcell Mountains, running parallel to the Rockies.
+
+
+4. Question #429 [fill] [Medium]
+Q: The ________ Bay, located between Quebec and Ontario, is the world's largest bay by area.
+✓ Answer: Hudson
+Explanation: Hudson Bay covers approximately 1.23 million km² and is the world's largest bay, central to Indigenous and early European trade.
+
+
+5. Question #206 [boolean] [Medium]
+Q: Lake Superior is the largest freshwater lake in the world by surface area.
+✓ Answer: True
+Explanation: Lake Superior is the largest of the Great Lakes and the world's largest freshwater lake by surface area.
+
+
+================================================================================
+Canada's Economy (64 total questions)
+================================================================================
+
+1. Question #991 [single] [Hard]
+Q: What is the Canada Pension Plan Investment Board (CPPIB)?
+   A. The federal department managing OAS payments
+   B. An independent Crown corporation that manages and invests the CPP Fund
+   C. A private pension management company
+   D. The Pension oversight committee in the Senate
+✓ Answer: B
+Explanation: The CPPIB is an independent Crown corporation that manages the CPP Fund's assets (~$600B+), investing globally to ensure the Fund's long-term sustainability.
+
+
+2. Question #952 [single] [Hard]
+Q: What is CANDU?
+   A. A type of Canadian wheat strain
+   B. A Canadian-designed nuclear reactor used in Canada and exported to many countries
+   C. A federal program for indigenous energy development
+   D. A Crown corporation managing Alberta's oil
+✓ Answer: B
+Explanation: CANDU (CANada Deuterium Uranium) is a nuclear reactor design developed by Atomic Energy of Canada Limited (AECL), used in Ontario, New Brunswick, and exported internationally.
+
+
+3. Question #430 [single] [Medium]
+Q: What is the TSX?
+   A. The Trans-Canada Stock Exchange
+   B. The Toronto Stock Exchange, one of North America's largest stock markets
+   C. A federal tax agency
+   D. A Canadian technology company
+✓ Answer: B
+Explanation: The Toronto Stock Exchange (TSX) is Canada's premier stock exchange and one of the largest in North America.
+
+
+4. Question #223 [single] [Easy]
+Q: What is the $2 Canadian coin called?
+   A. Toonie
+   B. Loonie
+   C. Maple
+   D. Doublee
+✓ Answer: A
+Explanation: The $2 coin introduced in 1996 is nicknamed the 'toonie.'
+
+
+5. Question #221 [single] [Medium]
+Q: Which sector employs the most Canadians?
+   A. Manufacturing
+   B. Agriculture
+   C. Services
+   D. Mining
+✓ Answer: C
+Explanation: The service sector (retail, banking, healthcare, education) is Canada's largest employer, about 75% of GDP.
+
+
+================================================================================
+Modern Canada (149 total questions)
+================================================================================
+
+1. Question #761 [fill] [Medium]
+Q: Canada's ________ is the official representative in countries that do not have a Canadian embassy.
+✓ Answer: High Commission (or consulate)
+Explanation: In Commonwealth countries, Canada is represented by a High Commission; in other countries by an Embassy or consulate.
+
+
+2. Question #779 [fill] [Medium]
+Q: Emily Carr was a pioneering Canadian painter from ________, BC.
+✓ Answer: Victoria
+Explanation: Emily Carr (1871–1945) was born in Victoria, BC, and is famous for her bold, expressionistic paintings of BC forests and Indigenous culture.
+
+
+3. Question #330 [fill] [Medium]
+Q: The Canadian robotic arm on the International Space Station is called the ________.
+✓ Answer: Canadarm (Canadarm2)
+Explanation: Canadarm2, built by Canada, is the robotic arm on the ISS used to capture cargo ships and assist spacewalks.
+
+
+4. Question #636 [fill] [Hard]
+Q: Canada established the ________ of Missing and Murdered Indigenous Women and Girls (MMIWG) inquiry in 2016.
+✓ Answer: National Inquiry
+Explanation: The National Inquiry into MMIWG investigated the systemic causes of violence against Indigenous women and girls in Canada.
+
+
+5. Question #742 [single] [Medium]
+Q: What is 'CanCon' (Canadian content)?
+   A. Canadian internet censorship rules
+   B. Requirements for Canadian broadcasters to air a minimum percentage of Canadian-produced content
+   C. A federal arts funding program
+   D. A list of banned foreign TV shows in Canada
+✓ Answer: B
+Explanation: CanCon (Canadian Content) regulations, administered by the CRTC, require broadcasters to air a certain percentage of Canadian-produced content to protect Canadian culture.
+
+
+================================================================================
+Applying for Citizenship (36 total questions)
+================================================================================
+
+1. Question #651 [fill] [Easy]
+Q: Applicants for citizenship must demonstrate knowledge of Canada and of the responsibilities and privileges of ________.
+✓ Answer: citizenship
+Explanation: The citizenship test assesses an applicant's knowledge of Canada's history, values, institutions, and the rights and responsibilities of citizenship.
+
+
+2. Question #773 [fill] [Hard]
+Q: The ________ Act is federal legislation that regulates immigration to Canada.
+✓ Answer: Immigration and Refugee Protection (IRPA)
+Explanation: The Immigration and Refugee Protection Act (IRPA, 2002) is Canada's primary immigration legislation, governing who may enter, stay in, and become a citizen.
+
+
+3. Question #259 [single] [Medium]
+Q: Who must take the citizenship test?
+   A. All applicants
+   B. Applicants aged 18 to 54
+   C. Applicants aged 18 to 64
+   D. Only new permanent residents
+✓ Answer: B
+Explanation: Applicants between the ages of 18 and 54 must take the citizenship knowledge test.
+
+
+4. Question #657 [fill] [Easy]
+Q: New Canadian citizens recite the Oath of Citizenship in front of a ________ judge.
+✓ Answer: citizenship
+Explanation: The citizenship oath is taken before a citizenship judge or commissioner at a citizenship ceremony.
+
+
+5. Question #659 [single] [Easy]
+Q: What document proves you are a Canadian citizen?
+   A. A Canadian passport
+   B. A citizenship certificate
+   C. A permanent resident card
+   D. A social insurance card
+✓ Answer: B
+Explanation: The citizenship certificate (or formerly the certificate of naturalization) is the official proof of Canadian citizenship.

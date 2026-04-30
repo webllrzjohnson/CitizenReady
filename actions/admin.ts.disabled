@@ -1,0 +1,483 @@
+'use server'
+// @ts-nocheck
+
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { QuestionSchema, TopicSchema } from '@/lib/validations'
+import type { QuestionInput, TopicInput } from '@/lib/validations'
+import type { Question, Topic } from '@/types'
+import { ROUTES, SUCCESS_MESSAGES } from '@/lib/constants'
+
+type ActionResult = {
+  success: boolean
+  message: string
+  errors?: Record<string, string[]>
+  id?: string
+}
+
+async function checkAdminPermission(): Promise<{ isAdmin: boolean; userId: string | null }> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { isAdmin: false, userId: null }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single<{ role: string }>()
+
+  return {
+    isAdmin: profile?.role === 'admin',
+    userId: user.id,
+  }
+}
+
+export async function createQuestion(data: QuestionInput): Promise<ActionResult> {
+  const { isAdmin, userId } = await checkAdminPermission()
+
+  if (!isAdmin || !userId) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  const validation = QuestionSchema.safeParse(data)
+
+  if (!validation.success) {
+    return {
+      success: false,
+      message: 'Validation failed',
+      errors: validation.error.flatten().fieldErrors,
+    }
+  }
+
+  const {
+    topic_id,
+    type,
+    question_text,
+    options,
+    correct_answers,
+    explanation,
+    difficulty,
+    is_active,
+  } = validation.data
+
+  try {
+    const supabase = await createClient()
+
+    const { data: question, error } = await supabase
+      .from('questions')
+      .insert({
+        topic_id,
+        type,
+        question_text,
+        options: options as any,
+        correct_answers: correct_answers as any,
+        explanation: explanation || null,
+        difficulty,
+        is_active,
+      } as any)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating question:', error)
+      return {
+        success: false,
+        message: 'Failed to create question',
+      }
+    }
+
+    revalidatePath('/admin/questions')
+    revalidatePath('/dashboard/practice')
+
+    return {
+      success: true,
+      message: 'Question created successfully',
+      id: (question as any)?.id,
+    }
+  } catch (error) {
+    console.error('Create question error:', error)
+    return {
+      success: false,
+      message: 'An error occurred',
+    }
+  }
+}
+
+export async function updateQuestion(id: string, data: QuestionInput): Promise<ActionResult> {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  const validation = QuestionSchema.safeParse(data)
+
+  if (!validation.success) {
+    return {
+      success: false,
+      message: 'Validation failed',
+      errors: validation.error.flatten().fieldErrors,
+    }
+  }
+
+  const {
+    topic_id,
+    type,
+    question_text,
+    options,
+    correct_answers,
+    explanation,
+    difficulty,
+    is_active,
+  } = validation.data
+
+  try {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+      .from('questions')
+      .update({
+        topic_id,
+        type,
+        question_text,
+        options: options as any,
+        correct_answers: correct_answers as any,
+        explanation: explanation || null,
+        difficulty,
+        is_active,
+      } as any)
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error updating question:', error)
+      return {
+        success: false,
+        message: 'Failed to update question',
+      }
+    }
+
+    revalidatePath('/admin/questions')
+    revalidatePath(`/admin/questions/${id}`)
+    revalidatePath('/dashboard/practice')
+
+    return {
+      success: true,
+      message: 'Question updated successfully',
+    }
+  } catch (error) {
+    console.error('Update question error:', error)
+    return {
+      success: false,
+      message: 'An error occurred',
+    }
+  }
+}
+
+export async function deleteQuestion(id: string): Promise<ActionResult> {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    const { error } = await supabase.from('questions').delete().eq('id', id)
+
+    if (error) {
+      console.error('Error deleting question:', error)
+      return {
+        success: false,
+        message: 'Failed to delete question',
+      }
+    }
+
+    revalidatePath(ROUTES.ADMIN_QUESTIONS)
+    revalidatePath(ROUTES.PRACTICE)
+
+    return {
+      success: true,
+      message: SUCCESS_MESSAGES.QUESTION_DELETED,
+    }
+  } catch (error) {
+    console.error('Delete question error:', error)
+    return {
+      success: false,
+      message: 'An error occurred',
+    }
+  }
+}
+
+export async function getAllQuestions(): Promise<Question[]> {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return []
+  }
+
+  const supabase = await createClient()
+
+  const { data: questions } = await supabase
+    .from('questions')
+    .select('*, topic:topics(*)')
+    .order('created_at', { ascending: false })
+
+  return (questions as Question[]) || []
+}
+
+export async function getQuestion(id: string): Promise<Question | null> {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return null
+  }
+
+  const supabase = await createClient()
+
+  const { data: question } = await supabase
+    .from('questions')
+    .select('*, topic:topics(*)')
+    .eq('id', id)
+    .single()
+
+  return question as Question | null
+}
+
+export async function createTopic(data: TopicInput): Promise<ActionResult> {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  const validation = TopicSchema.safeParse(data)
+
+  if (!validation.success) {
+    return {
+      success: false,
+      message: 'Validation failed',
+      errors: validation.error.flatten().fieldErrors,
+    }
+  }
+
+  const { name, description, displayOrder } = validation.data
+
+  try {
+    const supabase = await createClient()
+
+    const { data: topic, error } = await supabase
+      .from('topics')
+      .insert({
+        name,
+        description: description || null,
+        display_order: displayOrder || 0,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating topic:', error)
+      return {
+        success: false,
+        message: 'Failed to create topic',
+      }
+    }
+
+    revalidatePath(ROUTES.ADMIN_TOPICS)
+    revalidatePath(ROUTES.PRACTICE)
+
+    return {
+      success: true,
+      message: SUCCESS_MESSAGES.TOPIC_CREATED,
+      id: topic.id,
+    }
+  } catch (error) {
+    console.error('Create topic error:', error)
+    return {
+      success: false,
+      message: 'An error occurred',
+    }
+  }
+}
+
+export async function updateTopic(id: string, data: TopicInput): Promise<ActionResult> {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  const validation = TopicSchema.safeParse(data)
+
+  if (!validation.success) {
+    return {
+      success: false,
+      message: 'Validation failed',
+      errors: validation.error.flatten().fieldErrors,
+    }
+  }
+
+  const { name, description, displayOrder } = validation.data
+
+  try {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+      .from('topics')
+      .update({
+        name,
+        description: description || null,
+        display_order: displayOrder || 0,
+      })
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error updating topic:', error)
+      return {
+        success: false,
+        message: 'Failed to update topic',
+      }
+    }
+
+    revalidatePath(ROUTES.ADMIN_TOPICS)
+    revalidatePath(ROUTES.PRACTICE)
+
+    return {
+      success: true,
+      message: SUCCESS_MESSAGES.TOPIC_UPDATED,
+    }
+  } catch (error) {
+    console.error('Update topic error:', error)
+    return {
+      success: false,
+      message: 'An error occurred',
+    }
+  }
+}
+
+export async function deleteTopic(id: string): Promise<ActionResult> {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    const { data: questions } = await supabase
+      .from('questions')
+      .select('id')
+      .eq('topic_id', id)
+      .limit(1)
+
+    if (questions && questions.length > 0) {
+      return {
+        success: false,
+        message: 'Cannot delete topic with existing questions. Delete questions first.',
+      }
+    }
+
+    const { error } = await supabase.from('topics').delete().eq('id', id)
+
+    if (error) {
+      console.error('Error deleting topic:', error)
+      return {
+        success: false,
+        message: 'Failed to delete topic',
+      }
+    }
+
+    revalidatePath(ROUTES.ADMIN_TOPICS)
+    revalidatePath(ROUTES.PRACTICE)
+
+    return {
+      success: true,
+      message: SUCCESS_MESSAGES.TOPIC_DELETED,
+    }
+  } catch (error) {
+    console.error('Delete topic error:', error)
+    return {
+      success: false,
+      message: 'An error occurred',
+    }
+  }
+}
+
+export async function getAllTopics(): Promise<Topic[]> {
+  const supabase = await createClient()
+
+  const { data: topics } = await supabase
+    .from('topics')
+    .select('*')
+    .order('display_order', { ascending: true })
+
+  return (topics as Topic[]) || []
+}
+
+export async function getTopic(id: string): Promise<Topic | null> {
+  const supabase = await createClient()
+
+  const { data: topic } = await supabase
+    .from('topics')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  return topic as Topic | null
+}
+
+export async function getAdminStats() {
+  const { isAdmin } = await checkAdminPermission()
+
+  if (!isAdmin) {
+    return null
+  }
+
+  const supabase = await createClient()
+
+  const [
+    { count: totalQuestions },
+    { count: totalTopics },
+    { count: totalUsers },
+    { count: totalExams },
+  ] = await Promise.all([
+    supabase.from('questions').select('*', { count: 'exact', head: true }),
+    supabase.from('topics').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('exam_scores').select('*', { count: 'exact', head: true }),
+  ])
+
+  return {
+    totalQuestions: totalQuestions || 0,
+    totalTopics: totalTopics || 0,
+    totalUsers: totalUsers || 0,
+    totalExams: totalExams || 0,
+  }
+}

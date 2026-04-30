@@ -1,0 +1,36 @@
+# CitizenReady - Coding Rules
+
+## Tech Stack
+- Next.js 14+ with App Router
+- TypeScript
+- Tailwind CSS + shadcn/ui
+- Supabase (Auth + Database)
+- Zod for validation
+- Server Actions for mutations
+
+## Code Style
+- Use functional components with TypeScript
+- Prefer Server Components by default
+- Add 'use client' only when needed (hooks, interactivity)
+- Use Server Actions for all mutations
+- Return { success?, data?, error? } from all actions
+- Never throw errors in Server Actions
+
+## File Organization
+- Place Server Actions in /actions
+- Keep types in /types
+- Use /lib for utilities and Supabase clients
+- Components in /components with subfolders by domain
+
+## Database
+- All queries use RLS - no service role key in frontend
+- Use createClient() from lib/supabase/server in Server Components
+- Use createClient() from lib/supabase/client in Client Components
+- Validate all inputs with Zod schemas from lib/validations.ts
+
+## UI/UX
+- Use shadcn/ui components
+- Mobile-first responsive design
+- Loading states for all async operations
+- Error boundaries for error handling
+- Accessible forms with proper labels and ARIA attributes

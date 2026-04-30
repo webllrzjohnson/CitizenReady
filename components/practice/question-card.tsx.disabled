@@ -1,0 +1,175 @@
+'use client'
+
+import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Label } from '@/components/ui/label'
+import { submitPracticeAnswer } from '@/actions/practice'
+import type { Question } from '@/types'
+import { CheckCircle2, XCircle } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+
+interface QuestionCardProps {
+  question: Question
+  number: number
+  userAnswer?: { selectedAnswer: 'a' | 'b' | 'c' | 'd'; isCorrect: boolean } | null
+}
+
+export function QuestionCard({ question, number, userAnswer }: QuestionCardProps) {
+  const { toast } = useToast()
+  const [selectedAnswer, setSelectedAnswer] = useState<'a' | 'b' | 'c' | 'd' | null>(
+    userAnswer?.selectedAnswer || null
+  )
+  const [result, setResult] = useState<{
+    isCorrect: boolean
+    correctAnswer: 'a' | 'b' | 'c' | 'd'
+    explanation: string | null
+  } | null>(
+    userAnswer
+      ? {
+          isCorrect: userAnswer.isCorrect,
+          correctAnswer: question.correct_answer,
+          explanation: question.explanation,
+        }
+      : null
+  )
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!selectedAnswer) {
+      toast({
+        title: 'Error',
+        description: 'Please select an answer',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setLoading(true)
+
+    const response = await submitPracticeAnswer({
+      questionId: question.id,
+      selectedAnswer,
+    })
+
+    if (response.success) {
+      setResult({
+        isCorrect: response.isCorrect!,
+        correctAnswer: response.correctAnswer!,
+        explanation: response.explanation!,
+      })
+      toast({
+        title: response.isCorrect ? 'Correct!' : 'Incorrect',
+        description: response.isCorrect ? 'Well done!' : 'Keep practicing!',
+        variant: response.isCorrect ? 'default' : 'destructive',
+      })
+    } else {
+      toast({
+        title: 'Error',
+        description: response.message,
+        variant: 'destructive',
+      })
+    }
+
+    setLoading(false)
+  }
+
+  const options = [
+    { value: 'a', label: question.option_a },
+    { value: 'b', label: question.option_b },
+    { value: 'c', label: question.option_c },
+    { value: 'd', label: question.option_d },
+  ] as const
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <Badge variant="outline">Question {number}</Badge>
+          {question.difficulty && (
+            <Badge
+              variant={
+                question.difficulty === 'easy'
+                  ? 'default'
+                  : question.difficulty === 'medium'
+                  ? 'secondary'
+                  : 'destructive'
+              }
+            >
+              {question.difficulty}
+            </Badge>
+          )}
+        </div>
+        <CardTitle className="text-lg">{question.question_text}</CardTitle>
+        {question.topic && (
+          <CardDescription>Topic: {question.topic.name}</CardDescription>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <RadioGroup
+          value={selectedAnswer || undefined}
+          onValueChange={(value) => setSelectedAnswer(value as 'a' | 'b' | 'c' | 'd')}
+          disabled={!!result || loading}
+        >
+          <div className="space-y-3">
+            {options.map((option) => {
+              const isCorrect = result && option.value === result.correctAnswer
+              const isSelected = option.value === selectedAnswer
+              const isWrong = result && isSelected && !result.isCorrect
+
+              return (
+                <div
+                  key={option.value}
+                  className={`flex items-center space-x-2 rounded-lg border p-4 ${
+                    isCorrect
+                      ? 'border-green-500 bg-green-50'
+                      : isWrong
+                      ? 'border-red-500 bg-red-50'
+                      : ''
+                  }`}
+                >
+                  <RadioGroupItem value={option.value} id={`${question.id}-${option.value}`} />
+                  <Label
+                    htmlFor={`${question.id}-${option.value}`}
+                    className="flex-1 cursor-pointer"
+                  >
+                    {option.label}
+                  </Label>
+                  {isCorrect && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                  {isWrong && <XCircle className="h-5 w-5 text-red-600" />}
+                </div>
+              )
+            })}
+          </div>
+        </RadioGroup>
+
+        {result && (
+          <Alert variant={result.isCorrect ? 'default' : 'destructive'}>
+            <AlertDescription>
+              {result.isCorrect ? (
+                <span className="font-medium">Correct!</span>
+              ) : (
+                <>
+                  <span className="font-medium">Incorrect.</span> The correct answer is option{' '}
+                  {result.correctAnswer.toUpperCase()}.
+                </>
+              )}
+              {result.explanation && (
+                <div className="mt-2 text-sm">{result.explanation}</div>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!result && (
+          <Button onClick={handleSubmit} disabled={!selectedAnswer || loading} className="w-full">
+            {loading ? 'Submitting...' : 'Submit Answer'}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

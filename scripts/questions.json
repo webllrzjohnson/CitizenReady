@@ -1,0 +1,20 @@
+[
+  {
+    "topic": "Canadian History",
+    "type": "multiple_choice",
+    "question_text": "In what year did Canada become a country?",
+    "options": ["1867", "1867", "1901", "1763"],
+    "correct_answers": ["1867"],
+    "explanation": "Canada became a country on July 1, 1867, through the British North America Act.",
+    "difficulty": "medium"
+  },
+  {
+    "topic": "Canadian Government",
+    "type": "true_false",
+    "question_text": "The Prime Minister of Canada is the head of state.",
+    "options": ["True", "False"],
+    "correct_answers": ["False"],
+    "explanation": "The Governor General represents the monarch and is Canada's head of state. The Prime Minister is the head of government.",
+    "difficulty": "easy"
+  }
+]

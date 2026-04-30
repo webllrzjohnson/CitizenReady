@@ -1,0 +1,120 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { createTopic, updateTopic } from '@/actions/admin'
+import type { Topic } from '@/types'
+import { ROUTES } from '@/lib/constants'
+import { useToast } from '@/hooks/use-toast'
+
+interface TopicFormProps {
+  topic?: Topic
+  mode: 'create' | 'edit'
+}
+
+export function TopicForm({ topic, mode }: TopicFormProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+
+  const [formData, setFormData] = useState({
+    name: topic?.name || '',
+    description: topic?.description || '',
+    displayOrder: topic?.display_order || 0,
+  })
+
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    const result =
+      mode === 'create'
+        ? await createTopic(formData)
+        : await updateTopic(topic!.id, formData)
+
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: result.message,
+      })
+      router.push(ROUTES.ADMIN_TOPICS)
+      router.refresh()
+    } else {
+      setError(result.message)
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="name">Topic Name *</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          required
+          disabled={loading}
+          placeholder="e.g., Canadian History"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Description (optional)</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          disabled={loading}
+          rows={3}
+          placeholder="A brief description of this topic"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="displayOrder">Display Order</Label>
+        <Input
+          id="displayOrder"
+          type="number"
+          value={formData.displayOrder}
+          onChange={(e) =>
+            setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })
+          }
+          disabled={loading}
+          min={0}
+        />
+        <p className="text-sm text-muted-foreground">
+          Lower numbers appear first. Use 0 for default ordering.
+        </p>
+      </div>
+
+      <div className="flex gap-4">
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Saving...' : mode === 'create' ? 'Create Topic' : 'Update Topic'}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push(ROUTES.ADMIN_TOPICS)}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
+  )
+}
