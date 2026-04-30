@@ -69,3 +69,27 @@ export type TopicProgress = {
   best_score: number | null
   last_attempted: string | null
 }
+
+export type BlockType =
+  | 'paragraph'
+  | 'heading'
+  | 'image'
+  | 'quote'
+  | 'divider'
+  | 'bulletList'
+  | 'orderedList'
+
+export type BlogPost = {
+  id: string
+  title: string
+  slug: string
+  excerpt: string | null
+  cover_image: string | null
+  content: Record<string, unknown>
+  author_id: string
+  author?: Pick<Profile, 'full_name' | 'email'>
+  status: 'draft' | 'published'
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}

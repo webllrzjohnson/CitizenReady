@@ -2,6 +2,7 @@
 
 // @ts-nocheck - Supabase type inference issues with JSONB fields
 import { createClient } from '@/lib/supabase/server'
+import { EXAM_CONFIG } from '@/lib/constants'
 import { revalidatePath } from 'next/cache'
 import { SubmitExamSchema } from '@/lib/validations'
 import type { Question } from '@/types'
@@ -10,10 +11,7 @@ import type { Tables } from '@/types/database.types'
 export async function startMockExam() {
   const supabase = await createClient()
   
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return { error: 'You must be logged in to start a mock exam' }
-  }
+  const { data: { user } } = await supabase.auth.getUser()
 
   console.log('[startMockExam] Fetching questions for mock exam')
 
@@ -37,15 +35,38 @@ export async function startMockExam() {
   const questions = questionsData as Tables<'questions'>[]
   console.log('[startMockExam] Number of questions returned:', questions.length)
 
-  if (questions.length < 20) {
+  const targetCount = user ? EXAM_CONFIG.TOTAL_QUESTIONS : EXAM_CONFIG.GUEST_TOTAL_QUESTIONS
+
+  if (questions.length < targetCount) {
     console.warn('[startMockExam] Not enough questions available:', questions.length)
     return { error: 'Not enough questions available for mock exam' }
   }
 
-  // Shuffle and take first 20
   const shuffled = [...questions].sort(() => Math.random() - 0.5)
-  const selected = shuffled.slice(0, 20)
+  const selected = shuffled.slice(0, targetCount)
   const questionIds = selected.map(q => q.id)
+
+  if (!user) {
+    const typedQuestionsGuest: Question[] = selected.map(q => ({
+      id: q.id,
+      topic_id: q.topic_id,
+      type: q.type as 'single' | 'multiple' | 'boolean' | 'fill' | 'matching',
+      question_text: q.question_text,
+      options: q.options as { key: string; text: string }[],
+      correct_answers: q.correct_answers as string[],
+      explanation: q.explanation,
+      difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+      is_active: q.is_active,
+      created_at: q.created_at,
+    }))
+
+    return {
+      success: true,
+      sessionId: null,
+      questions: typedQuestionsGuest,
+      isGuest: true,
+    }
+  }
 
   // @ts-ignore - Supabase type inference issue
   const { data: sessionData, error: sessionError } = await supabase
@@ -55,7 +76,7 @@ export async function startMockExam() {
       user_id: user.id,
       type: 'mock_exam',
       topic_id: null,
-      total_q: 20,
+      total_q: EXAM_CONFIG.TOTAL_QUESTIONS,
       question_ids: questionIds,
     })
     .select()
@@ -85,6 +106,7 @@ export async function startMockExam() {
     success: true,
     sessionId: session.id,
     questions: typedQuestions,
+    isGuest: false,
   }
 }
 
@@ -206,7 +228,7 @@ export async function submitMockExam(
   return {
     success: true,
     score,
-    total: 20,
+    total: questionIds.length,
     attempts: attempts.map(a => ({
       question_id: a.question_id,
       is_correct: a.is_correct,

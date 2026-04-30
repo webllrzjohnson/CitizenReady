@@ -18,6 +18,10 @@ const navItems = [
     href: '/admin/topics',
   },
   {
+    label: 'Blog Posts',
+    href: '/admin/blog',
+  },
+  {
     label: 'Users',
     href: '/admin/users',
   },

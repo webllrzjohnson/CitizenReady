@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator'
 import { CheckCircle2, XCircle, Clock, Calendar, Target, Trophy, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ExamResultActions } from '@/components/exam/ExamResultActions'
+import { QuizOptionRow, type QuizOptionVisual } from '@/components/quiz/QuizOptionRow'
 
 interface ExamResultsPageProps {
   params: Promise<{ sessionId: string }>
@@ -227,43 +228,37 @@ export default async function ExamResultsPage({ params }: ExamResultsPageProps) 
                         )}
                       </div>
 
-                      <div className="space-y-2 ml-4">
-                        {question.options.map(option => {
+                      <div className="ml-4 space-y-3">
+                        {question.options.map((option) => {
                           const isUserAnswer = userAnswer.includes(option.key)
                           const isCorrectAnswer = correctAnswers.includes(option.key)
 
+                          let visual: QuizOptionVisual = 'default'
+                          if (isCorrectAnswer) visual = 'correct'
+                          else if (isUserAnswer && !isCorrectAnswer) visual = 'incorrect'
+
                           return (
-                            <div
+                            <QuizOptionRow
                               key={option.key}
-                              className={cn(
-                                'p-3 rounded-lg border-2 flex items-start gap-2',
-                                isCorrectAnswer && 'border-green-500 bg-green-50 dark:bg-green-950',
-                                isUserAnswer && !isCorrectAnswer && 'border-red-500 bg-red-50 dark:bg-red-950',
-                                !isUserAnswer && !isCorrectAnswer && 'border-muted'
-                              )}
-                            >
-                              <span className={cn(
-                                'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs',
-                                isCorrectAnswer && 'bg-green-500 text-white',
-                                isUserAnswer && !isCorrectAnswer && 'bg-red-500 text-white',
-                                !isUserAnswer && !isCorrectAnswer && 'bg-muted text-muted-foreground'
-                              )}>
-                                {option.key}
-                              </span>
-                              <div className="flex-1">
-                                <span>{option.text}</span>
-                                {isUserAnswer && (
-                                  <span className="ml-2 text-sm font-semibold">
-                                    (Your answer)
-                                  </span>
-                                )}
-                                {isCorrectAnswer && (
-                                  <span className="ml-2 text-sm font-semibold text-green-700 dark:text-green-300">
-                                    (Correct answer)
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                              optionKey={option.key}
+                              text={option.text}
+                              visual={visual}
+                              interactive={false}
+                              suffix={
+                                <>
+                                  {isUserAnswer && (
+                                    <span className="ml-2 text-sm font-semibold text-brand-navy">
+                                      (Your answer)
+                                    </span>
+                                  )}
+                                  {isCorrectAnswer && (
+                                    <span className="ml-2 text-sm font-semibold text-green-700">
+                                      (Correct answer)
+                                    </span>
+                                  )}
+                                </>
+                              }
+                            />
                           )
                         })}
                       </div>

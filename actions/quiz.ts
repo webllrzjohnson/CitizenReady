@@ -10,10 +10,7 @@ import type { Tables } from '@/types/database.types'
 export async function startPracticeSession(topicId: string, topicSlug: string) {
   const supabase = await createClient()
   
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return { error: 'You must be logged in to start a practice session' }
-  }
+  const { data: { user } } = await supabase.auth.getUser()
 
   console.log('[startPracticeSession] Querying questions for topicId:', topicId)
 
@@ -48,6 +45,28 @@ export async function startPracticeSession(topicId: string, topicSlug: string) {
   const shuffled = [...questions].sort(() => Math.random() - 0.5)
   const selected = shuffled.slice(0, Math.min(10, shuffled.length))
   const questionIds = selected.map(q => q.id)
+
+  if (!user) {
+    const typedQuestionsGuest: Question[] = selected.map(q => ({
+      id: q.id,
+      topic_id: q.topic_id,
+      type: q.type as 'single' | 'multiple' | 'boolean' | 'fill' | 'matching',
+      question_text: q.question_text,
+      options: q.options as { key: string; text: string }[],
+      correct_answers: q.correct_answers as string[],
+      explanation: q.explanation,
+      difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+      is_active: q.is_active,
+      created_at: q.created_at,
+    }))
+
+    return {
+      success: true,
+      sessionId: null,
+      questions: typedQuestionsGuest,
+      isGuest: true,
+    }
+  }
 
   // @ts-ignore - Supabase type inference issue
   const { data: sessionData, error: sessionError } = await supabase
@@ -86,6 +105,7 @@ export async function startPracticeSession(topicId: string, topicSlug: string) {
     success: true,
     sessionId: session.id,
     questions: typedQuestions,
+    isGuest: false,
   }
 }
 

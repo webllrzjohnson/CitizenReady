@@ -1,0 +1,89 @@
+/**
+ * Portrait image URLs (Wikimedia Commons or Wikipedia-scaled thumbnails).
+ * Each file’s licence is shown on its Commons page; most are public domain or CC-BY.
+ */
+
+export const KEY_PERSON_PORTRAIT_URLS: Record<string, string> = {
+  'donovan-bailey':
+    'https://upload.wikimedia.org/wikipedia/commons/5/51/Asv-koeln-1997-donovan-bailey.jpg',
+  'frederick-banting':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/F._G._Banting_1923.jpg/330px-F._G._Banting_1923.jpg',
+  'billy-bishop':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Billy_Bishop_%283543378125%29.jpg/330px-Billy_Bishop_%283543378125%29.jpg',
+  'john-buchan':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Lord_tweedsmuiir.jpg/330px-Lord_tweedsmuiir.jpg',
+  'sir-isaac-brock-tecumseh':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Tecumseh02.jpg/330px-Tecumseh02.jpg',
+  'john-cabot':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/JohnCabotPainting.jpg/330px-JohnCabotPainting.jpg',
+  'jacques-cartier':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Jacques_Cartier_1851-1852.jpg/330px-Jacques_Cartier_1851-1852.jpg',
+  'george-etienne-cartier':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Sir_George_Etienne_Cartier.jpg/330px-Sir_George_Etienne_Cartier.jpg',
+  'guy-carleton':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/General-Sir-Guy-Carleton_2.jpg/330px-General-Sir-Guy-Carleton_2.jpg',
+  'arthur-currie':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/ArthurCurrie.jpg/330px-ArthurCurrie.jpg',
+  'viola-desmond':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Viola_Desmond.jpg/330px-Viola_Desmond.jpg',
+  'gabriel-dumont':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/GabrielDumont.jpg/330px-GabrielDumont.jpg',
+  'alexander-robert-dunn':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/11thhussarsdunn.jpg/330px-11thhussarsdunn.jpg',
+  'phil-edwards':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Phil_Edwards_1928.jpg/330px-Phil_Edwards_1928.jpg',
+  'count-frontenac':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Portrait_of_Louis_de_Buade%2C_Count_of_Frontenac_%28cropped%29.jpg/330px-Portrait_of_Louis_de_Buade%2C_Count_of_Frontenac_%28cropped%29.jpg',
+  'terry-fox':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/TerryFoxToronto19800712.JPG/330px-TerryFoxToronto19800712.JPG',
+  'famous-five':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Ottawa_Parliament_Gardens_Famous_Five_Women_are_Persons.jpg/330px-Ottawa_Parliament_Gardens_Famous_Five_Women_are_Persons.jpg',
+  'robert-hampton-gray':
+    'https://upload.wikimedia.org/wikipedia/commons/5/5c/Robert_Hampton_Gray_VC.jpg',
+  'wayne-gretzky':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Andrew_Scheer_with_Wayne_Gretzky_%2848055697168%29_%28cropped%29.jpg/330px-Andrew_Scheer_with_Wayne_Gretzky_%2848055697168%29_%28cropped%29.jpg',
+  'william-hall':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/William_Hall_VC.jpg/330px-William_Hall_VC.jpg',
+  'paul-henderson':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Paul_Henderson_-_2019_%2832680141527%29_%28cropped%29.jpg/330px-Paul_Henderson_-_2019_%2832680141527%29_%28cropped%29.jpg',
+  'david-johnston':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/David_Johnston_2011-12-01.jpg/330px-David_Johnston_2011-12-01.jpg',
+  'filip-konowal':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Filip_Konowal_VC.jpg/330px-Filip_Konowal_VC.jpg',
+  'hippolyte-la-fontaine':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/LHLafontaine.jpg/330px-LHLafontaine.jpg',
+  'wilfrid-laurier':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/The_Honourable_Sir_Wilfrid_Laurier_Photo_A_%283x4_cropped%29.jpg/330px-The_Honourable_Sir_Wilfrid_Laurier_Photo_A_%283x4_cropped%29.jpg',
+  'catriona-le-may-doan':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Catriona_Le_May_Doan_Oh_Canada.jpg/330px-Catriona_Le_May_Doan_Oh_Canada.jpg',
+  'william-logan':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/William_Logan.jpg/330px-William_Logan.jpg',
+  'sir-john-a-macdonald':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/John_A_Macdonald_%28ca._1875%29.jpg/330px-John_A_Macdonald_%28ca._1875%29.jpg',
+  'agnes-macphail':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Miss_Agnes_McPhail%2C_M.P_1934.jpg/330px-Miss_Agnes_McPhail%2C_M.P_1934.jpg',
+  'pierre-le-moyne-iberville':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Portrait%2C_Pierre_Le_Moyne_d%27Iberville%2C_Montr%C3%A9al_Archives.jpg/330px-Portrait%2C_Pierre_Le_Moyne_d%27Iberville%2C_Montr%C3%A9al_Archives.jpg',
+  'chantal-petitclerc':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Chantal_Petitclerc_%28cropped%29.jpg/330px-Chantal_Petitclerc_%28cropped%29.jpg',
+  'louis-riel':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Louis_Riel.jpg/330px-Louis_Riel.jpg',
+  'mary-ann-shadd-cary':
+    'https://upload.wikimedia.org/wikipedia/commons/7/7f/Mary_Ann_Shadd.jpg',
+  'laura-secord':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Laura_Secord_portrait.png/330px-Laura_Secord_portrait.png',
+  'john-graves-simcoe':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/John_Graves_Simcoe.jpg/330px-John_Graves_Simcoe.jpg',
+  'sam-steele':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Col_SB_Steele_commanding_Strathcona%27s_Horse_No_733_%28HS85-10-11347%29_%28cropped%29.jpg/330px-Col_SB_Steele_commanding_Strathcona%27s_Horse_No_733_%28HS85-10-11347%29_%28cropped%29.jpg',
+  'mark-tewksbury':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Navra_Tewks_Outg_2.jpg/330px-Navra_Tewks_Outg_2.jpg',
+  'paul-triquet':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Paul_Triquet.jpg/330px-Paul_Triquet.jpg',
+  'duke-of-wellington':
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Sir_Arthur_Wellesley%2C_1st_Duke_of_Wellington.png/330px-Sir_Arthur_Wellesley%2C_1st_Duke_of_Wellington.png',
+}
+
+export function keyPersonPortraitUrl(slug: string): string | undefined {
+  return KEY_PERSON_PORTRAIT_URLS[slug]
+}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -9,11 +10,19 @@ import { Badge } from '@/components/ui/badge'
 import { startPracticeSession, submitAnswer, completeSession } from '@/actions/quiz'
 import type { Question } from '@/types'
 import { cn } from '@/lib/utils'
+import QuestionCard from '@/components/quiz/QuestionCard'
 
 interface FeedbackResult {
   is_correct: boolean
   correct_answers: string[]
   explanation: string | null
+}
+
+function answersMatch(userAnswer: string[], correctAnswers: string[]) {
+  return (
+    userAnswer.length === correctAnswers.length &&
+    userAnswer.every((a) => correctAnswers.includes(a))
+  )
 }
 
 export default function TopicPracticePage({
@@ -25,6 +34,7 @@ export default function TopicPracticePage({
   const searchParams = useSearchParams()
   const [topicSlug, setTopicSlug] = useState<string>('')
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [isGuest, setIsGuest] = useState(false)
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [userAnswers, setUserAnswers] = useState<Record<string, string[]>>({})
@@ -38,7 +48,7 @@ export default function TopicPracticePage({
   const [startTime, setStartTime] = useState<number>(Date.now())
 
   useEffect(() => {
-    params.then(p => setTopicSlug(p.topicSlug))
+    params.then((p) => setTopicSlug(p.topicSlug))
   }, [params])
 
   useEffect(() => {
@@ -56,14 +66,15 @@ export default function TopicPracticePage({
         const topic = await response.json()
 
         const result = await startPracticeSession(topic.id, topicSlug)
-        
+
         if (result.error) {
           setError(result.error)
           return
         }
 
-        if (result.success && result.sessionId && result.questions) {
-          setSessionId(result.sessionId)
+        if (result.success && result.questions && (result.sessionId != null || result.isGuest)) {
+          setSessionId(result.sessionId ?? null)
+          setIsGuest(!!result.isGuest)
           setQuestions(result.questions)
           setStartTime(Date.now())
         }
@@ -81,13 +92,30 @@ export default function TopicPracticePage({
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0
 
   async function handleAnswerSelect(answerKey: string) {
-    if (!sessionId || !currentQuestion || submitting || showFeedback) return
+    if (!currentQuestion || submitting || showFeedback) return
+    if (!isGuest && !sessionId) return
+
+    if (isGuest) {
+      setSubmitting(true)
+      const userAns = [answerKey]
+      const correct = currentQuestion.correct_answers ?? []
+      const isCorrect = answersMatch(userAns, correct)
+      setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: userAns }))
+      setLastResult({
+        is_correct: isCorrect,
+        correct_answers: correct,
+        explanation: currentQuestion.explanation,
+      })
+      setShowFeedback(true)
+      setSubmitting(false)
+      return
+    }
 
     setSubmitting(true)
     const timeSpent = Date.now() - startTime
 
     const formData = new FormData()
-    formData.append('session_id', sessionId)
+    formData.append('session_id', sessionId!)
     formData.append('question_id', currentQuestion.id)
     formData.append('user_answer', JSON.stringify([answerKey]))
     formData.append('time_spent_ms', timeSpent.toString())
@@ -101,7 +129,7 @@ export default function TopicPracticePage({
     }
 
     if (result.success) {
-      setUserAnswers(prev => ({ ...prev, [currentQuestion.id]: [answerKey] }))
+      setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: [answerKey] }))
       setLastResult({
         is_correct: result.is_correct,
         correct_answers: result.correct_answers,
@@ -115,7 +143,7 @@ export default function TopicPracticePage({
 
   async function handleNext() {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1)
+      setCurrentIndex((prev) => prev + 1)
       setShowFeedback(false)
       setLastResult(null)
       setStartTime(Date.now())
@@ -123,6 +151,18 @@ export default function TopicPracticePage({
   }
 
   async function handleSeeResults() {
+    if (isGuest) {
+      setCompleting(true)
+      let score = 0
+      for (const q of questions) {
+        const ua = userAnswers[q.id] ?? []
+        if (answersMatch(ua, q.correct_answers ?? [])) score++
+      }
+      setFinalScore({ score, total: questions.length })
+      setCompleting(false)
+      return
+    }
+
     if (!sessionId) return
 
     setCompleting(true)
@@ -152,9 +192,9 @@ export default function TopicPracticePage({
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 flex items-center justify-center min-h-[50vh]">
+      <div className="container mx-auto flex min-h-[50vh] items-center justify-center py-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
           <p className="text-muted-foreground">Loading practice session...</p>
         </div>
       </div>
@@ -166,7 +206,7 @@ export default function TopicPracticePage({
       <div className="container mx-auto py-8">
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-destructive mb-4">{error}</p>
+            <p className="mb-4 text-destructive">{error}</p>
             <Button onClick={handleBackToTopics}>Back to Topics</Button>
           </CardContent>
         </Card>
@@ -179,21 +219,19 @@ export default function TopicPracticePage({
     const percentage = Math.round((finalScore.score / finalScore.total) * 100)
 
     return (
-      <div className="container mx-auto py-8 max-w-2xl">
+      <div className="container mx-auto max-w-2xl py-8">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl mb-2">Practice Complete!</CardTitle>
+            <CardTitle className="mb-2 text-3xl">Practice Complete!</CardTitle>
             <CardDescription>Here are your results</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-center py-8">
-              <div className="text-6xl font-bold mb-2">
+            <div className="py-8 text-center">
+              <div className="mb-2 text-6xl font-bold">
                 {finalScore.score}/{finalScore.total}
               </div>
-              <div className="text-2xl text-muted-foreground mb-4">
-                {percentage}%
-              </div>
-              <Badge variant={passed ? 'default' : 'destructive'} className="text-lg px-4 py-1">
+              <div className="mb-4 text-2xl text-muted-foreground">{percentage}%</div>
+              <Badge variant={passed ? 'default' : 'destructive'} className="px-4 py-1 text-lg">
                 {passed ? 'Passed' : 'Keep Practicing'}
               </Badge>
             </div>
@@ -201,14 +239,12 @@ export default function TopicPracticePage({
             <div className="space-y-2">
               {questions.map((q, idx) => {
                 const userAnswer = userAnswers[q.id]
-                const isCorrect = userAnswer && 
-                  userAnswer.length === q.correct_answers.length &&
-                  userAnswer.every(a => q.correct_answers.includes(a))
+                const isCorrect = userAnswer && answersMatch(userAnswer, q.correct_answers ?? [])
 
                 return (
                   <div
                     key={q.id ?? `question-${idx}`}
-                    className="flex items-center justify-between p-3 rounded-lg border"
+                    className="flex items-center justify-between rounded-lg border p-3"
                   >
                     <span className="text-sm">Question {idx + 1}</span>
                     <Badge variant={isCorrect ? 'default' : 'destructive'}>
@@ -218,6 +254,28 @@ export default function TopicPracticePage({
                 )
               })}
             </div>
+
+            {isGuest && (
+              <Card className="border-brand-red/20 bg-amber-50/60">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Want to track your progress over time?</CardTitle>
+                  <CardDescription>
+                    Create a free account to save your scores and see how you improve.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Button asChild className="bg-brand-red text-white hover:bg-brand-red-dark">
+                    <Link href="/signup">Sign Up Free</Link>
+                  </Button>
+                  <Link
+                    href="/dashboard/practice"
+                    className="text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:text-left"
+                  >
+                    Continue as Guest
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="flex gap-4">
               <Button onClick={handlePracticeAgain} className="flex-1">
@@ -238,7 +296,7 @@ export default function TopicPracticePage({
       <div className="container mx-auto py-8">
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">No questions available</p>
+            <p className="mb-4 text-muted-foreground">No questions available</p>
             <Button onClick={handleBackToTopics}>Back to Topics</Button>
           </CardContent>
         </Card>
@@ -250,91 +308,67 @@ export default function TopicPracticePage({
   const isLastQuestion = currentIndex === questions.length - 1
 
   return (
-    <div className="container mx-auto py-8 max-w-3xl">
+    <div className="container mx-auto max-w-3xl py-8">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium">
             Question {currentIndex + 1} of {questions.length}
           </span>
-          <span className="text-sm text-muted-foreground">
-            {Math.round(progress)}%
-          </span>
+          <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
         </div>
         <Progress value={progress} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">{currentQuestion.question_text}</CardTitle>
-          {currentQuestion.difficulty && (
-            <Badge variant="outline" className="w-fit">
+      <QuestionCard
+        question={currentQuestion}
+        selectedKeys={userAnswer ?? []}
+        onSelect={(_qid, key) => handleAnswerSelect(key)}
+        showResults={showFeedback}
+        disabled={submitting}
+        afterTitle={
+          currentQuestion.difficulty ? (
+            <Badge
+              variant="outline"
+              className="w-fit border-surface-border capitalize text-[#424242]"
+            >
               {currentQuestion.difficulty}
             </Badge>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {currentQuestion.options?.map((option, index) => {
-            const isSelected = userAnswer?.includes(option.key)
-            const isCorrect = lastResult?.correct_answers.includes(option.key)
-            const shouldHighlight = showFeedback && (isSelected || isCorrect)
+          ) : undefined
+        }
+      />
 
-            return (
-              <Card
-                key={`${currentQuestion.id}-${option.key ?? index}`}
-                className={cn(
-                  'cursor-pointer transition-all hover:shadow-md',
-                  !showFeedback && 'hover:border-primary',
-                  shouldHighlight && isCorrect && 'border-green-500 bg-green-50',
-                  shouldHighlight && !isCorrect && isSelected && 'border-red-500 bg-red-50',
-                  submitting && 'pointer-events-none opacity-50'
-                )}
-                onClick={() => !showFeedback && handleAnswerSelect(option.key)}
-              >
-                <CardContent className="p-4 flex items-start gap-3">
-                  <div className={cn(
-                    'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm',
-                    !shouldHighlight && 'bg-secondary text-secondary-foreground',
-                    shouldHighlight && isCorrect && 'bg-green-500 text-white',
-                    shouldHighlight && !isCorrect && isSelected && 'bg-red-500 text-white'
-                  )}>
-                    {option.key}
-                  </div>
-                  <div className="flex-1">{option.text}</div>
-                </CardContent>
-              </Card>
-            )
-          })}
+      {showFeedback && lastResult && (
+        <div className="mt-6 space-y-4">
+          <div
+            className={cn(
+              'rounded-lg border p-4',
+              lastResult.is_correct
+                ? 'border-green-200 bg-green-50'
+                : 'border-red-200 bg-red-50'
+            )}
+          >
+            <p
+              className={cn(
+                'mb-2 font-semibold',
+                lastResult.is_correct ? 'text-green-900' : 'text-red-900'
+              )}
+            >
+              {lastResult.is_correct ? 'Correct!' : 'Incorrect'}
+            </p>
+            {lastResult.explanation && (
+              <p className="text-sm text-[#424242]">{lastResult.explanation}</p>
+            )}
+          </div>
 
-          {showFeedback && lastResult && (
-            <div className="mt-6 space-y-4">
-              <div className={cn(
-                'p-4 rounded-lg',
-                lastResult.is_correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-              )}>
-                <p className={cn(
-                  'font-semibold mb-2',
-                  lastResult.is_correct ? 'text-green-900' : 'text-red-900'
-                )}>
-                  {lastResult.is_correct ? 'Correct!' : 'Incorrect'}
-                </p>
-                {lastResult.explanation && (
-                  <p className="text-sm text-muted-foreground">
-                    {lastResult.explanation}
-                  </p>
-                )}
-              </div>
-
-              <Button
-                onClick={isLastQuestion ? handleSeeResults : handleNext}
-                className="w-full"
-                disabled={completing}
-              >
-                {completing ? 'Completing...' : isLastQuestion ? 'See Results' : 'Next Question'}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <Button
+            onClick={isLastQuestion ? handleSeeResults : handleNext}
+            className="w-full bg-brand-red text-white hover:bg-brand-red-dark"
+            disabled={completing}
+          >
+            {completing ? 'Completing...' : isLastQuestion ? 'See Results' : 'Next Question'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

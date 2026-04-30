@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +20,37 @@ import { submitMockExam } from '@/actions/exam'
 import { useExamTimer } from '@/hooks/useExamTimer'
 import type { Question } from '@/types'
 import { cn } from '@/lib/utils'
-import { Clock, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Clock, ChevronLeft, ChevronRight, AlertCircle, Trophy, CheckCircle2, XCircle } from 'lucide-react'
+import QuestionCard from '@/components/quiz/QuestionCard'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { QuizOptionRow, type QuizOptionVisual } from '@/components/quiz/QuizOptionRow'
+import { mockExamPassingCorrectCount, EXAM_CONFIG } from '@/lib/constants'
+
+const GUEST_EXAM_PAYLOAD_KEY = 'citizenready_guest_exam_payload'
+const GUEST_EXAM_USED_KEY = 'citizenready_guest_mock_exam_used'
+
+type GuestExamReviewItem = {
+  question: Question
+  userAnswer: string[]
+  isCorrect: boolean
+}
+
+type GuestExamResults = {
+  score: number
+  total: number
+  review: GuestExamReviewItem[]
+}
 
 interface ExamSessionPageProps {
   params: Promise<{ sessionId: string }>
+}
+
+function answersMatch(userAnswer: string[], correctAnswers: string[]) {
+  return (
+    userAnswer.length === correctAnswers.length &&
+    userAnswer.every((a) => correctAnswers.includes(a))
+  )
 }
 
 export default function ExamSessionPage({ params }: ExamSessionPageProps) {
@@ -37,19 +64,20 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
+  const [guestResults, setGuestResults] = useState<GuestExamResults | null>(null)
 
   useEffect(() => {
-    params.then(p => setSessionId(p.sessionId))
+    params.then((p) => setSessionId(p.sessionId))
   }, [params])
 
   const handleTimeExpire = async () => {
-    if (!submitted && !isSubmitting) {
+    if (!submitted && !isSubmitting && guestResults === null) {
       await handleSubmitExam(true)
     }
   }
 
-  const { timeRemaining, formattedTime, isExpired } = useExamTimer({
-    initialSeconds: 1800, // 30 minutes
+  const { timeRemaining, formattedTime } = useExamTimer({
+    initialSeconds: 1800,
     onExpire: handleTimeExpire,
   })
 
@@ -60,6 +88,31 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
       try {
         setLoading(true)
         setError(null)
+
+        if (sessionId === 'guest') {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            router.replace('/dashboard/mock-exam')
+            return
+          }
+
+          const raw =
+            typeof window !== 'undefined' ? sessionStorage.getItem(GUEST_EXAM_PAYLOAD_KEY) : null
+          if (!raw) {
+            setError('Exam data not found. Start a new mock exam from the mock exam page.')
+            return
+          }
+
+          const parsed = JSON.parse(raw) as { questions: Question[] }
+          if (!parsed.questions?.length) {
+            setError('Could not load exam questions.')
+            return
+          }
+
+          setQuestions(parsed.questions)
+          return
+        }
 
         const supabase = createClient()
 
@@ -74,7 +127,10 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
           return
         }
 
-        const typedSession = sessionData as any
+        const typedSession = sessionData as {
+          completed_at: string | null
+          question_ids: string[]
+        }
 
         if (typedSession.completed_at) {
           router.push(`/dashboard/mock-exam/${sessionId}/results`)
@@ -93,25 +149,33 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
           return
         }
 
-        const typedQuestions = questionsData as any[]
+        const typedQuestions = questionsData as Record<string, unknown>[]
 
         const orderedQuestions = questionIds
-          .map(id => typedQuestions.find(q => q.id === id))
+          .map((id) => typedQuestions.find((q) => (q as { id: string }).id === id))
           .filter(Boolean)
-          .map((q: any) => ({
-            id: q.id,
-            topic_id: q.topic_id,
-            type: q.type as 'single' | 'multiple' | 'boolean' | 'fill' | 'matching',
-            question_text: q.question_text,
-            options: q.options as { key: string; text: string }[],
-            correct_answers: q.correct_answers as string[],
-            explanation: q.explanation,
-            difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
-            is_active: q.is_active,
-            created_at: q.created_at,
-          }))
+          .map(
+            (q) =>
+              ({
+                id: (q as { id: string }).id,
+                topic_id: (q as { topic_id: string }).topic_id,
+                type: (q as { type: string }).type as
+                  | 'single'
+                  | 'multiple'
+                  | 'boolean'
+                  | 'fill'
+                  | 'matching',
+                question_text: (q as { question_text: string }).question_text,
+                options: (q as { options: { key: string; text: string }[] }).options,
+                correct_answers: (q as { correct_answers: string[] }).correct_answers,
+                explanation: (q as { explanation: string | null }).explanation,
+                difficulty: (q as { difficulty: string }).difficulty as 'easy' | 'medium' | 'hard',
+                is_active: (q as { is_active: boolean }).is_active,
+                created_at: (q as { created_at: string }).created_at,
+              }) as Question
+          )
 
-        setQuestions(orderedQuestions as Question[])
+        setQuestions(orderedQuestions)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load exam')
       } finally {
@@ -123,7 +187,7 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   }, [sessionId, router])
 
   const handleAnswerSelect = (questionId: string, answerKey: string) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
       [questionId]: [answerKey],
     }))
@@ -131,13 +195,13 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1)
+      setCurrentIndex((prev) => prev - 1)
     }
   }
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1)
+      setCurrentIndex((prev) => prev + 1)
     }
   }
 
@@ -145,13 +209,38 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
     setShowSubmitDialog(true)
   }
 
-  const handleSubmitExam = async (autoSubmit = false) => {
+  const handleSubmitExam = async (_autoSubmit = false) => {
     if (isSubmitting) return
 
     setIsSubmitting(true)
     setShowSubmitDialog(false)
 
     try {
+      if (sessionId === 'guest') {
+        let score = 0
+        const review: GuestExamReviewItem[] = questions.map((q) => {
+          const ua = answers[q.id] || []
+          const ca = q.correct_answers ?? []
+          const isCorrect = answersMatch(ua, ca)
+          if (isCorrect) score++
+          return { question: q, userAnswer: ua, isCorrect }
+        })
+
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(GUEST_EXAM_USED_KEY, '1')
+            sessionStorage.removeItem(GUEST_EXAM_PAYLOAD_KEY)
+          }
+        } catch {
+          /* ignore */
+        }
+
+        setGuestResults({ score, total: questions.length, review })
+        setSubmitted(true)
+        setIsSubmitting(false)
+        return
+      }
+
       const result = await submitMockExam(sessionId, answers)
 
       if (result.error) {
@@ -172,10 +261,10 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 flex items-center justify-center min-h-[50vh]">
+      <div className="container mx-auto flex min-h-[50vh] items-center justify-center py-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading exam...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-brand-red border-t-transparent" />
+          <p className="text-[#424242]">Loading exam...</p>
         </div>
       </div>
     )
@@ -184,11 +273,14 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   if (error) {
     return (
       <div className="container mx-auto py-8">
-        <Card>
+        <Card className="border-surface-border bg-surface-card">
           <CardContent className="py-12 text-center">
-            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <p className="text-destructive mb-4">{error}</p>
-            <Button onClick={() => router.push('/dashboard/mock-exam')}>
+            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-brand-red" />
+            <p className="mb-4 text-brand-red">{error}</p>
+            <Button
+              onClick={() => router.push('/dashboard/mock-exam')}
+              className="bg-brand-red text-white hover:bg-brand-red-dark"
+            >
               Back to Exam
             </Button>
           </CardContent>
@@ -197,13 +289,197 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
     )
   }
 
+  if (guestResults) {
+    const { score, total, review } = guestResults
+    const percentage = Math.round((score / total) * 100)
+    const passNeed = mockExamPassingCorrectCount(total)
+    const passed = score >= passNeed
+
+    return (
+      <div className="container mx-auto max-w-5xl py-8">
+        <Card
+          className={cn(
+            'mb-8 border-2',
+            passed
+              ? 'border-green-500 bg-green-50 dark:bg-green-950'
+              : 'border-red-500 bg-red-50 dark:bg-red-950'
+          )}
+        >
+          <CardContent className="py-8 text-center">
+            <div className="mb-4">
+              {passed ? (
+                <Trophy className="mx-auto h-20 w-20 text-green-600" />
+              ) : (
+                <AlertCircle className="mx-auto h-20 w-20 text-red-600" />
+              )}
+            </div>
+            <h1
+              className={cn(
+                'mb-2 text-4xl font-bold',
+                passed ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'
+              )}
+            >
+              {passed ? 'PASSED' : 'FAILED'}
+            </h1>
+            <div className="my-4 text-6xl font-bold">
+              {score} / {total}
+            </div>
+            <div className="mb-4 text-3xl text-muted-foreground">{percentage}%</div>
+            <p
+              className={cn(
+                'text-lg',
+                passed ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
+              )}
+            >
+              {passed
+                ? 'Congratulations! You passed the mock citizenship exam.'
+                : `Keep practicing. You need ${passNeed}/${total} (${EXAM_CONFIG.PASSING_SCORE}%) to pass.`}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8 border-brand-red/20 bg-amber-50/60">
+          <CardHeader>
+            <CardTitle className="text-lg">Save your results and track progress</CardTitle>
+            <CardDescription>
+              Create a free CitizenReady account to store mock exam history, practice scores, and more.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button asChild className="bg-brand-red text-white hover:bg-brand-red-dark">
+              <Link href="/signup">Sign Up Free</Link>
+            </Button>
+            <Link
+              href="/dashboard"
+              className="text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:text-left"
+            >
+              Continue as Guest
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Question Review</CardTitle>
+            <CardDescription>Your answers and correct responses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {review.map((item, idx) => {
+                const question = item.question
+                const userAnswer = item.userAnswer
+                const correctAnswers = question.correct_answers ?? []
+                const isCorrect = item.isCorrect
+
+                return (
+                  <div key={question.id} className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          'mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white',
+                          isCorrect ? 'bg-green-500' : 'bg-red-500'
+                        )}
+                      >
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <div className="mb-3 flex items-start justify-between gap-4">
+                          <h3 className="text-lg font-semibold">{question.question_text}</h3>
+                          {isCorrect ? (
+                            <Badge variant="default" className="shrink-0 bg-green-500">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              Correct
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="shrink-0">
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Incorrect
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="ml-4 space-y-3">
+                          {question.options?.map((option) => {
+                            const isUserAnswer = userAnswer.includes(option.key)
+                            const isCorrectAnswer = correctAnswers.includes(option.key)
+
+                            let visual: QuizOptionVisual = 'default'
+                            if (isCorrectAnswer) visual = 'correct'
+                            else if (isUserAnswer && !isCorrectAnswer) visual = 'incorrect'
+
+                            return (
+                              <QuizOptionRow
+                                key={option.key}
+                                optionKey={option.key}
+                                text={option.text}
+                                visual={visual}
+                                interactive={false}
+                                suffix={
+                                  <>
+                                    {isUserAnswer && (
+                                      <span className="ml-2 text-sm font-semibold text-brand-navy">
+                                        (Your answer)
+                                      </span>
+                                    )}
+                                    {isCorrectAnswer && (
+                                      <span className="ml-2 text-sm font-semibold text-green-700">
+                                        (Correct answer)
+                                      </span>
+                                    )}
+                                  </>
+                                }
+                              />
+                            )
+                          })}
+                        </div>
+
+                        {question.explanation && (
+                          <div className="ml-4 mt-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                            <p className="mb-1 text-sm font-semibold text-blue-900 dark:text-blue-100">
+                              Explanation:
+                            </p>
+                            <p className="text-sm text-blue-800 dark:text-blue-200">{question.explanation}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {idx < review.length - 1 && <Separator className="my-6" />}
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col justify-center gap-4 sm:flex-row">
+          <Button
+            variant="outline"
+            className="border-surface-border"
+            onClick={() => router.push('/dashboard/practice')}
+          >
+            Practice by topic
+          </Button>
+          <Button
+            className="bg-brand-red text-white hover:bg-brand-red-dark"
+            onClick={() => router.push('/dashboard')}
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (questions.length === 0) {
     return (
       <div className="container mx-auto py-8">
-        <Card>
+        <Card className="border-surface-border bg-surface-card">
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">No questions available</p>
-            <Button onClick={() => router.push('/dashboard/mock-exam')}>
+            <p className="mb-4 text-[#424242]">No questions available</p>
+            <Button
+              onClick={() => router.push('/dashboard/mock-exam')}
+              className="bg-brand-red text-white hover:bg-brand-red-dark"
+            >
               Back to Exam
             </Button>
           </CardContent>
@@ -215,70 +491,43 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   const currentQuestion = questions[currentIndex]
   const answeredCount = Object.keys(answers).length
   const isLastQuestion = currentIndex === questions.length - 1
+  const progressPct = ((currentIndex + 1) / questions.length) * 100
+  const timerUrgent = timeRemaining <= 300
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
-      {/* Top Bar */}
-      <div className="mb-6 flex items-center justify-between bg-card border rounded-lg p-4">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">
-            Question {currentIndex + 1} of {questions.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock className={cn(
-            'w-5 h-5',
-            timeRemaining <= 300 ? 'text-destructive' : 'text-muted-foreground'
-          )} />
-          <span className={cn(
-            'font-mono text-lg font-bold',
-            timeRemaining <= 300 ? 'text-destructive' : ''
-          )}>
-            {formattedTime}
-          </span>
+    <div className="mx-auto max-w-4xl py-6 md:py-8">
+      <div className="mb-6 h-1 w-full overflow-hidden rounded-full bg-surface-border">
+        <div
+          className="h-full rounded-full bg-brand-red transition-[width] duration-300 ease-out"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-lg font-semibold text-brand-navy">
+          Question {currentIndex + 1} of {questions.length}
+        </p>
+        <div
+          className={cn(
+            'flex items-center gap-2 self-end sm:self-auto',
+            timerUrgent && 'text-brand-red'
+          )}
+        >
+          <Clock className={cn('h-5 w-5', timerUrgent ? 'text-brand-red' : 'text-[#424242]')} />
+          <span className="font-mono text-lg font-bold tabular-nums">{formattedTime}</span>
         </div>
       </div>
 
-      {/* Question Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-xl">{currentQuestion.question_text}</CardTitle>
-          {currentQuestion.type === 'boolean' && (
-            <Badge variant="outline" className="w-fit">True/False</Badge>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {currentQuestion.options?.map((option, index) => {
-            const isSelected = answers[currentQuestion.id]?.includes(option.key)
+      <div className="mb-8">
+        <QuestionCard
+          question={currentQuestion}
+          selectedKeys={answers[currentQuestion.id] ?? []}
+          onSelect={handleAnswerSelect}
+          disabled={isSubmitting}
+        />
+      </div>
 
-            return (
-              <Card
-                key={`${currentQuestion.id}-${option.key ?? index}`}
-                className={cn(
-                  'cursor-pointer transition-all hover:shadow-md hover:border-primary',
-                  isSelected && 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-                )}
-                onClick={() => handleAnswerSelect(currentQuestion.id, option.key)}
-              >
-                <CardContent className="p-4 flex items-start gap-3">
-                  <div className={cn(
-                    'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm',
-                    isSelected 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-secondary text-secondary-foreground'
-                  )}>
-                    {option.key}
-                  </div>
-                  <div className="flex-1">{option.text}</div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </CardContent>
-      </Card>
-
-      {/* Question Indicators */}
-      <div className="mb-6 flex flex-wrap gap-2 justify-center">
+      <div className="mb-8 flex flex-wrap justify-center gap-2">
         {questions.map((q, idx) => {
           const isAnswered = !!answers[q.id]
           const isCurrent = idx === currentIndex
@@ -286,14 +535,15 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
           return (
             <button
               key={q.id}
+              type="button"
               onClick={() => setCurrentIndex(idx)}
               className={cn(
-                'w-8 h-8 rounded-full text-sm font-semibold transition-all',
-                isCurrent && 'ring-2 ring-primary ring-offset-2',
-                isAnswered && !isCurrent && 'bg-blue-500 text-white',
-                !isAnswered && !isCurrent && 'bg-muted text-muted-foreground',
-                isCurrent && isAnswered && 'bg-blue-500 text-white',
-                isCurrent && !isAnswered && 'bg-primary text-primary-foreground'
+                'flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold transition-all',
+                isCurrent && 'ring-2 ring-brand-red ring-offset-2 ring-offset-surface-page',
+                isCurrent && isAnswered && 'bg-brand-red text-white',
+                isCurrent && !isAnswered && 'bg-gray-300 text-gray-800',
+                !isCurrent && isAnswered && 'bg-brand-red text-white',
+                !isCurrent && !isAnswered && 'bg-gray-300 text-gray-600'
               )}
             >
               {idx + 1}
@@ -302,49 +552,56 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
         })}
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Button
           onClick={handlePrevious}
           disabled={currentIndex === 0}
           variant="outline"
+          className="border-surface-border"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" />
+          <ChevronLeft className="mr-1 h-4 w-4" />
           Previous
         </Button>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="font-semibold">{answeredCount}/20</span>
-          <span>answered</span>
+        <div className="order-first text-center text-sm text-[#424242] sm:order-none">
+          <span className="font-semibold text-brand-navy">
+            {answeredCount}/{questions.length}
+          </span>{' '}
+          answered
         </div>
 
         {!isLastQuestion ? (
-          <Button onClick={handleNext}>
+          <Button
+            onClick={handleNext}
+            className="bg-brand-red text-white hover:bg-brand-red-dark"
+          >
             Next
-            <ChevronRight className="w-4 h-4 ml-1" />
+            <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={handleSubmitClick} disabled={isSubmitting}>
+          <Button
+            onClick={handleSubmitClick}
+            disabled={isSubmitting}
+            className="bg-brand-red text-white hover:bg-brand-red-dark"
+          >
             Submit Exam
           </Button>
         )}
       </div>
 
-      {/* Submit Button (appears after question 10) */}
       {currentIndex >= 10 && !isLastQuestion && (
         <div className="mt-6 text-center">
           <Button
             onClick={handleSubmitClick}
             disabled={isSubmitting}
-            variant="default"
             size="lg"
+            className="bg-brand-red text-white hover:bg-brand-red-dark"
           >
             Submit Exam
           </Button>
         </div>
       )}
 
-      {/* Submit Confirmation Dialog */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -352,29 +609,31 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
             <AlertDialogDescription>
               You have answered {answeredCount} of {questions.length} questions.
               {answeredCount < questions.length && (
-                <span className="block mt-2 text-destructive font-semibold">
+                <span className="mt-2 block font-semibold text-brand-red">
                   {questions.length - answeredCount} questions remain unanswered.
                 </span>
               )}
-              <span className="block mt-2">
+              <span className="mt-2 block">
                 Once submitted, you cannot change your answers. Are you sure you want to submit now?
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSubmitExam(false)}>
+            <AlertDialogAction
+              onClick={() => handleSubmitExam(false)}
+              className="bg-brand-red text-white hover:bg-brand-red-dark"
+            >
               Submit Exam
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Time Warning */}
       {timeRemaining <= 300 && timeRemaining > 0 && (
-        <div className="fixed bottom-4 right-4 bg-destructive text-destructive-foreground p-4 rounded-lg shadow-lg">
+        <div className="fixed bottom-4 right-4 rounded-lg bg-brand-red p-4 text-white shadow-lg">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="h-5 w-5" />
             <span className="font-semibold">Less than 5 minutes remaining!</span>
           </div>
         </div>

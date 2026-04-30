@@ -3,9 +3,16 @@ export const APP_DESCRIPTION = 'Prepare for your Canadian citizenship exam with 
 
 export const EXAM_CONFIG = {
   TOTAL_QUESTIONS: 20,
+  /** Shortened exam for unregistered guests (registered users get TOTAL_QUESTIONS). */
+  GUEST_TOTAL_QUESTIONS: 10,
   TIME_LIMIT_MINUTES: 30,
   PASSING_SCORE: 75,
 } as const
+
+/** Minimum number correct to pass at PASSING_SCORE% (e.g. 15/20, 8/10). */
+export function mockExamPassingCorrectCount(totalQuestions: number): number {
+  return Math.ceil((totalQuestions * EXAM_CONFIG.PASSING_SCORE) / 100)
+}
 
 export const ROUTES = {
   HOME: '/',

@@ -44,9 +44,22 @@ export const SubmitExamSchema = z.object({
   answers: z.record(z.string().uuid(), z.array(z.string())),
 })
 
+export const BlogPostSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  slug: z
+    .string()
+    .min(3)
+    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase with hyphens only'),
+  excerpt: z.string().max(300).optional(),
+  cover_image: z.string().url().optional().or(z.literal('')),
+  content: z.record(z.unknown()),
+  status: z.enum(['draft', 'published']),
+})
+
 export type LoginInput = z.infer<typeof LoginSchema>
 export type SignupInput = z.infer<typeof SignupSchema>
 export type TopicInput = z.infer<typeof TopicSchema>
 export type QuestionInput = z.infer<typeof QuestionSchema>
 export type SubmitAnswerInput = z.infer<typeof SubmitAnswerSchema>
 export type SubmitExamInput = z.infer<typeof SubmitExamSchema>
+export type BlogPostInput = z.infer<typeof BlogPostSchema>

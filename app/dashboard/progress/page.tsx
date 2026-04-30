@@ -1,8 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import ScoreChart from '@/components/progress/ScoreChart'
 import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
+import { Lock } from 'lucide-react'
 import type { Tables } from '@/types/database.types'
 
 export const metadata = {
@@ -11,7 +14,6 @@ export const metadata = {
 }
 
 type Topic = Tables<'topics'>
-type QuizSession = Tables<'quiz_sessions'>
 
 interface TopicProgress {
   topic_id: string
@@ -25,7 +27,25 @@ export default async function ProgressPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-6 px-4 py-12 text-center">
+        <Lock className="h-14 w-14 shrink-0 text-muted-foreground" aria-hidden />
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Track Your Progress</h1>
+          <p className="mx-auto max-w-md text-muted-foreground">
+            Sign up free to see your score history, topic breakdown, and improvement over time.
+          </p>
+        </div>
+        <Button asChild className="bg-brand-red text-white hover:bg-brand-red-dark" size="lg">
+          <Link href="/signup">Sign Up Free</Link>
+        </Button>
+        <Link href="/login" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+          Login
+        </Link>
+      </div>
+    )
+  }
 
   // 1. Overall stats
   const { count: totalSessions } = await supabase

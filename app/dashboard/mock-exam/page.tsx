@@ -3,18 +3,27 @@ import { Badge } from '@/components/ui/badge'
 import { StartExamButton } from '@/components/exam/StartExamButton'
 import { Clock, FileText, Target, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { EXAM_CONFIG, mockExamPassingCorrectCount } from '@/lib/constants'
 
 export const metadata = {
   title: 'Mock Citizenship Exam',
-  description: 'Take a timed mock Canadian citizenship exam. 20 questions, 30 minutes, 75% to pass.',
+  description: `Timed mock exam — ${EXAM_CONFIG.GUEST_TOTAL_QUESTIONS} questions for guests, ${EXAM_CONFIG.TOTAL_QUESTIONS} when signed in. 30 minutes. ${EXAM_CONFIG.PASSING_SCORE}% to pass.`,
 }
 
-export default function MockExamPage() {
+export default async function MockExamPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const qCount = user ? EXAM_CONFIG.TOTAL_QUESTIONS : EXAM_CONFIG.GUEST_TOTAL_QUESTIONS
+  const passNeed = mockExamPassingCorrectCount(qCount)
+
   const rules = [
     {
       icon: FileText,
-      title: '20 Questions',
-      description: 'Random questions from all topics covering Canadian history, geography, government, and rights.',
+      title: user ? `${qCount} Questions` : `${qCount} Questions (guest preview)`,
+      description: user
+        ? 'Random questions from all topics covering Canadian history, geography, government, and rights.'
+        : 'Guests take a shorter preview. Create a free account for the full 20-question mock exam.',
     },
     {
       icon: Clock,
@@ -23,8 +32,8 @@ export default function MockExamPage() {
     },
     {
       icon: Target,
-      title: '75% to Pass',
-      description: 'You need to answer at least 15 out of 20 questions correctly to pass the mock exam.',
+      title: `${EXAM_CONFIG.PASSING_SCORE}% to Pass`,
+      description: `You need at least ${passNeed} out of ${qCount} correct to pass.`,
     },
     {
       icon: AlertCircle,
