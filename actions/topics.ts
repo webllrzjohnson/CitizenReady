@@ -47,7 +47,6 @@ export async function createTopic(formData: FormData) {
 
     const validated = TopicSchema.parse(data)
 
-    // @ts-expect-error - Supabase type inference issue
     const { error } = await supabase.from('topics').insert({
       name: validated.name,
       slug: validated.slug,
@@ -90,7 +89,6 @@ export async function updateTopic(id: string, formData: FormData) {
 
     const { error } = await supabase
       .from('topics')
-      // @ts-expect-error - Supabase type inference issue
       .update({
         name: validated.name,
         slug: validated.slug,

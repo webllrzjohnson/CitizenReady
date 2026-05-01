@@ -154,8 +154,7 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-[#1a2a4a] to-[#0f1e35] text-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(211,47,47,0.15),transparent_60%)]" />
+      <section className="relative overflow-hidden bg-[#1B2A4A] text-white shadow-nav">
         <div className="container relative mx-auto px-4 py-16 md:py-24 lg:py-28">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
             <div className="space-y-8">
@@ -174,7 +173,7 @@ export default async function HomePage() {
                 >
                   <Link href="/dashboard">
                     Start practicing — no account needed
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                   </Link>
                 </Button>
                 <Button
@@ -205,9 +204,9 @@ export default async function HomePage() {
                 ))}
               </div>
             </div>
-            <div className="flex justify-center lg:justify-end">
+              <div className="flex justify-center lg:justify-end">
               <div
-                className="flex h-48 w-48 select-none items-center justify-center rounded-full bg-brand-navy-light text-8xl shadow-xl md:h-64 md:w-64 md:text-9xl"
+                className="flex h-48 w-48 select-none items-center justify-center rounded-full bg-[#243558] text-8xl shadow-card md:h-64 md:w-64 md:text-9xl"
                 aria-hidden
               >
                 🍁
@@ -218,7 +217,7 @@ export default async function HomePage() {
       </section>
 
       {/* Social proof strip */}
-      <div className="border-b border-gray-200 bg-white">
+      <div className="border-b border-[#E0E0E0] bg-white">
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-gray-500">
             <span className="flex items-center gap-1.5">
@@ -238,7 +237,7 @@ export default async function HomePage() {
       </div>
 
       {/* How to prepare */}
-      <section id="how-to-prepare" className="bg-[#f8f7f5] py-16 md:py-24">
+      <section id="how-to-prepare" className="bg-white py-16 md:py-24">
         <div className="container mx-auto px-4">
           <h2 className="mb-12 text-center text-3xl font-bold text-brand-navy md:text-4xl">
             How to Prepare
@@ -276,13 +275,13 @@ export default async function HomePage() {
       </section>
 
       {/* Topics */}
-      <section id="topics" className="bg-white py-16 md:py-24">
+      <section id="topics" className="bg-[#F7F7F7] py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
             <h2 className="mb-3 text-3xl font-bold text-brand-navy md:text-4xl">
               Practice by Chapter
             </h2>
-            <p className="text-lg text-[#424242]">Complete all chapters to be fully prepared</p>
+            <p className="text-lg text-[#4A4A4A]">Complete all chapters to be fully prepared</p>
             <p className="mt-4">
               <Link
                 href="/study/complete-questions"
@@ -296,24 +295,22 @@ export default async function HomePage() {
             {LANDING_CHAPTERS.map((ch) => (
               <div
                 key={ch.n}
-                className="group flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                className="group flex flex-col rounded-[12px] border border-[#E0E0E0] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-shadow duration-200 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
               >
                 <div className="mb-4 flex gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-red text-lg font-bold text-white">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8192C] text-sm font-bold text-white">
                     {ch.n}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-brand-navy">{ch.name}</h3>
-                    <p className="mt-1 text-sm text-[#424242]">{ch.description}</p>
+                    <h3 className="text-base font-bold text-[#1B2A4A]">{ch.name}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-[#6B7280]">{ch.description}</p>
                   </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
-                  <span className="rounded-full bg-brand-red-light px-3 py-1 text-xs font-semibold text-brand-red">
-                    {ch.questions} questions
-                  </span>
+                <div className="mt-auto flex items-center justify-between border-t border-[#E0E0E0] pt-4">
+                  <span className="badge-grey">{ch.questions} questions</span>
                   <Link
                     href="/signup"
-                    className="inline-flex items-center gap-1 text-sm font-semibold text-brand-red hover:text-brand-red-dark"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-[#E8192C] hover:text-[#C41020]"
                   >
                     Start Practice
                     <ArrowRight className="h-4 w-4" />
@@ -341,7 +338,7 @@ export default async function HomePage() {
       ) : null}
 
       {/* Testimonials */}
-      <section id="success-stories" className="bg-[#f8f7f5] py-16 md:py-24">
+      <section id="success-stories" className="bg-[#F7F7F7] py-16 md:py-24">
         <div className="container mx-auto px-4">
           <h2 className="mb-12 text-center text-3xl font-bold text-brand-navy md:text-4xl">
             Success Stories
@@ -350,16 +347,16 @@ export default async function HomePage() {
             {TESTIMONIALS.map((t) => (
               <div
                 key={t.name}
-                className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+                className="rounded-[12px] border border-[#E0E0E0] bg-white p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
               >
-                <p className="mb-4 italic text-[#424242]">&ldquo;{t.quote}&rdquo;</p>
-                <div className="mb-3 flex gap-0.5">
+                <p className="mb-4 italic text-[#4A4A4A]">&ldquo;{t.quote}&rdquo;</p>
+                <div className="mb-3 flex gap-0.5" aria-label="5 out of 5 stars">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-brand-red text-brand-red" />
+                    <Star key={i} className="h-5 w-5 fill-brand-red text-brand-red" aria-hidden="true" />
                   ))}
                 </div>
                 <p className="font-semibold text-brand-navy">{t.name}</p>
-                <p className="text-sm text-[#424242]">{t.province}</p>
+                <p className="text-sm text-[#4A4A4A]">{t.province}</p>
               </div>
             ))}
           </div>
@@ -367,7 +364,7 @@ export default async function HomePage() {
       </section>
 
       {/* Plus pricing teaser */}
-      <section className="border-y border-gray-100 bg-white py-16 md:py-20">
+      <section className="border-y border-[#E0E0E0] bg-white py-16 md:py-20">
         <div className="container mx-auto max-w-5xl px-4">
           <div className="mb-3 flex justify-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">
@@ -383,11 +380,37 @@ export default async function HomePage() {
           </p>
 
           <div className="grid gap-6 sm:grid-cols-3">
-            {([
-              { label: '7-Day Sprint', price: '$5.99', original: '$11.98', desc: 'Last-minute, high-focus prep.' },
-              { label: '30-Day Plan', price: '$14.99', original: '$29.98', desc: 'The most popular balanced path.', popular: true },
-              { label: '1-Year Access', price: '$19.99', original: '$39.98', desc: 'Prepare at your own pace.', best: true },
-            ] as const).map((plan) => (
+            {(
+              [
+                {
+                  label: '7-Day Sprint',
+                  price: '$5.99',
+                  original: '$11.98',
+                  desc: 'Last-minute, high-focus prep.',
+                },
+                {
+                  label: '30-Day Plan',
+                  price: '$14.99',
+                  original: '$29.98',
+                  desc: 'The most popular balanced path.',
+                  popular: true,
+                },
+                {
+                  label: '1-Year Access',
+                  price: '$19.99',
+                  original: '$39.98',
+                  desc: 'Prepare at your own pace.',
+                  best: true,
+                },
+              ] satisfies ReadonlyArray<{
+                label: string
+                price: string
+                original: string
+                desc: string
+                popular?: boolean
+                best?: boolean
+              }>
+            ).map((plan) => (
               <div
                 key={plan.label}
                 className={[
@@ -451,7 +474,7 @@ export default async function HomePage() {
 
       {/* Blog */}
       {featuredPost ? (
-        <section className="bg-white py-16 md:py-24 border-t border-gray-100">
+        <section className="border-t border-[#E0E0E0] bg-white py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="mb-10 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <h2 className="text-3xl font-bold text-brand-navy md:text-4xl">From the Blog</h2>
@@ -463,7 +486,7 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <div className="mb-10 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div className="mb-10 overflow-hidden rounded-[12px] border border-[#E0E0E0] bg-white shadow-card">
               <div className="flex flex-col md:flex-row md:items-stretch">
                 <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-t-xl md:w-[60%] md:rounded-l-xl md:rounded-tr-none">
                   {featuredPost.cover_image ? (
@@ -475,7 +498,7 @@ export default async function HomePage() {
                       sizes="(max-width: 768px) 100vw, 60vw"
                     />
                   ) : (
-                    <div className="flex h-full min-h-[12rem] w-full items-center justify-center bg-gradient-to-br from-brand-navy to-brand-navy-light md:min-h-0">
+                    <div className="flex h-full min-h-[12rem] w-full items-center justify-center bg-[#1B2A4A] md:min-h-0">
                       <span className="text-6xl" aria-hidden>
                         🍁
                       </span>
@@ -513,7 +536,7 @@ export default async function HomePage() {
                 {recent.map((post) => (
                   <article
                     key={post.id}
-                    className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+                    className="flex flex-col overflow-hidden rounded-[12px] border border-[#E0E0E0] bg-white shadow-card"
                   >
                     <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-t-xl">
                       {post.cover_image ? (
@@ -525,7 +548,7 @@ export default async function HomePage() {
                           sizes="(max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-navy to-brand-navy-light">
+                        <div className="flex h-full w-full items-center justify-center bg-[#1B2A4A]">
                           <span className="text-5xl" aria-hidden>
                             🍁
                           </span>
@@ -554,18 +577,17 @@ export default async function HomePage() {
       ) : null}
 
       {/* CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-[#1a2a4a] to-[#0f1e35] py-16 md:py-24">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(211,47,47,0.2),transparent_60%)]" />
+      <section className="relative overflow-hidden bg-[#E8192C] py-16 md:py-24">
         <div className="container relative mx-auto px-4 text-center">
           <h2 className="mb-4 text-3xl font-extrabold tracking-tight text-white md:text-4xl">
             Ready to Pass Your Citizenship Test?
           </h2>
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-white/70">
+          <p className="mx-auto mb-8 max-w-2xl text-lg text-white/90">
             Join thousands of Canadians who prepared with CitizenReady
           </p>
           <Button
             size="lg"
-            className="h-12 rounded-full bg-brand-red px-8 text-base text-white hover:bg-brand-red-dark"
+            className="h-12 rounded-full bg-white px-8 text-base font-semibold text-[#E8192C] hover:bg-[#FFF0F0]"
             asChild
           >
             <Link href="/signup">Start Free Today</Link>

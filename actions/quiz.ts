@@ -68,10 +68,8 @@ export async function startPracticeSession(topicId: string, topicSlug: string) {
     }
   }
 
-  // @ts-ignore - Supabase type inference issue
   const { data: sessionData, error: sessionError } = await supabase
     .from('quiz_sessions')
-    // @ts-expect-error - Supabase type inference issue with JSONB fields
     .insert({
       user_id: user.id,
       type: 'practice',
@@ -177,10 +175,8 @@ export async function submitAnswer(formData: FormData) {
     userAnswer.length === correctAnswers.length &&
     userAnswer.every(a => correctAnswers.includes(a))
 
-  // @ts-ignore - Supabase type inference issue
   const { error: attemptError } = await supabase
     .from('question_attempts')
-    // @ts-expect-error - Supabase type inference issue with JSONB fields
     .insert({
       session_id: sessionId,
       question_id: questionId,
@@ -238,10 +234,8 @@ export async function completeSession(sessionId: string) {
 
   const score = attempts.filter(a => a.is_correct).length
 
-  // @ts-ignore - Supabase type inference issue
   const { error: updateError } = await supabase
     .from('quiz_sessions')
-    // @ts-expect-error - Supabase type inference issue
     .update({
       score,
       completed_at: new Date().toISOString(),

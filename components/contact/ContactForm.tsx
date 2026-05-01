@@ -78,7 +78,7 @@ export function ContactForm() {
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -135,8 +135,11 @@ export function ContactForm() {
           disabled={isPending}
           onChange={(e) => setMessageLength(e.target.value.length)}
           className="resize-none"
+          aria-describedby="message-count"
         />
         <p
+          id="message-count"
+          aria-live="polite"
           className={`text-right text-xs ${
             messageLength > 1000
               ? 'text-red-600'

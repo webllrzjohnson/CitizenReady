@@ -22,6 +22,7 @@ import {
   Award,
   TrendingUp,
 } from 'lucide-react'
+import { SITE_FAQS } from '@/lib/site-faqs'
 import { Button } from '@/components/ui/button'
 import {
   Accordion,
@@ -169,41 +170,13 @@ const PLAN_FEATURES = {
   ],
 }
 
-const FAQS = [
-  {
-    q: 'How is CitizenReady Plus different from just reading the handbook?',
-    a: 'The Discover Canada handbook is the source material — our platform turns it into 900+ targeted practice questions with instant explanations, timed mock exams, and a challenge bank that focuses exactly on what you\'ve missed. Reading alone can\'t tell you whether you truly understand the material until it\'s too late.',
-  },
-  {
-    q: 'I failed my knowledge test before. Will this actually help?',
-    a: 'Yes — and it\'s built for exactly that situation. Every question you get wrong is saved to your Challenge Bank with a clear explanation. Retakers typically spend the first few days on their weak chapters, then move into mixed mock exams until their score is comfortably above the 75% pass threshold.',
-  },
-  {
-    q: 'Can I track my progress as I study?',
-    a: 'Absolutely. Your dashboard shows accuracy by topic, time per question, recent mistakes, and full mock-exam scores. You\'ll know at a glance which chapters need more work and which ones you\'ve already locked in.',
-  },
-  {
-    q: 'How closely do the mock exams match the real IRCC test?',
-    a: 'Our mock exams follow the official format: 20 questions, a 30-minute timer, and the same 75% passing threshold. Questions are shuffled on every attempt, so each run stays fresh and realistic.',
-  },
-  {
-    q: 'I have several weeks before my test. Is one of the shorter plans enough?',
-    a: 'The 30-Day Plan is designed for exactly that window — enough time to work through every topic, run several mixed tests, and use the challenge bank to close any gaps. Most steady studiers feel fully ready within two to three weeks.',
-  },
-  {
-    q: 'Where can I verify official test details and fees?',
-    a: 'Always check IRCC directly for the latest format, fees, and scheduling information. The Discover Canada handbook and the IRCC Citizenship test and interview page are the official sources.',
-  },
-]
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PricingPage() {
   return (
-    <div className="bg-white">
+    <div className="min-h-screen bg-[#F7F7F7]">
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-brand-navy text-white">
-        <div className="pointer-events-none absolute inset-0 opacity-10 [background-image:radial-gradient(circle_at_70%_30%,#D32F2F_0%,transparent_55%)]" />
+      <section className="relative overflow-hidden bg-[#1B2A4A] text-white shadow-nav">
         <div className="container relative mx-auto max-w-3xl px-4 py-16 text-center md:py-24">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/80">
             <Shield className="h-3.5 w-3.5 text-brand-red" />
@@ -239,7 +212,7 @@ export default function PricingPage() {
       </section>
 
       {/* ── Stats strip ── */}
-      <section className="border-b border-gray-100 bg-gray-50">
+      <section className="border-b border-[#E0E0E0] bg-white">
         <div className="container mx-auto max-w-4xl px-4 py-6">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {STATS.map((s) => (
@@ -253,7 +226,8 @@ export default function PricingPage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="container mx-auto max-w-5xl px-4 py-16">
+      <section className="bg-white py-16">
+        <div className="container mx-auto max-w-5xl px-4">
         <h2 className="mb-2 text-center text-2xl font-extrabold text-gray-900">
           Real Stories from New Canadians
         </h2>
@@ -264,7 +238,7 @@ export default function PricingPage() {
           {TESTIMONIALS.map((t) => (
             <div
               key={t.name}
-              className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-6"
+              className="flex flex-col gap-4 rounded-[12px] border border-[#E0E0E0] bg-white p-6 shadow-card"
             >
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
@@ -285,10 +259,11 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
+        </div>
       </section>
 
       {/* ── Comparison ── */}
-      <section className="border-y border-gray-100 bg-gray-50 py-16">
+      <section className="border-y border-[#E0E0E0] bg-[#F7F7F7] py-16">
         <div className="container mx-auto max-w-4xl px-4">
           <h2 className="mb-2 text-center text-2xl font-extrabold text-gray-900">
             A Smarter Way to Prepare
@@ -330,7 +305,8 @@ export default function PricingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="container mx-auto max-w-4xl px-4 py-16">
+      <section className="border-y border-[#E0E0E0] bg-white py-16">
+        <div className="container mx-auto max-w-4xl px-4">
         <h2 className="mb-2 text-center text-2xl font-extrabold text-gray-900">
           Three Steps to Test-Day Confidence
         </h2>
@@ -356,10 +332,11 @@ export default function PricingPage() {
             )
           })}
         </div>
+        </div>
       </section>
 
       {/* ── Feature grid ── */}
-      <section className="border-y border-gray-100 bg-gray-50 py-16">
+      <section className="border-y border-[#E0E0E0] bg-[#F7F7F7] py-16">
         <div className="container mx-auto max-w-4xl px-4">
           <h2 className="mb-2 text-center text-2xl font-extrabold text-gray-900">
             Everything You Need, All in One Place
@@ -386,7 +363,8 @@ export default function PricingPage() {
       </section>
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="container mx-auto max-w-5xl px-4 py-16">
+      <section id="pricing" className="border-t border-[#E0E0E0] bg-white py-16">
+        <div className="container mx-auto max-w-5xl px-4">
         <div className="mb-2 flex justify-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">
             <Zap className="h-3.5 w-3.5" aria-hidden />
@@ -537,7 +515,7 @@ export default function PricingPage() {
 
         {/* Trust strip */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+          <div className="flex items-start gap-3 rounded-2xl border border-[#E0E0E0] bg-[#F7F7F7] p-4">
             <Award className="mt-0.5 h-5 w-5 shrink-0 text-brand-navy" aria-hidden />
             <div>
               <p className="text-sm font-semibold text-gray-900">Instant Access</p>
@@ -546,7 +524,7 @@ export default function PricingPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+          <div className="flex items-start gap-3 rounded-2xl border border-[#E0E0E0] bg-[#F7F7F7] p-4">
             <Users className="mt-0.5 h-5 w-5 shrink-0 text-brand-navy" aria-hidden />
             <div>
               <p className="text-sm font-semibold text-gray-900">800+ Canadians</p>
@@ -555,7 +533,7 @@ export default function PricingPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+          <div className="flex items-start gap-3 rounded-2xl border border-[#E0E0E0] bg-[#F7F7F7] p-4">
             <Shield className="mt-0.5 h-5 w-5 shrink-0 text-brand-navy" aria-hidden />
             <div>
               <p className="text-sm font-semibold text-gray-900">Secure Checkout</p>
@@ -565,10 +543,11 @@ export default function PricingPage() {
             </div>
           </div>
         </div>
+        </div>
       </section>
 
       {/* ── FAQ ── */}
-      <section className="border-t border-gray-100 bg-gray-50 py-16">
+      <section className="border-t border-[#E0E0E0] bg-[#F7F7F7] py-16">
         <div className="container mx-auto max-w-2xl px-4">
           <h2 className="mb-2 text-center text-2xl font-extrabold text-gray-900">
             Frequently Asked Questions
@@ -577,7 +556,7 @@ export default function PricingPage() {
             Still weighing it up? Here are the questions we hear most often.
           </p>
           <Accordion type="single" collapsible className="space-y-2">
-            {FAQS.map((faq, i) => (
+            {SITE_FAQS.map((faq, i) => (
               <AccordionItem
                 key={i}
                 value={`faq-${i}`}
@@ -596,22 +575,22 @@ export default function PricingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="bg-brand-navy py-16 text-center text-white">
+      <section className="bg-[#E8192C] py-16 text-center text-white">
         <div className="container mx-auto max-w-xl px-4">
-          <TrendingUp className="mx-auto mb-4 h-8 w-8 text-brand-red" aria-hidden />
-          <h2 className="text-2xl font-extrabold">Ready to Pass on Your First Try?</h2>
-          <p className="mt-3 text-sm leading-relaxed text-white/70">
+          <TrendingUp className="mx-auto mb-4 h-8 w-8 text-white" aria-hidden />
+          <h2 className="text-2xl font-extrabold text-white">Ready to Pass on Your First Try?</h2>
+          <p className="mt-3 text-sm leading-relaxed text-white/90">
             Join 800+ permanent residents who trusted CitizenReady Plus to get them
             across the finish line. Your Canadian citizenship journey starts here.
           </p>
           <Button
             size="lg"
-            className="mt-7 bg-brand-red px-10 font-bold hover:bg-brand-red-dark"
+            className="mt-7 bg-white px-10 font-bold text-[#E8192C] hover:bg-[#FFF0F0]"
             asChild
           >
             <a href="#pricing">Unlock All 900+ Questions</a>
           </Button>
-          <p className="mt-3 text-xs text-white/40">
+          <p className="mt-3 text-xs text-white/80">
             Cancel anytime · Secure checkout · Instant access
           </p>
         </div>

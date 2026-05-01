@@ -18,7 +18,7 @@ export default async function DashboardLayout({
       )}
       <div className="flex flex-1 flex-col lg:flex-row">
         <DashboardSidebar isGuest={isGuest} />
-        <main className="flex-1 bg-[#f8f7f5] p-6 lg:p-8">{children}</main>
+        <div className="flex-1 bg-[#F7F7F7] p-6 lg:p-8">{children}</div>
       </div>
     </div>
   )

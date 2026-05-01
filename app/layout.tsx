@@ -1,14 +1,17 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
-import { cn } from '@/lib/utils'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import { CookieBanner } from '@/components/cookies/CookieBanner'
 import { Toaster } from 'sonner'
 import { getAdSettings } from '@/lib/ad-settings'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+})
 
 export const metadata = {
   title: {
@@ -37,7 +40,7 @@ export default async function RootLayout({
   const loadAdScript = adsEnabled && clientId.length > 0
 
   return (
-    <html lang="en" className={cn('font-sans', inter.variable)}>
+    <html lang="en" className="font-sans">
       <head>
         {loadAdScript && (
           <Script
@@ -48,10 +51,10 @@ export default async function RootLayout({
           />
         )}
       </head>
-      <body>
+      <body className={inter.className}>
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-brand-navy focus:shadow"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-[#1B2A4A] focus:shadow"
         >
           Skip to main content
         </a>

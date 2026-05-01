@@ -118,16 +118,16 @@ const sections = [
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-surface-page">
-      <section className="bg-brand-navy py-14 text-white">
+    <div className="min-h-screen bg-[#F7F7F7]">
+      <section className="bg-[#1B2A4A] py-14 text-white shadow-nav">
         <div className="container mx-auto px-4 text-center">
           <h1 className="mb-3 text-3xl font-bold md:text-4xl">Terms of Service</h1>
-          <p className="text-gray-300">Last updated: April 2026</p>
+          <p className="text-white/70">Last updated: April 2026</p>
         </div>
       </section>
 
       <section className="container mx-auto max-w-3xl px-4 py-12">
-        <div className="rounded-xl bg-white p-8 shadow-sm">
+        <div className="card p-8">
           <div className="space-y-0">
             {sections.map((section, i) => (
               <div key={section.title}>

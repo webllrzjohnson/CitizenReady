@@ -78,16 +78,16 @@ export default async function SitemapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-page">
-      <section className="bg-brand-navy py-14 text-white">
+    <div className="min-h-screen bg-[#F7F7F7]">
+      <section className="bg-[#1B2A4A] py-14 text-white shadow-nav">
         <div className="container mx-auto px-4 text-center">
           <h1 className="mb-3 text-3xl font-bold md:text-4xl">Sitemap</h1>
-          <p className="text-gray-300">All pages on CitizenReady</p>
+          <p className="text-white/70">All pages on CitizenReady</p>
         </div>
       </section>
 
       <section className="container mx-auto max-w-4xl px-4 py-12">
-        <div className="rounded-xl bg-white p-8 shadow-sm">
+        <div className="card p-8">
           <div className="grid gap-10 sm:grid-cols-2">
             <SitemapSection title="Main Pages" links={mainPages} />
             <SitemapSection title="Practice" links={practicePages} />

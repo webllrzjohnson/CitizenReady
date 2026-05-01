@@ -45,7 +45,6 @@ export async function toggleUserRole(userId: string, currentRole: string) {
 
   const { error } = await supabase
     .from('profiles')
-    // @ts-expect-error - Supabase type inference issue
     .update({ role: newRole })
     .eq('id', userId)
 
@@ -67,7 +66,6 @@ export async function toggleUserPremium(userId: string, currentPremium: boolean)
 
   const { error } = await supabase
     .from('profiles')
-    // @ts-expect-error - Supabase client narrow typing on dynamic update
     .update({ is_premium: !currentPremium })
     .eq('id', userId)
 
@@ -114,7 +112,6 @@ export async function updateSiteSettings(formData: FormData) {
   for (const entry of entries) {
     const { error } = await supabase
       .from('site_settings')
-      // @ts-expect-error - site_settings table added via migration, types may lag
       .upsert({ key: entry.key, value: entry.value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
 
     if (error) {

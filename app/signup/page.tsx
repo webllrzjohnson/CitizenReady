@@ -102,6 +102,7 @@ export default function SignupPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 disabled={isLoading}
+                autoComplete="name"
               />
             </div>
             <div className="space-y-2">
@@ -114,6 +115,7 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -126,10 +128,11 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
+                autoComplete="new-password"
               />
             </div>
             {error && (
-              <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
+              <div role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-800">
                 {error}
               </div>
             )}

@@ -42,16 +42,21 @@ export default function QuestionCard({
 }: QuestionCardProps) {
   const correctAnswers = question.correct_answers ?? []
 
+  const headingId = `question-heading-${question.id}`
+
   return (
-    <div className="rounded-xl border border-surface-border bg-surface-card p-6 shadow-sm md:p-8">
+    <div className="rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-card md:p-8">
       <div className="mb-6 space-y-3">
-        <h2 className="text-xl font-bold leading-snug text-brand-navy md:text-2xl">
+        <h2
+          id={headingId}
+          className="text-xl font-bold leading-snug text-brand-navy md:text-2xl"
+        >
           {question.question_text}
         </h2>
         {(question.type === 'boolean' || afterTitle) && (
           <div className="flex flex-wrap items-center gap-2">
             {question.type === 'boolean' && (
-              <Badge variant="outline" className="border-surface-border text-[#424242]">
+              <Badge variant="outline" className="border-[#E0E0E0] text-[#4A4A4A]">
                 True/False
               </Badge>
             )}
@@ -60,7 +65,11 @@ export default function QuestionCard({
         )}
       </div>
 
-      <div className="space-y-3">
+      <div
+        className="space-y-3"
+        role="group"
+        aria-labelledby={headingId}
+      >
         {question.options?.map((option, index) => {
           const visual = getOptionVisual(
             option.key,
@@ -69,6 +78,7 @@ export default function QuestionCard({
             showResults
           )
           const interactive = !disabled && !showResults
+          const isSelected = selectedKeys.includes(option.key)
 
           return (
             <QuizOptionRow
@@ -78,6 +88,7 @@ export default function QuestionCard({
               visual={visual}
               interactive={interactive}
               disabled={disabled}
+              isSelected={isSelected}
               onClick={
                 interactive ? () => onSelect(question.id, option.key) : undefined
               }

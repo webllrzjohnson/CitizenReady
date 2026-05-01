@@ -261,9 +261,9 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   // ── Loading ────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-        <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-brand-red border-t-transparent" />
-        <p className="text-sm text-muted-foreground">Loading exam…</p>
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4" role="status" aria-label="Loading exam">
+        <div className="h-12 w-12 animate-spin rounded-full border-[3px] border-brand-red border-t-transparent" aria-hidden="true" />
+        <p className="text-sm text-muted-foreground" aria-hidden="true">Loading exam…</p>
       </div>
     )
   }
@@ -490,7 +490,14 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
     <div className="mx-auto max-w-4xl py-6 md:py-8">
 
       {/* ── Progress bar ──────────────────────────────────────── */}
-      <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+      <div
+        className="mb-6 h-2 w-full overflow-hidden rounded-full bg-gray-200"
+        role="progressbar"
+        aria-valuenow={currentIndex + 1}
+        aria-valuemin={1}
+        aria-valuemax={questions.length}
+        aria-label={`Question ${currentIndex + 1} of ${questions.length}`}
+      >
         <div
           className="h-full rounded-full bg-brand-red transition-[width] duration-300 ease-out"
           style={{ width: `${progressPct}%` }}
@@ -504,17 +511,19 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
           <span className="text-muted-foreground"> of {questions.length}</span>
         </p>
 
-        {/* Timer pill */}
+        {/* Timer pill — visible time is in the live region so SRs announce updates */}
         <div
           className={cn(
             'inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold tabular-nums transition-colors',
             timerUrgent
-              ? 'animate-pulse bg-brand-red text-white shadow-lg shadow-brand-red/30'
+              ? 'motion-safe:animate-pulse bg-brand-red text-white shadow-lg shadow-brand-red/30'
               : 'bg-gray-100 text-gray-700'
           )}
         >
-          <Clock className="h-4 w-4 shrink-0" aria-hidden />
-          {formattedTime}
+          <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span aria-live="polite" aria-atomic="true">
+            {formattedTime}
+          </span>
         </div>
       </div>
 
@@ -636,8 +645,12 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
       {/* ── Urgent timer toast ────────────────────────────────── */}
       {timeRemaining <= 300 && timeRemaining > 0 && (
-        <div className="fixed bottom-4 right-4 flex items-center gap-2 rounded-xl bg-brand-red px-4 py-3 text-white shadow-xl shadow-brand-red/30">
-          <AlertCircle className="h-5 w-5 shrink-0" aria-hidden />
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fixed bottom-4 right-4 flex items-center gap-2 rounded-xl bg-brand-red px-4 py-3 text-white shadow-xl shadow-brand-red/30"
+        >
+          <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
           <span className="text-sm font-semibold">Less than 5 minutes remaining!</span>
         </div>
       )}

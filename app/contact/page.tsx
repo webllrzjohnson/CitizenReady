@@ -12,12 +12,12 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div className="min-h-screen bg-[#F7F7F7]">
       {/* Hero */}
-      <section className="bg-brand-navy py-14 text-white">
+      <section className="bg-[#1B2A4A] py-14 text-white shadow-nav">
         <div className="container mx-auto px-4 text-center">
           <h1 className="mb-3 text-3xl font-bold md:text-4xl">Contact Us</h1>
-          <p className="text-lg text-gray-300">We&apos;d love to hear from you</p>
+          <p className="text-lg text-white/80">We&apos;d love to hear from you</p>
         </div>
       </section>
 

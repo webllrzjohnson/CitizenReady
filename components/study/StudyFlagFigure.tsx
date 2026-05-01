@@ -21,7 +21,7 @@ const maxWidthClass = {
 export function StudyFlagFigure({ name, imageKey, size = 'md' }: StudyFlagFigureProps) {
   const label = name === 'Canada' ? 'National Flag of Canada' : `Flag of ${name}`
   return (
-    <figure className={`relative mx-auto mt-4 w-full ${maxWidthClass[size]}`}>
+    <figure className={`relative mx-auto mt-6 mb-12 w-full ${maxWidthClass[size]}`}>
       <div className="relative aspect-[2/1] w-full overflow-hidden rounded-md border border-border/80 bg-muted/40 shadow-sm dark:bg-muted/20">
         <Image
           src={`/flags/${imageKey}.svg`}

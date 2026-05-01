@@ -66,10 +66,9 @@ export default async function BlogListingPage() {
   const { adsEnabled, clientId } = await getAdSettings()
 
   return (
-    <div className="min-h-screen bg-[#f8f7f5]">
+    <div className="min-h-screen bg-[#F7F7F7]">
       {/* Hero */}
-      <div className="relative overflow-hidden border-b border-gray-200 bg-gradient-to-br from-brand-navy via-[#1a2a4a] to-[#0f1e35] text-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(211,47,47,0.15),transparent_60%)]" />
+      <div className="relative overflow-hidden border-b border-[#E0E0E0] bg-[#1B2A4A] text-white shadow-nav">
         <div className="container relative mx-auto max-w-5xl px-4 py-12 md:py-16">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-brand-red/20 px-3 py-1.5 ring-1 ring-brand-red/30">
             <Newspaper className="h-3.5 w-3.5 text-brand-red" aria-hidden />
@@ -87,15 +86,15 @@ export default async function BlogListingPage() {
       </div>
 
       {/* Social proof strip */}
-      <div className="border-b border-gray-200 bg-white">
+      <div className="border-b border-[#E0E0E0] bg-white">
         <div className="container mx-auto max-w-5xl px-4 py-3">
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-gray-500">
             <span className="flex items-center gap-1.5">
-              <BookOpen className="h-3.5 w-3.5 text-brand-navy" />
+              <BookOpen className="h-3.5 w-3.5 text-brand-navy" aria-hidden="true" />
               Study tips from real applicants
             </span>
             <span className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-brand-red" />
+              <Zap className="h-3.5 w-3.5 text-brand-red" aria-hidden="true" />
               Updated for 2026 test format
             </span>
           </div>
@@ -131,9 +130,9 @@ export default async function BlogListingPage() {
               return (
                 <article
                   key={post.id}
-                  className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="flex flex-col overflow-hidden rounded-[12px] border border-[#E0E0E0] bg-white shadow-card transition-shadow hover:shadow-card-hover"
                 >
-                  <Link href={`/blog/${post.slug}`} className="block">
+                  <Link href={`/blog/${post.slug}`} className="block" tabIndex={-1} aria-hidden="true">
                     <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-gray-100">
                       {post.cover_image ? (
                         <Image
@@ -141,10 +140,11 @@ export default async function BlogListingPage() {
                           alt=""
                           fill
                           className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 50vw"
+                          sizes="(max-width: 768px) 100vw, 640px"
+                          quality={72}
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-navy to-brand-navy-light">
+                        <div className="flex h-full w-full items-center justify-center bg-[#1B2A4A]">
                           <span className="text-4xl" aria-hidden>🍁</span>
                         </div>
                       )}
@@ -167,6 +167,7 @@ export default async function BlogListingPage() {
                       <Link
                         href={`/blog/${post.slug}`}
                         className="text-sm font-semibold text-brand-red hover:text-brand-red-dark"
+                        aria-label={`Read more: ${post.title}`}
                       >
                         Read More →
                       </Link>

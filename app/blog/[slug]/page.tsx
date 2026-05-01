@@ -140,16 +140,17 @@ export default async function BlogPostPage({ params }: { params: Params }) {
     }[]
 
   return (
-    <article className="min-h-screen bg-[#f8f7f5] pb-16">
+    <article className="min-h-screen bg-[#F7F7F7] pb-16">
       {post.cover_image ? (
-        <div className="relative aspect-video w-full max-h-[min(56vh,560px)] bg-muted">
+        <div className="relative mb-12 aspect-video w-full max-h-[min(56vh,560px)] bg-muted md:mb-16">
           <Image
             src={post.cover_image}
             alt=""
             fill
             className="object-cover"
             priority
-            sizes="100vw"
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            quality={72}
           />
         </div>
       ) : null}
@@ -236,6 +237,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
                                 fill
                                 className="object-cover"
                                 sizes="80px"
+                                quality={70}
                               />
                             ) : null}
                           </div>

@@ -15,6 +15,7 @@ type QuizOptionRowProps = {
   visual: QuizOptionVisual
   interactive: boolean
   disabled?: boolean
+  isSelected?: boolean
   onClick?: () => void
   suffix?: ReactNode
 }
@@ -25,29 +26,30 @@ export function QuizOptionRow({
   visual,
   interactive,
   disabled = false,
+  isSelected = false,
   onClick,
   suffix,
 }: QuizOptionRowProps) {
   const label = formatOptionKey(optionKey)
 
   const rowClass = cn(
-    'flex w-full items-center gap-4 rounded-lg border-2 bg-white px-4 py-4 text-left transition-colors',
+    'flex w-full items-center gap-4 rounded-xl border bg-white p-4 text-left transition-all duration-150',
     visual === 'default' &&
       interactive &&
-      'cursor-pointer border-surface-border hover:border-brand-red hover:bg-brand-red-light',
-    visual === 'default' && !interactive && 'border-surface-border',
-    visual === 'selected' && 'border-brand-red bg-brand-red-light',
-    visual === 'correct' && 'border-green-500 bg-green-50',
-    visual === 'incorrect' && 'border-red-500 bg-red-50',
+      'cursor-pointer border-[#E0E0E0] hover:border-[#E8192C] hover:bg-[#FFF0F0]',
+    visual === 'default' && !interactive && 'border-[#E0E0E0]',
+    visual === 'selected' && 'border-[#E8192C] bg-[#FFF0F0]',
+    visual === 'correct' && 'border-[#2E7D32] bg-[#F1F8F1] text-[#2E7D32]',
+    visual === 'incorrect' && 'border-[#E8192C] bg-[#FFF0F0] text-[#C41020]',
     disabled && 'pointer-events-none opacity-60'
   )
 
   const letterClass = cn(
     'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
-    visual === 'default' && 'bg-neutral-200 text-neutral-800',
-    visual === 'selected' && 'bg-brand-red text-white',
-    visual === 'correct' && 'bg-green-600 text-white',
-    visual === 'incorrect' && 'bg-red-600 text-white'
+    visual === 'default' && 'bg-[#F0F0F0] text-[#4A4A4A]',
+    visual === 'selected' && 'bg-[#E8192C] text-white',
+    visual === 'correct' && 'bg-[#2E7D32] text-white',
+    visual === 'incorrect' && 'bg-[#E8192C] text-white'
   )
 
   const body = (
@@ -55,7 +57,14 @@ export function QuizOptionRow({
       <span className={letterClass} aria-hidden>
         {label}
       </span>
-      <span className="flex-1 text-base text-brand-navy">
+      <span
+        className={cn(
+          'flex-1 text-base',
+          visual === 'correct' && 'text-[#2E7D32]',
+          visual === 'incorrect' && 'text-[#C41020]',
+          (visual === 'default' || visual === 'selected') && 'text-[#1B2A4A]'
+        )}
+      >
         {text}
         {suffix}
       </span>
@@ -64,7 +73,13 @@ export function QuizOptionRow({
 
   if (interactive && onClick) {
     return (
-      <button type="button" disabled={disabled} onClick={onClick} className={rowClass}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        className={rowClass}
+        aria-pressed={isSelected}
+      >
         {body}
       </button>
     )

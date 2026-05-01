@@ -81,10 +81,8 @@ export async function startMockExam() {
     }
   }
 
-  // @ts-ignore - Supabase type inference issue
   const { data: sessionData, error: sessionError } = await supabase
     .from('quiz_sessions')
-    // @ts-expect-error - Supabase type inference issue with JSONB fields
     .insert({
       user_id: user.id,
       type: 'mock_exam',
@@ -208,10 +206,8 @@ export async function submitMockExam(
   }).filter((a): a is NonNullable<typeof a> => a !== null)
 
   // Insert all attempts in a single query
-  // @ts-ignore - Supabase type inference issue
   const { error: attemptsError } = await supabase
     .from('question_attempts')
-    // @ts-expect-error - Supabase type inference issue with JSONB fields
     .insert(attempts)
 
   if (attemptsError) {
@@ -220,10 +216,8 @@ export async function submitMockExam(
   }
 
   // Update session with score and completion time
-  // @ts-ignore - Supabase type inference issue
   const { error: updateError } = await supabase
     .from('quiz_sessions')
-    // @ts-expect-error - Supabase type inference issue
     .update({
       score,
       completed_at: new Date().toISOString(),

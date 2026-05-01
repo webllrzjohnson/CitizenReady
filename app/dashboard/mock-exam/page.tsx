@@ -84,7 +84,7 @@ export default async function MockExamPage() {
                 Full 20-question exam is a Plus feature
               </p>
               <p className="mt-1 text-sm text-amber-700">
-                You're on the free plan — you'll get a 10-question preview exam. Upgrade to Plus to take the full 20-question mock exam that mirrors the real Canadian citizenship test.
+                You&apos;re on the free plan — you&apos;ll get a 10-question preview exam. Upgrade to Plus to take the full 20-question mock exam that mirrors the real Canadian citizenship test.
               </p>
               <div className="mt-3 flex flex-wrap gap-3">
                 <Link

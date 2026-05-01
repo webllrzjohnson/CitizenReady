@@ -9,9 +9,8 @@ export interface AdSettings {
 export async function getAdSettings(): Promise<AdSettings> {
   try {
     const supabase = createPublicSupabaseClient()
-    // @ts-expect-error - site_settings added via migration
     const { data } = await supabase.from('site_settings').select('key, value')
-    const map = new Map<string, string>((data ?? []).map((r: { key: string; value: string }) => [r.key, r.value]))
+    const map = new Map<string, string>((data ?? []).map((r) => [r.key, r.value]))
     return {
       adsEnabled: map.get('ads_enabled') === 'true',
       clientId: map.get('adsense_client_id') ?? '',

@@ -196,9 +196,9 @@ export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId }: T
   if (loading) {
     return (
       <div className="container mx-auto flex min-h-[50vh] items-center justify-center py-8">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Loading practice session...</p>
+        <div className="text-center" role="status" aria-label="Loading practice session">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" aria-hidden="true"></div>
+          <p className="text-muted-foreground" aria-hidden="true">Loading practice session...</p>
         </div>
       </div>
     )

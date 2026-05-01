@@ -34,7 +34,7 @@ export function AdUnit({ slot, clientId, adsEnabled, format = 'auto', className 
   if (!adsEnabled) return null
 
   return (
-    <div className={className}>
+    <div className={className} aria-label="Advertisement">
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}

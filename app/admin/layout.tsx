@@ -15,7 +15,7 @@ export default async function AdminLayout({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/auth/login')
+    redirect('/login')
   }
 
   const { data: profile } = await supabase
@@ -45,7 +45,7 @@ export default async function AdminLayout({
         <AdminNav unreadContactCount={unreadCount ?? 0} />
       </aside>
 
-      <main className="flex-1 p-8">{children}</main>
+      <div className="flex-1 p-8">{children}</div>
     </div>
   )
 }

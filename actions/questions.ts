@@ -57,7 +57,6 @@ export async function createQuestion(formData: FormData) {
 
     const validated = QuestionSchema.parse(data)
 
-    // @ts-expect-error - Supabase type inference issue with JSONB fields
     const { error } = await supabase.from('questions').insert({
       topic_id: validated.topic_id,
       type: validated.type,
@@ -113,7 +112,6 @@ export async function updateQuestion(id: string, formData: FormData) {
 
     const { error } = await supabase
       .from('questions')
-      // @ts-expect-error - Supabase type inference issue with JSONB fields
       .update({
         topic_id: validated.topic_id,
         type: validated.type,
@@ -150,7 +148,6 @@ export async function deleteQuestion(id: string) {
 
   const { error } = await supabase
     .from('questions')
-    // @ts-expect-error - Supabase type inference issue
     .update({ is_active: false })
     .eq('id', id)
 
@@ -172,7 +169,6 @@ export async function toggleQuestion(id: string, is_active: boolean) {
 
   const { error } = await supabase
     .from('questions')
-    // @ts-expect-error - Supabase type inference issue
     .update({ is_active: !is_active })
     .eq('id', id)
 

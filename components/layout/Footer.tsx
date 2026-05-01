@@ -12,12 +12,12 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-brand-navy text-white print:hidden">
+    <footer className="bg-[#1B2A4A] text-white print:hidden">
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <h3 className="mb-4 font-semibold text-white">About</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <ul className="space-y-2 text-sm text-white/70">
               <li>
                 <Link href="/" className="hover:text-white">
                   CitizenReady
@@ -33,7 +33,7 @@ export function Footer() {
 
           <div>
             <h3 className="mb-4 font-semibold text-white">Practice</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <ul className="space-y-2 text-sm text-white/70">
               <li>
                 <Link href="/signup" className="hover:text-white">
                   Start practicing
@@ -49,7 +49,7 @@ export function Footer() {
 
           <div>
             <h3 className="mb-4 font-semibold text-white">Resources</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <ul className="space-y-2 text-sm text-white/70">
               <li>
                 <a
                   href="https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/discover-canada.html"
@@ -70,7 +70,7 @@ export function Footer() {
 
           <div>
             <h3 className="mb-4 font-semibold text-white">Support</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <ul className="space-y-2 text-sm text-white/70">
               <li>
                 <Link href="/contact" className="hover:text-white">
                   Contact Us
@@ -91,7 +91,7 @@ export function Footer() {
 
           <div>
             <h3 className="mb-4 font-semibold text-white">Legal</h3>
-            <ul className="space-y-2 text-sm text-gray-300">
+            <ul className="space-y-2 text-sm text-white/70">
               <li>
                 <Link href="/privacy" className="hover:text-white">
                   Privacy Policy
@@ -111,8 +111,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-gray-300">
-          © 2026 CitizenReady. Proudly Canadian 🍁
+        <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/70">
+          © 2026 CitizenReady. Proudly Canadian <span aria-hidden="true">🍁</span>
         </div>
       </div>
     </footer>

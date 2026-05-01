@@ -9,7 +9,6 @@ export const metadata: Metadata = {
 export default async function AdminAdSettingsPage() {
   const supabase = await createClient()
 
-  // @ts-expect-error - site_settings added via migration
   const { data } = await supabase.from('site_settings').select('key, value')
   const map = new Map<string, string>(
     ((data ?? []) as { key: string; value: string }[]).map((r) => [r.key, r.value]),

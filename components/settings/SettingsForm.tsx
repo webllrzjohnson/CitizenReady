@@ -58,13 +58,13 @@ export function SettingsForm({
           {children}
 
           {state?.error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
               {state.error}
             </p>
           )}
 
           {state?.success && (
-            <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            <p role="status" aria-live="polite" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
               {state.message ?? 'Changes saved successfully.'}
             </p>
           )}
