@@ -46,3 +46,6 @@ next-env.d.ts
 
 #questions
 canadaquiz_questions.json
+
+# supabase cli
+supabase/.temp/
