@@ -1,0 +1,166 @@
+{
+  "name": "CitizenReady — Canada blog draft (Webhook → OpenAI or Claude → Drive)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "citizenready-canada-blog-draft",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-aa11bb22",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "citizenready-canada-blog-draft"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body ?? $json;\nconst title = String(b.title ?? '').trim();\nconst context = String(b.context ?? '').trim();\nconst cover_image_url = String(b.cover_image_url ?? b.coverImageUrl ?? '').trim();\nif (!title) throw new Error('title is required');\nif (!context) throw new Error('context is required');\nreturn [{ json: { title, context, cover_image_url } }];"
+      },
+      "id": "code-normalize-cc33dd44",
+      "name": "Normalize input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\r\n * n8n Code node — place after \"Normalize input\".\r\n * Env:\r\n *   BLOG_LLM_PROVIDER   — \"openai\" (default) or \"anthropic\" / \"claude\"\r\n *   OPENAI_API_KEY      — when using OpenAI\r\n *   OPENAI_MODEL        — optional, default gpt-4o-mini\r\n *   ANTHROPIC_API_KEY   — when using Claude\r\n *   ANTHROPIC_MODEL     — optional, default claude-sonnet-4-20250514\r\n * Sync with prompts in automation/n8n/prompts/openai-blog-system.txt\r\n */\r\nfunction stripJsonFence(s) {\r\n  let t = String(s || '').trim();\r\n  t = t.replace(/^```(?:json)?\\s*/i, '');\r\n  t = t.replace(/\\s*```$/i, '');\r\n  return t.trim();\r\n}\r\n\r\n// Keep aligned with automation/n8n/prompts/openai-blog-system.txt\r\nconst SYSTEM = `You are an editor for a Canada-focused travel and culture blog (CitizenReady). Write accurate, friendly, practical articles grounded in the user's context.\r\n\r\nRules:\r\n- Topics must relate to Canada: travel, cities, nature, wildlife, tourism, weather, history, current events with clear Canadian angle, culture, immigration tips, etc.\r\n- Use a warm, informative tone. No clickbait. If you are unsure of a fact, qualify it or avoid specifics rather than inventing statistics.\r\n- Output ONLY valid JSON (no markdown fences). Schema:\r\n{\r\n  \"title\": \"string, compelling and specific\",\r\n  \"slug\": \"optional string, lowercase hyphenated; may be omitted\",\r\n  \"excerpt\": \"string, max 300 chars, summary for listings\",\r\n  \"cover_image\": \"optional absolute https URL if user did not supply one and you suggest a placeholder from a reputable free stock/CDN — only https URLs\",\r\n  \"publish\": true,\r\n  \"blocks\": [\r\n    { \"type\": \"h2\", \"text\": \"Section title\" },\r\n    { \"type\": \"paragraph\", \"text\": \"Body ...\" },\r\n    { \"type\": \"image\", \"src\": \"https://...\", \"alt\": \"...\", \"layout\": \"center_large\" }\r\n  ]\r\n}\r\n- Include at least 3 h2 sections and several paragraphs. You may add one or two h3s where useful.\r\n- blocks must represent the full article in reading order.`;\r\n\r\nconst input = $json;\r\nconst userMessage = `Title hint: ${input.title}\r\n\r\nContext:\r\n${input.context}\r\n\r\nOptional cover image URL: ${input.cover_image_url || 'none'}`;\r\n\r\nconst provider = String($env.BLOG_LLM_PROVIDER || 'openai').toLowerCase();\r\nconst useAnthropic = provider === 'anthropic' || provider === 'claude';\r\n\r\nlet llmJsonText;\r\n\r\nif (useAnthropic) {\r\n  const key = String($env.ANTHROPIC_API_KEY || '');\r\n  if (!key) throw new Error('ANTHROPIC_API_KEY is required when BLOG_LLM_PROVIDER is anthropic or claude');\r\n  const model = String($env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514');\r\n  const res = await this.helpers.httpRequest({\r\n    method: 'POST',\r\n    url: 'https://api.anthropic.com/v1/messages',\r\n    headers: {\r\n      'x-api-key': key,\r\n      'anthropic-version': '2023-06-01',\r\n      'content-type': 'application/json',\r\n    },\r\n    body: {\r\n      model,\r\n      max_tokens: 8192,\r\n      system: SYSTEM,\r\n      messages: [{ role: 'user', content: userMessage }],\r\n    },\r\n    json: true,\r\n  });\r\n  const block = Array.isArray(res.content) ? res.content.find((c) => c.type === 'text') : null;\r\n  llmJsonText = stripJsonFence(block?.text);\r\n  if (!llmJsonText) throw new Error('Claude response missing text content');\r\n} else {\r\n  const key = String($env.OPENAI_API_KEY || '');\r\n  if (!key) throw new Error('OPENAI_API_KEY is required when BLOG_LLM_PROVIDER is openai (or unset)');\r\n  const model = String($env.OPENAI_MODEL || 'gpt-4o-mini');\r\n  const res = await this.helpers.httpRequest({\r\n    method: 'POST',\r\n    url: 'https://api.openai.com/v1/chat/completions',\r\n    headers: {\r\n      authorization: `Bearer ${key}`,\r\n      'content-type': 'application/json',\r\n    },\r\n    body: {\r\n      model,\r\n      response_format: { type: 'json_object' },\r\n      temperature: 0.7,\r\n      messages: [\r\n        { role: 'system', content: SYSTEM },\r\n        { role: 'user', content: userMessage },\r\n      ],\r\n    },\r\n    json: true,\r\n  });\r\n  llmJsonText = res.choices?.[0]?.message?.content;\r\n  if (!llmJsonText) throw new Error('OpenAI response missing choices[0].message.content');\r\n  llmJsonText = stripJsonFence(llmJsonText);\r\n}\r\n\r\nreturn [\r\n  {\r\n    json: {\r\n      llmJsonText,\r\n      _llmProvider: useAnthropic ? 'anthropic' : 'openai',\r\n    },\r\n  },\r\n];\r\n"
+      },
+      "id": "code-llm-aabbcc99",
+      "name": "LLM (OpenAI or Claude)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\r\n * n8n Code node — run once per item, after \"LLM (OpenAI or Claude)\".\r\n * Input item 0: { llmJsonText } from call-llm-openai-or-claude.js\r\n * Form fields: node FORM_NODE (webhook normalize).\r\n */\r\nconst FORM_NODE = 'Normalize input';\r\n\r\nfunction slugify(s) {\r\n  return String(s || '')\r\n    .toLowerCase()\r\n    .trim()\r\n    .replace(/[^a-z0-9]+/g, '-')\r\n    .replace(/^-+|-+$/g, '')\r\n    .slice(0, 96);\r\n}\r\n\r\nfunction blocksToTiptap(blocks) {\r\n  const content = [];\r\n  for (const b of blocks || []) {\r\n    if (!b || !b.type) continue;\r\n    const t = String(b.text || '').trim();\r\n    if (!t && b.type !== 'paragraph') continue;\r\n    if (b.type === 'h1') {\r\n      content.push({\r\n        type: 'heading',\r\n        attrs: { level: 1 },\r\n        content: [{ type: 'text', text: t }],\r\n      });\r\n    } else if (b.type === 'h2') {\r\n      content.push({\r\n        type: 'heading',\r\n        attrs: { level: 2 },\r\n        content: [{ type: 'text', text: t }],\r\n      });\r\n    } else if (b.type === 'h3') {\r\n      content.push({\r\n        type: 'heading',\r\n        attrs: { level: 3 },\r\n        content: [{ type: 'text', text: t }],\r\n      });\r\n    } else if (b.type === 'paragraph') {\r\n      content.push({\r\n        type: 'paragraph',\r\n        content: t ? [{ type: 'text', text: t }] : [],\r\n      });\r\n    } else if (b.type === 'image' && b.src) {\r\n      content.push({\r\n        type: 'image',\r\n        attrs: {\r\n          src: String(b.src),\r\n          alt: b.alt ? String(b.alt) : null,\r\n          title: null,\r\n          layout: b.layout || 'center_large',\r\n        },\r\n      });\r\n    }\r\n  }\r\n  return { type: 'doc', content };\r\n}\r\n\r\nconst form = $(FORM_NODE).first().json;\r\nconst raw = items[0].json?.llmJsonText;\r\nif (!raw || typeof raw !== 'string') {\r\n  throw new Error('Expected llmJsonText from LLM node');\r\n}\r\n\r\nlet ai;\r\ntry {\r\n  ai = JSON.parse(raw);\r\n} catch {\r\n  throw new Error(`Model did not return valid JSON. First 300 chars: ${raw.slice(0, 300)}`);\r\n}\r\n\r\nconst title = String(ai.title || form.title || '').trim();\r\nconst slug = slugify(ai.slug || title);\r\nconst excerpt = String(ai.excerpt || '').trim().slice(0, 300);\r\nconst coverFromForm = String(form.cover_image_url || '').trim();\r\nconst coverFromAi = String(ai.cover_image || '').trim();\r\nconst cover_image = coverFromForm || coverFromAi || null;\r\n\r\nconst content = blocksToTiptap(ai.blocks);\r\n\r\n/** Payload written to Drive + consumed by sync workflow */\r\nconst blogDraft = {\r\n  title,\r\n  slug,\r\n  excerpt: excerpt || null,\r\n  cover_image,\r\n  content,\r\n  /** Sync workflow maps this to Supabase status */\r\n  publish: ai.publish !== false,\r\n  source: 'n8n',\r\n  generated_at: new Date().toISOString(),\r\n};\r\n\r\nreturn [{ json: blogDraft }];\r\n"
+      },
+      "id": "code-tiptap-77001122",
+      "name": "Build TipTap payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const slug = String($json.slug || 'post').replace(/[^a-z0-9-]/gi, '-');\nconst fileName = `blog-${slug}-${Date.now()}.json`;\nconst jsonStr = JSON.stringify($json, null, 2);\nconst buf = Buffer.from(jsonStr, 'utf8');\nconst bin = await this.helpers.prepareBinaryData(buf, fileName, 'application/json');\nreturn [{ json: $json, binary: { data: bin } }];"
+      },
+      "id": "code-binary-9900aabb",
+      "name": "JSON to binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "upload",
+        "inputDataFieldName": "data",
+        "name": "={{ 'blog-' + $json.slug + '-' + Date.now() + '.json' }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "REPLACE_QUEUE_FOLDER_ID",
+          "cachedResultName": "CitizenReady blog queue"
+        },
+        "options": {}
+      },
+      "id": "gdrive-upload-ccdd1122",
+      "name": "Upload draft to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1400,
+        300
+      ],
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize input": {
+      "main": [
+        [
+          {
+            "node": "LLM (OpenAI or Claude)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build TipTap payload": {
+      "main": [
+        [
+          {
+            "node": "JSON to binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON to binary": {
+      "main": [
+        [
+          {
+            "node": "Upload draft to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM (OpenAI or Claude)": {
+      "main": [
+        [
+          {
+            "node": "Build TipTap payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  }
+}

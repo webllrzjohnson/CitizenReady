@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { siteUrl } from '@/lib/site-url'
 import { CheatSheetContent } from '@/components/study/CheatSheetContent'
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
     title: '150 Questions Most Likely on Your Canadian Citizenship Test | CitizenReady',
     description:
       'Survey-ranked cheat sheet: the 150 most-tested questions with instant answer reveal, exam tips, and print-ready layout. Unlock with CitizenReady Plus.',
-    url: 'https://citizenready.ca/study/cheat-sheet',
+    url: siteUrl('/study/cheat-sheet'),
     siteName: 'CitizenReady',
   },
 }

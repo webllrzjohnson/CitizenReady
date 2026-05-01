@@ -1,0 +1,264 @@
+{
+  "name": "CitizenReady — Queue folder → Supabase blog_posts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "cron-1001aaaa",
+      "name": "Every 15 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "='REPLACE_QUEUE_FOLDER_ID' in parents and mimeType = 'application/json' and trashed = false",
+        "returnAll": true,
+        "filter": {},
+        "options": {}
+      },
+      "id": "gdrive-list-2002bbbb",
+      "name": "List queued JSON files",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [440, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-3003cccc",
+      "name": "SplitInBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "driveFileId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-driveid-4004dddd",
+      "name": "Keep Drive file id",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.driveFileId }}"
+        },
+        "options": {}
+      },
+      "id": "gdrive-dl-5005eeee",
+      "name": "Download JSON",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1160, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let supabaseUrl = String($env.SUPABASE_URL || '').trim();\nif (supabaseUrl.endsWith('/')) supabaseUrl = supabaseUrl.slice(0, -1);\nconst key = String($env.SUPABASE_SERVICE_ROLE_KEY || '');\nconst authorId = String($env.CITIZENREADY_BLOG_AUTHOR_ID || '');\n\nif (!supabaseUrl || !key || !authorId) {\n  throw new Error('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CITIZENREADY_BLOG_AUTHOR_ID');\n}\n\nconst bin = items[0].binary?.data;\nif (!bin?.data) throw new Error('Expected binary from Drive download');\n\nconst text = Buffer.from(bin.data, 'base64').toString('utf8');\nconst draft = JSON.parse(text);\n\nconst slug = String(draft.slug || '').trim();\nif (!slug) throw new Error('Draft missing slug');\n\nconst driveFileId = String($('Keep Drive file id').first().json.driveFileId || '').trim();\nif (!driveFileId) throw new Error('Missing driveFileId from node Keep Drive file id');\n\nconst headers = { apikey: key, Authorization: `Bearer ${key}` };\n\nconst checkUrl = `${supabaseUrl}/rest/v1/blog_posts?slug=eq.${encodeURIComponent(slug)}&select=id`;\n\nconst existing = await this.helpers.httpRequest({\n  method: 'GET',\n  url: checkUrl,\n  headers,\n  json: true,\n});\n\nif (Array.isArray(existing) && existing.length > 0) {\n  return [{ json: { inserted: false, skipped: true, slug, driveFileId, reason: 'slug_already_exists' } }];\n}\n\nconst publish = draft.publish !== false;\nconst row = {\n  title: draft.title,\n  slug: draft.slug,\n  excerpt: draft.excerpt ?? null,\n  cover_image: draft.cover_image ?? null,\n  content: draft.content,\n  author_id: authorId,\n  status: publish ? 'published' : 'draft',\n  published_at: publish ? new Date().toISOString() : null,\n};\n\nawait this.helpers.httpRequest({\n  method: 'POST',\n  url: `${supabaseUrl}/rest/v1/blog_posts`,\n  headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },\n  body: row,\n  json: true,\n});\n\nreturn [{ json: { inserted: true, skipped: false, slug, driveFileId } }];"
+      },
+      "id": "code-sync-6006ffff",
+      "name": "Insert into Supabase",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": { "type": "boolean", "operation": "equals" },
+              "leftValue": "={{ $json.inserted }}",
+              "rightValue": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "if-inserted-7007aaaa",
+      "name": "Inserted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1640, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.driveFileId }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "REPLACE_POSTED_FOLDER_ID"
+        },
+        "options": {}
+      },
+      "id": "gdrive-move-8008bbbb",
+      "name": "Move to posted folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1920, 200],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": ""
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 15 minutes": {
+      "main": [
+        [
+          {
+            "node": "List queued JSON files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List queued JSON files": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches": {
+      "main": [
+        [
+          {
+            "node": "Keep Drive file id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep Drive file id": {
+      "main": [
+        [
+          {
+            "node": "Download JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download JSON": {
+      "main": [
+        [
+          {
+            "node": "Insert into Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert into Supabase": {
+      "main": [
+        [
+          {
+            "node": "Inserted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserted?": {
+      "main": [
+        [
+          {
+            "node": "Move to posted folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to posted folder": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": { "templateCredsSetupCompleted": false }
+}

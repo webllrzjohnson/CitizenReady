@@ -4,7 +4,7 @@ This guide will walk you through deploying the Canadian Citizenship Exam Prep ap
 
 ## Prerequisites
 
-- Node.js 18+ installed
+- Node.js 20.9+ installed (matches `engines` in `package.json` and Next.js 15 support)
 - A Supabase account (free tier works)
 - A Vercel account (free tier works)
 - Git installed
@@ -38,12 +38,19 @@ npm install
 
 ### 2.3 Run Database Migrations
 
-1. In Supabase Dashboard → SQL Editor
-2. Click "New query"
-3. Copy the entire contents of `supabase/migrations/001_initial_schema.sql`
-4. Paste into the editor
-5. Click "Run" (or press Cmd/Ctrl + Enter)
-6. You should see "Success. No rows returned"
+Your schema is shipped as ordered SQL files in `supabase/migrations/` (**001** through **013**, plus any newer files). Everything must run on a fresh Supabase project.
+
+**Recommended (Supabase CLI)** — applies migrations from the repo:
+
+1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli).
+2. `npx supabase link --project-ref <your-project-ref>` (Dashboard → Project Settings → General).
+3. `npx supabase db push`
+
+**Alternative (SQL Editor)** — open each migration file **in numerical order**, paste into **SQL Editor** → **Run** (Dashboard → SQL → New query). Do not skip files or reorder them.
+
+Still apply **avatars** storage bucket steps below if you use profile photos.
+
+**Note:** Older copies of this guide referenced only `001_initial_schema.sql`. That is insufficient for the current app (blog, contact messages, guest quiz access, premium flags, etc.).
 
 ### 2.4 (Optional) Add Sample Data
 
@@ -213,9 +220,9 @@ To give admin access to other users:
 
 Before going live:
 
-- [ ] Run all database migrations
-- [ ] Set up proper environment variables in Vercel
-- [ ] Configure Supabase Auth URLs
+- [ ] Run all database migrations (001–013+) via CLI or SQL Editor in order
+- [ ] Set up proper environment variables in Vercel (including **`NEXT_PUBLIC_SITE_URL`** matching your canonical domain — drives sitemap, robots, Open Graph metadata)
+- [ ] Configure Supabase Auth URLs (Site URL + Redirect URLs aligned with **`NEXT_PUBLIC_SITE_URL`** / production hostname)
 - [ ] Test all features (signup, login, practice, exam, admin)
 - [ ] Create your admin account and verify role
 - [ ] Add initial questions (or run seed script)

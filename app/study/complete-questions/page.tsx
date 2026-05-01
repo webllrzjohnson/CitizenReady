@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { siteUrl } from '@/lib/site-url'
 import { getQuestionBankEntries } from '@/lib/data/complete-questions'
 import { CompleteQuestionsCatalog } from '@/components/study/CompleteQuestionsCatalog'
 import { createClient } from '@/lib/supabase/server'
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
     title: 'Complete question bank | CitizenReady',
     description:
       'Chapter-by-chapter citizenship questions with explanations. Preview free chapters; unlock the full bank as a member.',
-    url: 'https://citizenready.ca/study/complete-questions',
+    url: siteUrl('/study/complete-questions'),
     siteName: 'CitizenReady',
   },
 }

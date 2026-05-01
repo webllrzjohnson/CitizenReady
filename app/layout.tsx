@@ -1,4 +1,5 @@
 import './globals.css'
+import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import { Navbar } from '@/components/layout/Navbar'
@@ -6,6 +7,7 @@ import { Footer } from '@/components/layout/Footer'
 import { CookieBanner } from '@/components/cookies/CookieBanner'
 import { Toaster } from 'sonner'
 import { getAdSettings } from '@/lib/ad-settings'
+import { getSiteUrl, siteUrl } from '@/lib/site-url'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -13,7 +15,8 @@ const inter = Inter({
   display: 'swap',
 })
 
-export const metadata = {
+export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: 'CitizenReady',
     template: '%s | CitizenReady',
@@ -24,7 +27,7 @@ export const metadata = {
   openGraph: {
     title: 'CitizenReady — Canadian Citizenship Exam Prep',
     description: 'Free practice questions, timed mock exams, and progress tracking.',
-    url: 'https://citizenready.ca',
+    url: siteUrl('/'),
     siteName: 'CitizenReady',
     locale: 'en_CA',
     type: 'website',

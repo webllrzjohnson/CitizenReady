@@ -1,33 +1,35 @@
 import { MetadataRoute } from 'next'
 
+import { siteUrl } from '@/lib/site-url'
+
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: 'https://citizenready.ca',
+      url: siteUrl('/'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 1,
     },
     {
-      url: 'https://citizenready.ca/login',
+      url: siteUrl('/login'),
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.5,
     },
     {
-      url: 'https://citizenready.ca/signup',
+      url: siteUrl('/signup'),
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.8,
     },
     {
-      url: 'https://citizenready.ca/study/complete-questions',
+      url: siteUrl('/study/complete-questions'),
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
-      url: 'https://citizenready.ca/pricing',
+      url: siteUrl('/pricing'),
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.75,
