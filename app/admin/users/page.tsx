@@ -9,12 +9,14 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { RoleToggleButton } from './role-toggle-button'
+import { PremiumToggleButton } from '@/components/admin/PremiumToggleButton'
 
 type UserWithSessions = {
   id: string
   email: string
   full_name: string | null
   role: string
+  is_premium: boolean
   created_at: string
   session_count: number
 }
@@ -28,7 +30,7 @@ export default async function AdminUsersPage() {
 
   const { data: users } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, created_at')
+    .select('id, email, full_name, role, is_premium, created_at')
     .order('created_at', { ascending: false })
 
   const userIds = (users ?? []).map((u: any) => u.id)
@@ -45,6 +47,7 @@ export default async function AdminUsersPage() {
 
   const usersWithSessions: UserWithSessions[] = (users ?? []).map((user: any) => ({
     ...user,
+    is_premium: user.is_premium === true,
     session_count: sessionCountMap[user.id] || 0,
   }))
 
@@ -65,6 +68,7 @@ export default async function AdminUsersPage() {
             <TableHead>Full Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Plus</TableHead>
             <TableHead>Joined</TableHead>
             <TableHead className="text-right">Total Sessions</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -90,15 +94,20 @@ export default async function AdminUsersPage() {
                     {user.role === 'admin' ? 'Admin' : 'User'}
                   </Badge>
                 </TableCell>
+                <TableCell>
+                  <Badge variant={user.is_premium ? 'default' : 'secondary'}>
+                    {user.is_premium ? 'Plus' : '—'}
+                  </Badge>
+                </TableCell>
                 <TableCell>{joinedDate}</TableCell>
                 <TableCell className="text-right">{user.session_count}</TableCell>
                 <TableCell className="text-right">
-                  {!isCurrentUser && (
-                    <RoleToggleButton
-                      userId={user.id}
-                      currentRole={user.role}
-                    />
-                  )}
+                  <div className="flex flex-col items-end gap-2">
+                    <PremiumToggleButton userId={user.id} isPremium={user.is_premium} />
+                    {!isCurrentUser && (
+                      <RoleToggleButton userId={user.id} currentRole={user.role} />
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             )

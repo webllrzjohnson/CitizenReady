@@ -15,6 +15,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          is_premium: boolean
           role: string
         }
         Insert: {
@@ -22,6 +23,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          is_premium?: boolean
           role?: string
         }
         Update: {
@@ -29,6 +31,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          is_premium?: boolean
           role?: string
         }
         Relationships: []

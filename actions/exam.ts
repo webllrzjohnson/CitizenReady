@@ -13,6 +13,18 @@ export async function startMockExam() {
   
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Determine premium status for logged-in users
+  let isPremium = false
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_premium, role')
+      .eq('id', user.id)
+      .single()
+    const row = profile as { is_premium?: boolean; role?: string } | null
+    isPremium = row?.role === 'admin' || row?.is_premium === true
+  }
+
   console.log('[startMockExam] Fetching questions for mock exam')
 
   const { data: questionsData, error: questionsError } = await supabase
@@ -35,7 +47,8 @@ export async function startMockExam() {
   const questions = questionsData as Tables<'questions'>[]
   console.log('[startMockExam] Number of questions returned:', questions.length)
 
-  const targetCount = user ? EXAM_CONFIG.TOTAL_QUESTIONS : EXAM_CONFIG.GUEST_TOTAL_QUESTIONS
+  // Premium users get 20 questions; guests and free registered users get 10
+  const targetCount = isPremium ? EXAM_CONFIG.TOTAL_QUESTIONS : EXAM_CONFIG.FREE_TOTAL_QUESTIONS
 
   if (questions.length < targetCount) {
     console.warn('[startMockExam] Not enough questions available:', questions.length)
@@ -76,7 +89,7 @@ export async function startMockExam() {
       user_id: user.id,
       type: 'mock_exam',
       topic_id: null,
-      total_q: EXAM_CONFIG.TOTAL_QUESTIONS,
+      total_q: targetCount,
       question_ids: questionIds,
     })
     .select()

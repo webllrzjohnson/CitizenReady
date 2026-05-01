@@ -44,6 +44,8 @@ import {
 
   BookCopy,
 
+  ListChecks,
+
 } from 'lucide-react'
 
 import { useState } from 'react'
@@ -71,6 +73,8 @@ const navItems = [
   { href: '/dashboard/study', label: 'Study centre', icon: Library },
 
   { href: '/dashboard/study/handbook', label: 'Discover Canada handbook', icon: BookCopy },
+
+  { href: '/study/complete-questions', label: 'Complete question bank', icon: ListChecks },
 
   { href: '/dashboard/study/public-holidays', label: 'Public holidays', icon: CalendarDays },
 

@@ -1,9 +1,12 @@
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database.types'
-import { BookOpen, Clock, BarChart2, ArrowRight, Star } from 'lucide-react'
+import { BookOpen, Clock, BarChart2, ArrowRight, Star, Award, Zap, Users, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { getAdSettings } from '@/lib/ad-settings'
+import { AdUnit } from '@/components/ads/AdUnit'
+import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
 
 export const metadata = {
   title: 'Free Canadian Citizenship Exam Practice',
@@ -117,6 +120,11 @@ function formatBlogDate(iso: string | null) {
 export default async function HomePage() {
   const supabase = await createClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const isGuest = !user
+
   const { data: featuredPostRaw } = await supabase
     .from('blog_posts')
     .select('id, title, slug, excerpt, cover_image, published_at, author_id')
@@ -140,11 +148,15 @@ export default async function HomePage() {
     recent = (data ?? []) as LandingRecentPost[]
   }
 
+  const { adsEnabled, clientId, showToGuestsOnly } = await getAdSettings()
+  const showAd = adsEnabled && (!showToGuestsOnly || isGuest)
+
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="bg-brand-navy text-white">
-        <div className="container mx-auto px-4 py-16 md:py-24 lg:py-28">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-[#1a2a4a] to-[#0f1e35] text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(211,47,47,0.15),transparent_60%)]" />
+        <div className="container relative mx-auto px-4 py-16 md:py-24 lg:py-28">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
             <div className="space-y-8">
               <h1 className="text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
@@ -186,7 +198,7 @@ export default async function HomePage() {
                 {['1,001 Questions', '11 Topics', 'Free Forever'].map((label) => (
                   <span
                     key={label}
-                    className="rounded-full bg-brand-navy-light px-4 py-2 text-sm font-medium text-white"
+                    className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white ring-1 ring-white/10"
                   >
                     {label}
                   </span>
@@ -205,8 +217,28 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Social proof strip */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <Award className="h-3.5 w-3.5 text-brand-red" />
+              1,001 exam-quality questions
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-brand-navy" />
+              Trusted by citizenship applicants across Canada
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-amber-500" />
+              Updated for 2026 test format
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* How to prepare */}
-      <section id="how-to-prepare" className="bg-surface-card py-16 md:py-24">
+      <section id="how-to-prepare" className="bg-[#f8f7f5] py-16 md:py-24">
         <div className="container mx-auto px-4">
           <h2 className="mb-12 text-center text-3xl font-bold text-brand-navy md:text-4xl">
             How to Prepare
@@ -244,19 +276,27 @@ export default async function HomePage() {
       </section>
 
       {/* Topics */}
-      <section id="topics" className="bg-surface-page py-16 md:py-24">
+      <section id="topics" className="bg-white py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
             <h2 className="mb-3 text-3xl font-bold text-brand-navy md:text-4xl">
               Practice by Chapter
             </h2>
             <p className="text-lg text-[#424242]">Complete all chapters to be fully prepared</p>
+            <p className="mt-4">
+              <Link
+                href="/study/complete-questions"
+                className="text-base font-semibold text-brand-red underline underline-offset-2 hover:text-brand-red-dark"
+              >
+                Question bank — random sample free; Plus unlocks all chapters
+              </Link>
+            </p>
           </div>
           <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {LANDING_CHAPTERS.map((ch) => (
               <div
                 key={ch.n}
-                className="group flex flex-col rounded-xl border border-surface-border bg-surface-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                className="group flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className="mb-4 flex gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-red text-lg font-bold text-white">
@@ -267,7 +307,7 @@ export default async function HomePage() {
                     <p className="mt-1 text-sm text-[#424242]">{ch.description}</p>
                   </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between border-t border-surface-border pt-4">
+                <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
                   <span className="rounded-full bg-brand-red-light px-3 py-1 text-xs font-semibold text-brand-red">
                     {ch.questions} questions
                   </span>
@@ -285,8 +325,23 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Leaderboard ad between topics and testimonials — guests only */}
+      {showAd ? (
+        <div className="bg-white py-4">
+          <div className="container mx-auto max-w-5xl px-4">
+            <AdUnit slot="landing-leaderboard" clientId={clientId} adsEnabled={adsEnabled} format="leaderboard" />
+          </div>
+        </div>
+      ) : !adsEnabled ? (
+        <div className="bg-white py-4">
+          <div className="container mx-auto max-w-5xl px-4">
+            <AdPlaceholder format="leaderboard" />
+          </div>
+        </div>
+      ) : null}
+
       {/* Testimonials */}
-      <section id="success-stories" className="bg-surface-card py-16 md:py-24">
+      <section id="success-stories" className="bg-[#f8f7f5] py-16 md:py-24">
         <div className="container mx-auto px-4">
           <h2 className="mb-12 text-center text-3xl font-bold text-brand-navy md:text-4xl">
             Success Stories
@@ -295,7 +350,7 @@ export default async function HomePage() {
             {TESTIMONIALS.map((t) => (
               <div
                 key={t.name}
-                className="rounded-xl border border-surface-border bg-surface-page p-8 shadow-sm"
+                className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
               >
                 <p className="mb-4 italic text-[#424242]">&ldquo;{t.quote}&rdquo;</p>
                 <div className="mb-3 flex gap-0.5">
@@ -311,9 +366,92 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Plus pricing teaser */}
+      <section className="border-y border-gray-100 bg-white py-16 md:py-20">
+        <div className="container mx-auto max-w-5xl px-4">
+          <div className="mb-3 flex justify-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">
+              <Zap className="h-3.5 w-3.5" aria-hidden />
+              Limited time — 50% off all plans
+            </span>
+          </div>
+          <h2 className="mb-2 text-center text-3xl font-extrabold text-brand-navy md:text-4xl">
+            Go Further with CitizenReady Plus
+          </h2>
+          <p className="mb-10 text-center text-base text-gray-500">
+            One payment. Full access. Everything you need to walk into test day confident.
+          </p>
+
+          <div className="grid gap-6 sm:grid-cols-3">
+            {([
+              { label: '7-Day Sprint', price: '$5.99', original: '$11.98', desc: 'Last-minute, high-focus prep.' },
+              { label: '30-Day Plan', price: '$14.99', original: '$29.98', desc: 'The most popular balanced path.', popular: true },
+              { label: '1-Year Access', price: '$19.99', original: '$39.98', desc: 'Prepare at your own pace.', best: true },
+            ] as const).map((plan) => (
+              <div
+                key={plan.label}
+                className={[
+                  'relative flex flex-col rounded-2xl border p-6',
+                  plan.popular
+                    ? 'border-brand-navy bg-brand-navy text-white shadow-lg'
+                    : 'border-gray-200 bg-white',
+                ].join(' ')}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="rounded-full bg-brand-red px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
+                      Most Popular
+                    </span>
+                  </div>
+                )}
+                {plan.best && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="rounded-full bg-green-600 px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-white">
+                      Best Value
+                    </span>
+                  </div>
+                )}
+                <p className={['text-xs font-bold uppercase tracking-wider', plan.popular ? 'text-white/60' : 'text-gray-400'].join(' ')}>
+                  {plan.label}
+                </p>
+                <p className={['mt-1 text-sm', plan.popular ? 'text-white/70' : 'text-gray-500'].join(' ')}>
+                  {plan.desc}
+                </p>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className={['text-3xl font-extrabold', plan.popular ? 'text-white' : 'text-gray-900'].join(' ')}>
+                    {plan.price}
+                  </span>
+                  <span className={['text-sm line-through', plan.popular ? 'text-white/40' : 'text-gray-300'].join(' ')}>
+                    {plan.original}
+                  </span>
+                  <span className="rounded bg-brand-red/20 px-1.5 py-0.5 text-xs font-semibold text-brand-red">
+                    50% off
+                  </span>
+                </div>
+                <Button
+                  className={['mt-6 w-full font-semibold', plan.popular ? 'bg-brand-red hover:bg-brand-red-dark text-white' : 'bg-brand-navy text-white hover:bg-brand-navy/90'].join(' ')}
+                  asChild
+                >
+                  <Link href="/pricing">Get Access</Link>
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-500">
+            {['900+ exam-like questions', 'Unlimited mock exams', 'Challenge bank', 'Cheat sheet PDF', 'Instant access'].map((f) => (
+              <span key={f} className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-green-500" aria-hidden />
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Blog */}
       {featuredPost ? (
-        <section className="bg-white py-16 md:py-24">
+        <section className="bg-white py-16 md:py-24 border-t border-gray-100">
           <div className="container mx-auto px-4">
             <div className="mb-10 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <h2 className="text-3xl font-bold text-brand-navy md:text-4xl">From the Blog</h2>
@@ -325,7 +463,7 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <div className="mb-10 overflow-hidden rounded-xl border border-surface-border bg-surface-card shadow-sm">
+            <div className="mb-10 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-col md:flex-row md:items-stretch">
                 <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-t-xl md:w-[60%] md:rounded-l-xl md:rounded-tr-none">
                   {featuredPost.cover_image ? (
@@ -375,7 +513,7 @@ export default async function HomePage() {
                 {recent.map((post) => (
                   <article
                     key={post.id}
-                    className="flex flex-col overflow-hidden rounded-xl border border-surface-border bg-surface-card shadow-sm"
+                    className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
                   >
                     <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-t-xl">
                       {post.cover_image ? (
@@ -416,18 +554,18 @@ export default async function HomePage() {
       ) : null}
 
       {/* CTA */}
-      <section className="bg-brand-red py-16 md:py-24">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-white md:text-4xl">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-[#1a2a4a] to-[#0f1e35] py-16 md:py-24">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(211,47,47,0.2),transparent_60%)]" />
+        <div className="container relative mx-auto px-4 text-center">
+          <h2 className="mb-4 text-3xl font-extrabold tracking-tight text-white md:text-4xl">
             Ready to Pass Your Citizenship Test?
           </h2>
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-white/90">
+          <p className="mx-auto mb-8 max-w-2xl text-lg text-white/70">
             Join thousands of Canadians who prepared with CitizenReady
           </p>
           <Button
             size="lg"
-            variant="outline"
-            className="h-12 rounded-full border-2 border-white bg-transparent px-8 text-base text-white hover:bg-white/10 hover:text-white"
+            className="h-12 rounded-full bg-brand-red px-8 text-base text-white hover:bg-brand-red-dark"
             asChild
           >
             <Link href="/signup">Start Free Today</Link>
@@ -435,81 +573,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-brand-navy text-white">
-        <div className="container mx-auto px-4 py-12 md:py-16">
-          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <h3 className="mb-4 font-semibold text-white">About</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>
-                  <Link href="/" className="hover:text-white">
-                    CitizenReady
-                  </Link>
-                </li>
-                <li>
-                  <a href="#how-to-prepare" className="hover:text-white">
-                    How it works
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-4 font-semibold text-white">Practice</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>
-                  <Link href="/signup" className="hover:text-white">
-                    Start practicing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/signup" className="hover:text-white">
-                    Mock exam
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-4 font-semibold text-white">Resources</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>
-                  <a
-                    href="https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/discover-canada.html"
-                    className="hover:text-white"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Discover Canada
-                  </a>
-                </li>
-                <li>
-                  <a href="#topics" className="hover:text-white">
-                    Chapters
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-4 font-semibold text-white">Support</h3>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>
-                  <Link href="/login" className="hover:text-white">
-                    Login
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/signup" className="hover:text-white">
-                    Sign up
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-gray-300">
-            © 2026 CitizenReady. Proudly Canadian 🍁
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Library } from 'lucide-react'
+import { Library, BookOpen, FileText, TrendingUp, ArrowRight } from 'lucide-react'
 import type { Topic } from '@/types'
 import { STUDY_SHEETS } from '@/lib/study/study-sheets-meta'
+import { getTopicIcon } from '@/lib/topics/topic-icons'
+import { cn } from '@/lib/utils'
+import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -37,43 +39,41 @@ export default async function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="space-y-8">
+      <div className="mx-auto max-w-4xl space-y-8 pb-8">
         <div>
-          <h1 className="text-3xl font-bold">Welcome to CitizenReady</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Welcome to CitizenReady
+          </h1>
+          <p className="mt-1 text-gray-500">
             Continue your Canadian citizenship exam preparation
           </p>
         </div>
 
-        <Card className="border-brand-red/20 bg-amber-50/50">
-          <CardHeader>
-            <CardTitle>Sign up to track your progress and scores</CardTitle>
-            <CardDescription>
-              Create a free account to save practice results, mock exams, and see your improvement over time.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="bg-brand-red text-white hover:bg-brand-red-dark">
-              <Link href="/signup">Sign Up Free</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900">Sign up to track your progress and scores</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Create a free account to save practice results, mock exams, and see your improvement over time.
+          </p>
+          <Button asChild className="mt-4 bg-brand-red text-white hover:bg-brand-red-dark">
+            <Link href="/signup">Sign Up Free</Link>
+          </Button>
+        </div>
 
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold tracking-tight">Study for your exam</h2>
-          <Card className="overflow-hidden border-brand-navy/10 shadow-sm">
-            <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-navy text-white">
+        <div className="space-y-3">
+          <h2 className="text-xl font-semibold text-gray-900">Study for your exam</h2>
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-row items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy text-white">
                 <Library className="h-5 w-5" aria-hidden />
               </div>
-              <div className="space-y-1">
-                <CardTitle className="text-lg">Study centre</CardTitle>
-                <CardDescription>
-                  Timelines, holidays, government basics, symbols, capitals, key figures, and rights — build on IRCC&apos;s Discover Canada.
-                </CardDescription>
+              <div className="min-w-0 space-y-1">
+                <p className="text-lg font-semibold text-gray-900">Study centre</p>
+                <p className="text-sm text-gray-500">
+                  Timelines, holidays, government basics, symbols, capitals, key figures, and rights — built on IRCC&apos;s Discover Canada.
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+            <div className="mt-4 space-y-3 pl-[3.75rem]">
               <Button asChild className="bg-brand-navy text-white hover:bg-brand-navy-light">
                 <Link href="/dashboard/study">Open study centre</Link>
               </Button>
@@ -84,33 +84,34 @@ export default async function DashboardPage() {
                   </Button>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         <div>
-          <h2 className="mb-4 text-2xl font-semibold">Practice by Topic</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Practice by topic</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(topics as Topic[] | null)?.map((topic: Topic) => {
               const questionCount = countMap[topic.id] || 0
-
+              const { icon, bg } = getTopicIcon(topic.slug)
               return (
-                <Card key={topic.id}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{topic.name}</CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {topic.description || 'Start practicing questions for this topic'}
-                    </CardDescription>
-                    <div className="pt-2 text-sm text-muted-foreground">
-                      {questionCount} {questionCount === 1 ? 'question' : 'questions'}
+                <div key={topic.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg', bg)}>
+                      <span role="img" aria-hidden>{icon}</span>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Button asChild className="w-full">
-                      <Link href={`/dashboard/practice/${topic.slug}`}>Start Practice</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
+                    <p className="font-semibold text-gray-900">{topic.name}</p>
+                  </div>
+                  <p className="line-clamp-2 text-sm text-gray-500">
+                    {topic.description || 'Start practicing questions for this topic'}
+                  </p>
+                  <p className="mt-2 text-xs text-gray-400">
+                    {questionCount} {questionCount === 1 ? 'question' : 'questions'}
+                  </p>
+                  <Button asChild className="mt-4 w-full bg-brand-red hover:bg-brand-red-dark">
+                    <Link href={`/dashboard/practice/${topic.slug}`}>Start Practice</Link>
+                  </Button>
+                </div>
               )
             })}
           </div>
@@ -121,9 +122,11 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('full_name, is_premium, role')
     .eq('id', user.id)
-    .single<{ full_name: string | null }>()
+    .single<{ full_name: string | null; is_premium: boolean | null; role: string | null }>()
+
+  const isPremium = profile?.role === 'admin' || profile?.is_premium === true
 
   const { count: sessionCount } = await supabase
     .from('quiz_sessions')
@@ -164,99 +167,94 @@ export default async function DashboardPage() {
     }
   )
 
+  const quickLinks = [
+    { href: '/dashboard/practice', label: 'Practice', icon: BookOpen, desc: 'Topic-by-topic questions' },
+    { href: '/dashboard/mock-exam', label: 'Mock Exam', icon: FileText, desc: '20 q · 30 min timer' },
+    { href: '/dashboard/progress', label: 'Progress', icon: TrendingUp, desc: 'Score history & trends' },
+    { href: '/dashboard/study', label: 'Study centre', icon: Library, desc: 'Study sheets & handbook' },
+  ]
+
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8 pb-8">
       <div>
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
           Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}
         </h1>
-        <p className="text-muted-foreground">
-          Continue your Canadian citizenship exam preparation
-        </p>
+        <p className="mt-1 text-gray-500">Continue your Canadian citizenship exam preparation</p>
       </div>
 
+      {/* Upgrade nudge for free users */}
+      {!isPremium && <UpgradeBanner />}
+
+      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">{sessionCount ?? 0}</CardTitle>
-            <CardDescription>Total Sessions</CardDescription>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">{avgScore}%</CardTitle>
-            <CardDescription>Average Score</CardDescription>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">0</CardTitle>
-            <CardDescription>Mock Exams Passed</CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-3xl font-extrabold text-gray-900">{sessionCount ?? 0}</p>
+          <p className="mt-1 text-sm text-gray-500">Total sessions</p>
+        </div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-3xl font-extrabold text-gray-900">{avgScore}%</p>
+          <p className="mt-1 text-sm text-gray-500">Average score</p>
+        </div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p className="text-3xl font-extrabold text-gray-900">0</p>
+          <p className="mt-1 text-sm text-gray-500">Mock exams passed</p>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">Study for your exam</h2>
-        <Card className="overflow-hidden border-brand-navy/10 shadow-sm">
-          <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-navy text-white">
-              <Library className="h-5 w-5" aria-hidden />
+      {/* Quick links */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {quickLinks.map(({ href, label, icon: Icon, desc }) => (
+          <Link
+            key={href}
+            href={href}
+            className="group flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-navy text-white">
+              <Icon className="h-5 w-5" aria-hidden />
             </div>
-            <div className="space-y-1">
-              <CardTitle className="text-lg">Study centre</CardTitle>
-              <CardDescription>
-                Timelines, holidays, government basics, symbols, capitals, key figures, and rights — build on IRCC&apos;s Discover Canada.
-              </CardDescription>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-gray-900 transition-colors group-hover:text-brand-red">{label}</p>
+              <p className="text-sm text-gray-500">{desc}</p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button asChild className="bg-brand-navy text-white hover:bg-brand-navy-light">
-              <Link href="/dashboard/study">Open study centre</Link>
-            </Button>
-            <div className="flex flex-wrap gap-2">
-              {STUDY_SHEETS.map((sheet) => (
-                <Button key={sheet.href} variant="secondary" size="sm" className="text-xs sm:text-sm" asChild>
-                  <Link href={sheet.href}>{sheet.title}</Link>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+            <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition-colors group-hover:text-brand-red" aria-hidden />
+          </Link>
+        ))}
       </div>
 
+      {/* Practice by topic */}
       <div>
-        <h2 className="mb-4 text-2xl font-semibold">Practice by Topic</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <h2 className="mb-4 text-xl font-semibold text-gray-900">Practice by topic</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(topics as Topic[] | null)?.map((topic: Topic) => {
             const questionCount = countMap[topic.id] || 0
             const bestScore = scoreMap[topic.id]
             const bestScorePercent = bestScore
               ? Math.round((bestScore.score / bestScore.total) * 100)
               : null
+            const { icon, bg } = getTopicIcon(topic.slug)
 
             return (
-              <Card key={topic.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{topic.name}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {topic.description || 'Start practicing questions for this topic'}
-                  </CardDescription>
-                  <div className="space-y-1 pt-2 text-sm">
-                    <div className="text-muted-foreground">
-                      {questionCount} {questionCount === 1 ? 'question' : 'questions'}
-                    </div>
-                    {bestScorePercent !== null && (
-                      <div className="font-medium text-foreground">Best: {bestScorePercent}%</div>
-                    )}
+              <div key={topic.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg', bg)}>
+                    <span role="img" aria-hidden>{icon}</span>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild className="w-full">
-                    <Link href={`/dashboard/practice/${topic.slug}`}>Start Practice</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+                  <p className="font-semibold text-gray-900">{topic.name}</p>
+                </div>
+                <p className="line-clamp-2 text-sm text-gray-500">
+                  {topic.description || 'Start practicing questions for this topic'}
+                </p>
+                <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">
+                  <span>{questionCount} {questionCount === 1 ? 'question' : 'questions'}</span>
+                  {bestScorePercent !== null && (
+                    <span className="font-semibold text-green-600">Best: {bestScorePercent}%</span>
+                  )}
+                </div>
+                <Button asChild className="mt-4 w-full bg-brand-red hover:bg-brand-red-dark">
+                  <Link href={`/dashboard/practice/${topic.slug}`}>Start Practice</Link>
+                </Button>
+              </div>
             )
           })}
         </div>

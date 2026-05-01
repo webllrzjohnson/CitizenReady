@@ -992,7 +992,308 @@ INSERT INTO questions (topic_id, type, question_text, options, correct_answers, 
 
 ---
 
-## Output 22 — Future Improvements
+## Output 22 — Cookie Consent & Compliance
+
+### Overview
+
+CitizenReady collects personal data (email, quiz progress, payment info) and sets cookies.
+Canadian law (PIPEDA), Canada's anti-spam law (CASL), and EU law (GDPR/ePrivacy) all require informed, freely given consent before non-essential cookies are set and before marketing emails are sent.
+
+---
+
+### 22a — Cookie Categories
+
+| Category | Examples | Consent required? |
+|---|---|---|
+| **Strictly necessary** | Supabase auth session cookie (`sb-*`), CSRF token | No — can set without consent |
+| **Functional** | Theme preference, last-visited topic | No — but disclose |
+| **Analytics** | Vercel Analytics, PostHog page views | Yes — opt-in |
+| **Marketing** | Ad pixels, affiliate tracking | Yes — opt-in (not used in Phase 1) |
+
+---
+
+### 22b — Cookie Banner Component
+
+Install a lightweight consent library:
+
+```bash
+npm install vanilla-cookieconsent
+```
+
+Create `components/cookies/CookieBanner.tsx` (Client Component):
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+import 'vanilla-cookieconsent/dist/cookieconsent.css';
+
+export function CookieBanner() {
+  useEffect(() => {
+    import('vanilla-cookieconsent').then((cc) => {
+      cc.default.run({
+        guiOptions: {
+          consentModal: { layout: 'bar', position: 'bottom' },
+        },
+        categories: {
+          necessary: { enabled: true, readOnly: true },
+          analytics: { enabled: false },
+        },
+        language: {
+          default: 'en',
+          translations: {
+            en: {
+              consentModal: {
+                title: 'We use cookies',
+                description:
+                  'CitizenReady uses essential cookies to keep you logged in and optional analytics cookies to improve the study experience. You can opt out of analytics at any time.',
+                acceptAllBtn: 'Accept all',
+                acceptNecessaryBtn: 'Necessary only',
+                showPreferencesBtn: 'Manage preferences',
+              },
+              preferencesModal: {
+                title: 'Cookie preferences',
+                acceptAllBtn: 'Accept all',
+                acceptNecessaryBtn: 'Necessary only',
+                savePreferencesBtn: 'Save preferences',
+                sections: [
+                  {
+                    title: 'Strictly necessary',
+                    description:
+                      'Required for login and security. Cannot be disabled.',
+                    linkedCategory: 'necessary',
+                  },
+                  {
+                    title: 'Analytics',
+                    description:
+                      'Help us understand how users navigate the app so we can improve it. No personal data is sold.',
+                    linkedCategory: 'analytics',
+                  },
+                ],
+              },
+            },
+          },
+        },
+        onConsent({ cookie }) {
+          if (cookie.categories.includes('analytics')) {
+            // Enable Vercel Analytics / PostHog here
+          }
+        },
+      });
+    });
+  }, []);
+
+  return null;
+}
+```
+
+Add `<CookieBanner />` to `app/layout.tsx` (inside `<body>`, after `<Providers>`).
+
+---
+
+### 22c — Consent Stored in Supabase (optional, for audit trail)
+
+If you need a server-side audit log of consent (recommended for GDPR compliance):
+
+```sql
+-- Migration: add consent log table
+CREATE TABLE consent_log (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  session_id  text,                        -- anonymous identifier before login
+  categories  text[] NOT NULL,             -- e.g. ARRAY['necessary','analytics']
+  consented_at timestamptz DEFAULT now(),
+  ip_hash     text,                        -- SHA-256 of IP, never raw IP
+  user_agent  text
+);
+
+ALTER TABLE consent_log ENABLE ROW LEVEL SECURITY;
+
+-- Users can only insert their own record
+CREATE POLICY "insert own consent" ON consent_log
+  FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+
+-- Admins can read all
+CREATE POLICY "admin read consent" ON consent_log
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+```
+
+---
+
+### 22d — PIPEDA (Canada) Compliance Checklist
+
+PIPEDA is Canada's federal private-sector privacy law. Key obligations:
+
+```
+[ ] Privacy Policy page — accessible from footer on every page
+      Required disclosures:
+        - What personal data you collect (email, quiz history, payment info)
+        - Why you collect it (authentication, progress tracking, billing)
+        - Who you share it with (Supabase, Stripe, Vercel, Resend)
+        - How long you keep it (retention period)
+        - How users can access, correct, or delete their data
+        - Contact email for privacy requests (e.g. privacy@citizenready.ca)
+
+[ ] Data minimisation — only collect what you need
+      Do NOT store raw IP addresses; hash or omit them.
+
+[ ] Retention policy — define and enforce:
+      - Quiz attempt logs: keep 2 years, then anonymise
+      - Deleted accounts: purge within 30 days (automate with pg_cron)
+      - Stripe customer data: Stripe retains per their policy; reference it
+
+[ ] Data subject rights — provide a self-serve way to:
+      - Download their data (export JSON from /account/settings)
+      - Delete their account and all associated data
+
+[ ] Third-party processors — list in Privacy Policy:
+      Supabase (database, auth) · Stripe (payments) · Vercel (hosting)
+      Resend (transactional email) · PostHog or Vercel Analytics (analytics)
+
+[ ] Breach notification — if a breach occurs, notify affected users and
+      the Office of the Privacy Commissioner within 72 hours if there is a
+      "real risk of significant harm"
+```
+
+---
+
+### 22e — CASL (Canada's Anti-Spam Law) Checklist
+
+CASL applies to any commercial electronic message (CEM) sent to a Canadian recipient.
+
+```
+[ ] Transactional emails (password reset, receipt) — CASL exempt; send freely
+
+[ ] Marketing emails (newsletter, promotions) — require EXPRESS consent:
+      - Add a marketing opt-in checkbox on signup (unchecked by default)
+      - Store consent timestamp and source in the profiles table:
+          ALTER TABLE profiles ADD COLUMN marketing_consent_at timestamptz;
+      - Include a one-click unsubscribe link in every marketing email
+      - Honor unsubscribes within 10 business days
+
+[ ] Unsubscribe endpoint — create a Server Action / API route:
+      POST /api/unsubscribe?token=<signed-jwt>
+      Sets profiles.marketing_consent_at = NULL for that user
+
+[ ] Sender identification — every email must show:
+      - Your legal business name
+      - A mailing address (P.O. Box is acceptable)
+```
+
+---
+
+### 22f — GDPR / ePrivacy (EU visitors) Checklist
+
+If any EU residents use the app, GDPR applies regardless of where your servers are.
+
+```
+[ ] Lawful basis documented for each processing activity:
+      - Auth data         → Contract (needed to provide the service)
+      - Quiz progress     → Contract
+      - Analytics cookies → Consent
+      - Marketing email   → Consent
+
+[ ] Cookie banner fires BEFORE any non-essential cookies are set
+      (vanilla-cookieconsent blocks analytics until user accepts)
+
+[ ] Right to erasure ("right to be forgotten") — honor deletion requests
+      within 30 days; cascade deletes via ON DELETE CASCADE in schema
+
+[ ] Data Processing Agreements (DPA) signed with processors:
+      Supabase ✓ (DPA available in dashboard)
+      Stripe   ✓ (DPA in Stripe dashboard)
+      Vercel   ✓ (DPA available on request)
+      Resend   — check their current DPA availability
+
+[ ] Do NOT transfer data outside adequacy-decision countries without
+      Standard Contractual Clauses (SCCs); Supabase + Vercel both support
+      EU region deployments if needed
+
+[ ] Privacy Policy must include an EU-specific section listing:
+      - Data Controller name and contact
+      - DPO contact (only required if large-scale processing)
+      - Right to lodge a complaint with a supervisory authority
+```
+
+---
+
+### 22g — Accessibility (AODA / WCAG 2.1 AA)
+
+Ontario's AODA and the federal Accessible Canada Act require web accessibility.
+WCAG 2.1 Level AA is the practical standard.
+
+```
+[ ] All images have descriptive alt text (or alt="" for decorative images)
+[ ] Color contrast ratio ≥ 4.5:1 for normal text, ≥ 3:1 for large text
+      (Tailwind's default slate palette passes; verify with Colour Contrast Analyser)
+[ ] All interactive elements reachable and operable by keyboard alone
+[ ] Focus ring visible on all focusable elements (do not use outline:none globally)
+[ ] Forms have <label> elements linked via htmlFor / id (shadcn/ui does this)
+[ ] Quiz answer options are proper <button> elements (not div-based click targets)
+[ ] Error messages are announced to screen readers (use role="alert" or aria-live)
+[ ] Page <title> changes on route navigation (Next.js App Router handles this)
+[ ] Skip-to-main-content link as first focusable element in layout
+```
+
+Add skip link to `app/layout.tsx`:
+
+```tsx
+<a
+  href="#main-content"
+  className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2
+             focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-blue-700
+             focus:rounded focus:shadow"
+>
+  Skip to main content
+</a>
+```
+
+Then add `id="main-content"` to your `<main>` element.
+
+---
+
+### 22h — Privacy Policy & Terms of Use Pages
+
+Create two static pages:
+
+**`app/(marketing)/privacy/page.tsx`** — Privacy Policy
+**`app/(marketing)/terms/page.tsx`** — Terms of Use
+
+Minimum sections for the Privacy Policy:
+
+1. Who we are (legal name, contact email)
+2. What data we collect and why
+3. Cookies and tracking technologies (reference the banner)
+4. How we share data (processors list)
+5. How long we keep data (retention table)
+6. Your rights (access, correction, deletion, portability, objection)
+7. How to contact us / file a complaint
+8. Changes to this policy (effective date, how we notify users)
+
+Add both links to the site footer component.
+
+---
+
+### 22i — Environment Variables for Compliance Features
+
+Add to `.env.local` and Vercel dashboard:
+
+```bash
+# Cookie consent version — increment when policy changes to re-prompt users
+NEXT_PUBLIC_COOKIE_CONSENT_VERSION="1"
+
+# Privacy contact email (shown in Privacy Policy)
+NEXT_PUBLIC_PRIVACY_EMAIL="privacy@citizenready.ca"
+
+# Unsubscribe JWT secret (sign/verify unsubscribe tokens)
+UNSUBSCRIBE_JWT_SECRET="generate-with-openssl-rand-hex-32"
+```
+
+---
+
+## Output 23 — Future Improvements
 
 **Phase 2 — Content**
 - Import all 1,001 questions from your existing JSON bank (seed script)
@@ -1017,3 +1318,7 @@ INSERT INTO questions (topic_id, type, question_text, options, correct_answers, 
 ---
 
 Now paste this entire output into your `BLUEPRINT.md` file. Then come back here and we move to **Step 7 — running the SQL in Supabase.**
+
+---
+
+*Blueprint last updated: April 30, 2026*

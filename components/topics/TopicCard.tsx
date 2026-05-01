@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { startPracticeSession } from '@/actions/quiz'
 import { cn } from '@/lib/utils'
+import { getTopicIcon } from '@/lib/topics/topic-icons'
 
 interface TopicCardProps {
   id: string
@@ -31,6 +32,7 @@ export function TopicCard({
 }: TopicCardProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const { icon, bg } = getTopicIcon(slug)
 
   const handleStartPractice = () => {
     startTransition(() => {
@@ -62,18 +64,18 @@ export function TopicCard({
   return (
     <div
       className={cn(
-        'group flex flex-col rounded-xl border border-surface-border bg-surface-card p-5 shadow-sm transition-all duration-200',
+        'group flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200',
         'hover:scale-[1.02] hover:shadow-lg',
         isPending && 'pointer-events-none opacity-80'
       )}
     >
       <div className="mb-4 flex gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-red text-lg font-bold text-white">
-          {sortOrder}
+        <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl', bg)}>
+          <span role="img" aria-hidden>{icon}</span>
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-bold text-brand-navy">{name}</h3>
-          <p className="mt-1 line-clamp-3 text-sm text-[#424242]">
+          <p className="mt-1 line-clamp-3 text-sm text-gray-500">
             {description || 'Practice questions for this chapter.'}
           </p>
         </div>
@@ -90,7 +92,7 @@ export function TopicCard({
         )}
       </div>
 
-      <div className="mt-auto flex items-center justify-end border-t border-surface-border pt-4">
+      <div className="mt-auto flex items-center justify-end border-t border-gray-100 pt-4">
         <Button
           variant="ghost"
           className="h-auto p-0 font-semibold text-brand-red hover:bg-transparent hover:text-brand-red-dark"

@@ -1,5 +1,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "vanilla-cookieconsent/dist/cookieconsent.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,5 +99,16 @@
   }
   a:not([class]) {
     @apply text-brand-red hover:text-brand-red-dark;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .complete-questions-catalog {
+    background: white !important;
+    color: black !important;
   }
 }

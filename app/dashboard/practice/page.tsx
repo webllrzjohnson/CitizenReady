@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent } from '@/components/ui/card'
 import { TopicCard } from '@/components/topics/TopicCard'
+import { StudyPageHero } from '@/components/study/StudyPageHero'
+import { BookOpen } from 'lucide-react'
 import type { Topic } from '@/types'
 
 export const metadata = {
@@ -76,15 +77,15 @@ export default async function PracticePage() {
   }))
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Practice by Topic</h1>
-        <p className="text-muted-foreground">
-          Choose a topic to practice. Each session contains 10 random questions.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-8 pb-8">
+      <StudyPageHero
+        icon={BookOpen}
+        eyebrow="Practice"
+        title="Practice by topic"
+        description="Choose a chapter to practice. Each session draws 10 random questions — work through topics until each one shows a strong best score."
+      />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {topicsWithStats.map((topic) => (
           <TopicCard
             key={topic.id}
@@ -101,11 +102,9 @@ export default async function PracticePage() {
       </div>
 
       {topicsWithStats.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No topics available yet.</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-gray-200 bg-white py-12 text-center shadow-sm">
+          <p className="text-gray-400">No topics available yet.</p>
+        </div>
       )}
     </div>
   )

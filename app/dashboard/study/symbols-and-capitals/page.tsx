@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { ArrowLeft, Flag, Sparkles } from 'lucide-react'
+import { ArrowLeft, Flag, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -57,81 +56,96 @@ export default function StudySymbolsCapitalsPage() {
         description="Official emblems plus design notes and trivia for flags across Canada — not just pictures and names."
       />
 
-      <div className="space-y-6">
-        {STUDY_NATIONAL_SYMBOL_SECTIONS.map((section) => (
-          <Card key={section.heading} className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">{section.heading}</CardTitle>
-            </CardHeader>
-            <CardContent>
+      {/* ── National symbols ──────────────────────────────────── */}
+      <div className="space-y-4">
+        {STUDY_NATIONAL_SYMBOL_SECTIONS.map((section, idx) => (
+          <div
+            key={section.heading}
+            className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+          >
+            <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/60 px-6 py-4">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-navy text-[11px] font-bold text-white">
+                {String(idx + 1).padStart(2, '0')}
+              </span>
+              <h2 className="text-base font-semibold text-gray-900">{section.heading}</h2>
+            </div>
+            <div className="px-6 py-4">
               {section.imageKey ? (
                 <StudyFlagFigure name="Canada" imageKey={section.imageKey} size="lg" />
               ) : null}
               <BulletList items={section.bullets} />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 
-      <Card className="shadow-sm ring-1 ring-brand-red/10">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-brand-red" aria-hidden />
-            Exam-style notes & trivia
-          </CardTitle>
-          <CardDescription>Shortcuts that confuse people on drills — skim before a mock test.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* ── Exam-style notes ──────────────────────────────────── */}
+      <div className="flex gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/80 p-5">
+        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-amber-900">Exam-style notes &amp; trivia</p>
+            <p className="mt-0.5 text-xs text-amber-700">Shortcuts that confuse people on drills — skim before a mock test.</p>
+          </div>
           <BulletList items={STUDY_SYMBOLS_EXAM_NOTES} />
-          <p className="mt-6 rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
-            Canada&apos;s federal capital is <strong className="text-foreground">Ottawa</strong>, located in the province of Ontario.
+          <p className="rounded-xl bg-amber-100/70 px-4 py-3 text-sm text-amber-900">
+            Canada&apos;s federal capital is <strong className="font-semibold">Ottawa</strong>, located in the province of Ontario.
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Provincial & territorial flags</CardTitle>
-          <CardDescription>What distinguishes each banner — visuals, heraldry, and story beats likely to stick in memory.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8 px-6 pb-8 pt-2">
-          <p className="-mt-1 text-xs text-muted-foreground">
+      {/* ── Provincial & territorial flags ────────────────────── */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-100 px-6 pb-4 pt-6">
+          <h2 className="text-lg font-semibold text-gray-900">Provincial &amp; territorial flags</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            What distinguishes each banner — visuals, heraldry, and story beats likely to stick in memory.
+          </p>
+          <p className="mt-2 text-xs text-gray-400">
             Flag illustrations are Wikimedia Commons SVGs bundled for offline-friendly study — colours may differ slightly from official specimens.
           </p>
-          {flagsSorted.map((row) => (
-            <section key={row.name} className="border-b border-border/60 pb-8 last:border-0 last:pb-0">
-              <h3 className="mb-3 text-base font-semibold text-foreground">{row.name}</h3>
+        </div>
+        <div className="divide-y divide-gray-100">
+          {flagsSorted.map((row, idx) => (
+            <div key={row.name} className="px-6 py-6">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-navy text-[11px] font-bold text-white">
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+                <h3 className="text-base font-semibold text-gray-800">{row.name}</h3>
+              </div>
               <StudyFlagFigure name={row.name} imageKey={row.imageKey} />
               <BulletList items={row.bullets} />
-            </section>
+            </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Provincial & territorial capitals</CardTitle>
-          <CardDescription>Know both names cold — questions often pair jurisdiction with capital.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0 sm:p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-6">Province or territory</TableHead>
-                <TableHead className="pr-6 text-right">Capital city</TableHead>
+      {/* ── Capitals table ────────────────────────────────────── */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-100 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-900">Provincial &amp; territorial capitals</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Know both names cold — questions often pair jurisdiction with capital.
+          </p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="pl-6">Province or territory</TableHead>
+              <TableHead className="pr-6 text-right">Capital city</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {capitalsSorted.map((row) => (
+              <TableRow key={row.name} className="group">
+                <TableCell className="pl-6 font-medium text-gray-900">{row.name}</TableCell>
+                <TableCell className="pr-6 text-right font-medium text-brand-navy">{row.capital}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {capitalsSorted.map((row) => (
-                <TableRow key={row.name}>
-                  <TableCell className="pl-6 font-medium">{row.name}</TableCell>
-                  <TableCell className="pr-6 text-right text-muted-foreground">{row.capital}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       <p className="text-center text-xs text-muted-foreground">
         Symbols are summarized here — verify details with{' '}

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, Users } from 'lucide-react'
+import { ArrowLeft, Users, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { KeyPersonCard } from '@/components/study/KeyPersonCard'
 import { StudyPageHero } from '@/components/study/StudyPageHero'
@@ -18,21 +18,31 @@ export default function StudyKeyPeoplePage() {
       <StudyPageHero
         icon={Users}
         title="Important people"
-        description="Profiles similar in breadth to companion citizenship sites — explorers, Confederation figures, soldiers, scientists, athletes, and human-rights pioneers. Sorted A–Z by family name for quick lookup."
+        description="Explorers, Confederation figures, soldiers, scientists, athletes, and human-rights pioneers sorted A–Z by family name for quick lookup."
       />
 
-      <p className="text-sm text-muted-foreground">
-        Portraits are photographs, paintings, or monuments from{' '}
-        <a
-          href="https://commons.wikimedia.org/"
-          className="font-medium text-foreground underline underline-offset-2 hover:text-brand-red"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Wikimedia Commons
-        </a>{' '}
-        (public domain or CC-licensed; licence varies by file). Where no suitable open image exists, a placeholder is shown instead of a misleading substitute.
-      </p>
+      {/* Count + attribution note */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-brand-navy px-3 py-1 text-xs font-bold text-white">
+            {STUDY_KEY_PEOPLE_SORTED.length} profiles
+          </span>
+          <span className="text-sm text-gray-500">sorted A–Z by family name</span>
+        </div>
+        <p className="text-xs text-gray-400">
+          Portraits are public-domain or CC-licensed photos from{' '}
+          <a
+            href="https://commons.wikimedia.org/"
+            className="font-medium text-gray-600 underline underline-offset-2 hover:text-brand-red"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Wikimedia Commons
+            <ExternalLink className="ml-0.5 inline h-3 w-3 opacity-60" aria-hidden />
+          </a>
+          {' '}— a placeholder is shown where no open image exists.
+        </p>
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         {STUDY_KEY_PEOPLE_SORTED.map((person) => (

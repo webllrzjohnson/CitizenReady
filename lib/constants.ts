@@ -2,9 +2,10 @@ export const APP_NAME = 'Canadian Citizenship Exam Prep'
 export const APP_DESCRIPTION = 'Prepare for your Canadian citizenship exam with practice questions and mock exams'
 
 export const EXAM_CONFIG = {
+  /** Full 20-question exam — premium subscribers and admins only. */
   TOTAL_QUESTIONS: 20,
-  /** Shortened exam for unregistered guests (registered users get TOTAL_QUESTIONS). */
-  GUEST_TOTAL_QUESTIONS: 10,
+  /** 10-question exam for guests and free (non-premium) registered users. */
+  FREE_TOTAL_QUESTIONS: 10,
   TIME_LIMIT_MINUTES: 30,
   PASSING_SCORE: 75,
 } as const

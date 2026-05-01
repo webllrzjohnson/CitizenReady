@@ -30,8 +30,8 @@ export function StartExamButton() {
             localStorage.getItem(GUEST_EXAM_USED_KEY) === '1'
           ) {
             toast({
-              title: 'Free mock exam already completed',
-              description: 'Create a free account for unlimited mock exams and saved progress.',
+              title: 'Guest preview already used',
+              description: 'Sign up free for a 10-question exam, or upgrade to Plus for the full 20-question mock exam.',
             })
             setIsStarting(false)
             return

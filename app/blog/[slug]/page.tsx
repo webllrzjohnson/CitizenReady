@@ -9,6 +9,10 @@ import { BlogRenderer } from '@/components/blog/BlogRenderer'
 import { plainTextFromTiptap } from '@/lib/blog/plain-text'
 import { ChevronRight } from 'lucide-react'
 import type { Json } from '@/types/database.types'
+import { UpgradeCard } from '@/components/marketing/UpgradeBanner'
+import { getAdSettings } from '@/lib/ad-settings'
+import { AdUnit } from '@/components/ads/AdUnit'
+import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
 
 type Params = Promise<{ slug: string }>
 
@@ -117,6 +121,8 @@ export default async function BlogPostPage({ params }: { params: Params }) {
 
   const contentObj = (post.content ?? {}) as Record<string, unknown>
 
+  const { adsEnabled, clientId } = await getAdSettings()
+
   const { data: relatedRaw } = await fromBlogPosts(supabase)
     .select('title, slug, excerpt, cover_image, published_at')
     .eq('status', 'published')
@@ -134,7 +140,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
     }[]
 
   return (
-    <article className="min-h-screen bg-surface-page pb-16">
+    <article className="min-h-screen bg-[#f8f7f5] pb-16">
       {post.cover_image ? (
         <div className="relative aspect-video w-full max-h-[min(56vh,560px)] bg-muted">
           <Image
@@ -178,7 +184,24 @@ export default async function BlogPostPage({ params }: { params: Params }) {
 
               <BlogRenderer key={post.id} content={contentObj} />
 
+              {/* Rectangle ad after the first part of the article */}
+              <div className="my-8">
+                {adsEnabled ? (
+                  <AdUnit slot="blog-post-mid" clientId={clientId} adsEnabled={adsEnabled} format="rectangle" />
+                ) : (
+                  <AdPlaceholder format="rectangle" />
+                )}
+              </div>
+
               <div className="mt-12 border-t border-surface-border pt-8">
+                {/* Leaderboard ad before Back to Blog */}
+                <div className="mb-8">
+                  {adsEnabled ? (
+                    <AdUnit slot="blog-post-bottom" clientId={clientId} adsEnabled={adsEnabled} format="leaderboard" />
+                  ) : (
+                    <AdPlaceholder format="leaderboard" />
+                  )}
+                </div>
                 <Link
                   href="/blog"
                   className="text-sm font-semibold text-brand-red hover:text-brand-red-dark"
@@ -241,18 +264,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
               >
                 View all posts →
               </Link>
-              <div className="mt-8 rounded-xl border border-surface-border bg-surface-card p-5">
-                <p className="text-sm font-semibold text-brand-navy">Preparing for your test?</p>
-                <p className="mt-2 text-sm text-gray-600">
-                  Practise citizenship topics and mock exams on CitizenReady.
-                </p>
-                <Link
-                  href="/"
-                  className="mt-4 inline-block text-sm font-semibold text-brand-red hover:text-brand-red-dark"
-                >
-                  Get started
-                </Link>
-              </div>
+              <UpgradeCard />
             </div>
           </aside>
         </div>

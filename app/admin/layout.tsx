@@ -28,6 +28,11 @@ export default async function AdminLayout({
     redirect('/dashboard')
   }
 
+  const { count: unreadCount } = await supabase
+    .from('contact_messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_read', false)
+
   return (
     <div className="flex min-h-screen">
       <aside className="w-64 border-r bg-muted/40 p-6">
@@ -37,7 +42,7 @@ export default async function AdminLayout({
           </Link>
         </div>
 
-        <AdminNav />
+        <AdminNav unreadContactCount={unreadCount ?? 0} />
       </aside>
 
       <main className="flex-1 p-8">{children}</main>

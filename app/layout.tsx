@@ -1,8 +1,12 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
+import Script from 'next/script'
 import { cn } from '@/lib/utils'
 import { Navbar } from '@/components/layout/Navbar'
+import { Footer } from '@/components/layout/Footer'
+import { CookieBanner } from '@/components/cookies/CookieBanner'
 import { Toaster } from 'sonner'
+import { getAdSettings } from '@/lib/ad-settings'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -24,17 +28,42 @@ export const metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { adsEnabled, clientId } = await getAdSettings()
+  const loadAdScript = adsEnabled && clientId.length > 0
+
   return (
     <html lang="en" className={cn('font-sans', inter.variable)}>
+      <head>
+        {loadAdScript && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-brand-navy focus:shadow"
+        >
+          Skip to main content
+        </a>
         <Navbar />
-        {children}
-        <Toaster />
+        <main id="main-content">
+          {children}
+        </main>
+        <Footer />
+        <CookieBanner />
+        <div className="print:hidden">
+          <Toaster />
+        </div>
       </body>
     </html>
   )

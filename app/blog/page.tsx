@@ -4,6 +4,11 @@ import { createPublicSupabaseClient } from '@/lib/supabase/public'
 import { fromBlogPosts } from '@/lib/supabase/blog-from'
 import { format } from 'date-fns'
 import type { Metadata } from 'next'
+import { BookOpen, Newspaper, Zap } from 'lucide-react'
+import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
+import { getAdSettings } from '@/lib/ad-settings'
+import { AdUnit } from '@/components/ads/AdUnit'
+import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
 
 export const metadata: Metadata = {
   title: 'Blog & Updates',
@@ -58,19 +63,62 @@ export default async function BlogListingPage() {
     author: authorMap.get(r.author_id) ?? null,
   }))
 
-  return (
-    <div className="min-h-screen bg-surface-page">
-      <div className="container mx-auto max-w-5xl px-4 py-12 md:py-16">
-        <header className="mb-10 text-center md:mb-14">
-          <h1 className="text-4xl font-bold text-brand-navy md:text-5xl">Blog &amp; Updates</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-            Tips, guides, and updates for citizenship test preparation
-          </p>
-        </header>
+  const { adsEnabled, clientId } = await getAdSettings()
 
-        <div className="grid gap-8 md:grid-cols-2">
+  return (
+    <div className="min-h-screen bg-[#f8f7f5]">
+      {/* Hero */}
+      <div className="relative overflow-hidden border-b border-gray-200 bg-gradient-to-br from-brand-navy via-[#1a2a4a] to-[#0f1e35] text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(211,47,47,0.15),transparent_60%)]" />
+        <div className="container relative mx-auto max-w-5xl px-4 py-12 md:py-16">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-brand-red/20 px-3 py-1.5 ring-1 ring-brand-red/30">
+            <Newspaper className="h-3.5 w-3.5 text-brand-red" aria-hidden />
+            <span className="text-xs font-semibold uppercase tracking-wide text-brand-red">
+              CitizenReady Blog
+            </span>
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+            Tips, guides &amp; <span className="text-brand-red">updates</span>
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70">
+            Study strategies, citizenship test insights, and guides to help you prepare with confidence.
+          </p>
+        </div>
+      </div>
+
+      {/* Social proof strip */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="container mx-auto max-w-5xl px-4 py-3">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <BookOpen className="h-3.5 w-3.5 text-brand-navy" />
+              Study tips from real applicants
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-brand-red" />
+              Updated for 2026 test format
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto max-w-5xl px-4 py-10 md:py-14">
+        <div className="mb-8">
+          <UpgradeBanner />
+        </div>
+
+        {/* Leaderboard ad below the featured upgrade banner */}
+        <div className="mb-8">
+          {adsEnabled ? (
+            <AdUnit slot="blog-list-leaderboard" clientId={clientId} adsEnabled={adsEnabled} format="leaderboard" />
+          ) : (
+            <AdPlaceholder format="leaderboard" />
+          )}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
           {posts.length === 0 ? (
-            <p className="col-span-full text-center text-muted-foreground">
+            <p className="col-span-full text-center text-gray-500">
               No posts yet. Check back soon.
             </p>
           ) : (
@@ -83,10 +131,10 @@ export default async function BlogListingPage() {
               return (
                 <article
                   key={post.id}
-                  className="flex flex-col overflow-hidden rounded-xl border border-surface-border bg-surface-card shadow-sm transition-shadow hover:shadow-md"
+                  className="flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <Link href={`/blog/${post.slug}`} className="block">
-                    <div className="relative aspect-video w-full bg-muted">
+                    <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-gray-100">
                       {post.cover_image ? (
                         <Image
                           src={post.cover_image}
@@ -96,35 +144,46 @@ export default async function BlogListingPage() {
                           sizes="(max-width: 768px) 100vw, 50vw"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                          No cover image
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-navy to-brand-navy-light">
+                          <span className="text-4xl" aria-hidden>🍁</span>
                         </div>
                       )}
                     </div>
                   </Link>
                   <div className="flex flex-1 flex-col p-6">
-                    <time className="text-sm text-gray-500">{pub}</time>
+                    <time className="text-xs text-gray-400">{pub}</time>
                     <Link href={`/blog/${post.slug}`}>
-                      <h2 className="mt-2 text-xl font-bold text-brand-navy hover:underline md:text-2xl">
+                      <h2 className="mt-2 text-xl font-bold text-brand-navy hover:text-brand-red transition-colors md:text-2xl">
                         {post.title}
                       </h2>
                     </Link>
                     {post.excerpt ? (
-                      <p className="mt-3 line-clamp-2 flex-1 text-gray-600 leading-relaxed">
+                      <p className="mt-3 line-clamp-2 flex-1 text-sm leading-relaxed text-gray-600">
                         {post.excerpt}
                       </p>
                     ) : null}
-                    <p className="mt-4 text-sm text-gray-500">By {author}</p>
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="mt-4 text-sm font-semibold text-brand-red hover:text-brand-red-dark"
-                    >
-                      Read More →
-                    </Link>
+                    <div className="mt-4 flex items-center justify-between">
+                      <p className="text-xs text-gray-400">By {author}</p>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="text-sm font-semibold text-brand-red hover:text-brand-red-dark"
+                      >
+                        Read More →
+                      </Link>
+                    </div>
                   </div>
                 </article>
               )
             })
+          )}
+        </div>
+
+        {/* Rectangle ad at the bottom of the recent posts grid */}
+        <div className="mt-10">
+          {adsEnabled ? (
+            <AdUnit slot="blog-list-rectangle" clientId={clientId} adsEnabled={adsEnabled} format="rectangle" />
+          ) : (
+            <AdPlaceholder format="rectangle" />
           )}
         </div>
       </div>
