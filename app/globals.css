@@ -1,5 +1,3 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @import "vanilla-cookieconsent/dist/cookieconsent.css";
 @tailwind base;
 @tailwind components;
@@ -76,13 +74,16 @@
     --sidebar-border: 0 0% 100% / 10%;
     --sidebar-ring: 348 82% 51%;
   }
+
   .theme {
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
   }
+
   * {
     @apply border-border;
   }
+
   html {
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -143,67 +144,50 @@
 }
 
 @layer components {
+
   /* PRIMARY BUTTON — red pill */
   .btn-primary {
-    @apply bg-[#E8192C] text-white font-semibold 
-           px-6 py-3 rounded-full 
-           hover:bg-[#C41020] 
-           transition-colors duration-200
-           inline-flex items-center justify-center
-           text-sm tracking-wide;
+    @apply bg-[#E8192C] text-white font-semibold px-6 py-3 rounded-full hover:bg-[#C41020] transition-colors duration-200 inline-flex items-center justify-center text-sm tracking-wide;
   }
 
   /* SECONDARY BUTTON — outlined red pill */
   .btn-secondary {
-    @apply bg-white text-[#E8192C] font-semibold
-           border border-[#E8192C]
-           px-6 py-3 rounded-full
-           hover:bg-[#FFF0F0]
-           transition-colors duration-200
-           inline-flex items-center justify-center
-           text-sm tracking-wide;
+    @apply bg-white text-[#E8192C] font-semibold border border-[#E8192C] px-6 py-3 rounded-full hover:bg-[#FFF0F0] transition-colors duration-200 inline-flex items-center justify-center text-sm tracking-wide;
   }
 
   /* CARD */
   .card {
-    @apply bg-white rounded-[12px] 
-           border border-[#E0E0E0]
-           shadow-[0_2px_8px_rgba(0,0,0,0.08)]
-           hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)]
-           transition-shadow duration-200;
+    @apply bg-white rounded-[12px] border border-[#E0E0E0] transition-shadow duration-200;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   }
 
   /* SECTION HEADING */
   .section-heading {
-    @apply text-[28px] font-bold text-[#1B2A4A] 
-           leading-tight tracking-tight;
+    @apply text-[28px] font-bold text-[#1B2A4A] leading-tight tracking-tight;
   }
 
   /* SECTION SUBHEADING */
   .section-subheading {
-    @apply text-[16px] text-[#6B7280] 
-           font-normal leading-relaxed mt-2;
+    @apply text-[16px] text-[#6B7280] font-normal leading-relaxed mt-2;
   }
 
   /* BADGE — red */
   .badge-red {
-    @apply bg-[#E8192C] text-white 
-           text-xs font-semibold 
-           px-2.5 py-1 rounded-full;
+    @apply bg-[#E8192C] text-white text-xs font-semibold px-2.5 py-1 rounded-full;
   }
 
   /* BADGE — grey */
   .badge-grey {
-    @apply bg-[#F0F0F0] text-[#6B7280]
-           text-xs font-semibold
-           px-2.5 py-1 rounded-full;
+    @apply bg-[#F0F0F0] text-[#6B7280] text-xs font-semibold px-2.5 py-1 rounded-full;
   }
 
   /* BADGE — navy */
   .badge-navy {
-    @apply bg-[#1B2A4A] text-white
-           text-xs font-semibold
-           px-2.5 py-1 rounded-full;
+    @apply bg-[#1B2A4A] text-white text-xs font-semibold px-2.5 py-1 rounded-full;
   }
 }
 
