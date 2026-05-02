@@ -16,14 +16,17 @@
       "name": "Every 15 minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [200, 300]
+      "position": [
+        200,
+        300
+      ]
     },
     {
       "parameters": {
         "authentication": "oAuth2",
         "resource": "fileFolder",
         "searchMethod": "query",
-        "queryString": "='REPLACE_QUEUE_FOLDER_ID' in parents and mimeType = 'application/json' and trashed = false",
+        "queryString": "='1-Vm5cqZDkEicAlGck0OYPOx04lY5MV3A' in parents and mimeType = 'application/json' and trashed = false",
         "returnAll": true,
         "filter": {},
         "options": {}
@@ -32,7 +35,10 @@
       "name": "List queued JSON files",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [440, 300],
+      "position": [
+        440,
+        300
+      ],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "",
@@ -49,7 +55,10 @@
       "name": "SplitInBatches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -69,7 +78,10 @@
       "name": "Keep Drive file id",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [920, 300]
+      "position": [
+        920,
+        300
+      ]
     },
     {
       "parameters": {
@@ -87,7 +99,10 @@
       "name": "Download JSON",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [1160, 300],
+      "position": [
+        1160,
+        300
+      ],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "",
@@ -103,17 +118,28 @@
       "name": "Insert into Supabase",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1400, 300]
+      "position": [
+        1400,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
           "conditions": [
             {
               "id": "c1",
-              "operator": { "type": "boolean", "operation": "equals" },
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
               "leftValue": "={{ $json.inserted }}",
               "rightValue": true
             }
@@ -125,7 +151,10 @@
       "name": "Inserted?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1640, 300]
+      "position": [
+        1640,
+        300
+      ]
     },
     {
       "parameters": {
@@ -145,7 +174,7 @@
         "folderId": {
           "__rl": true,
           "mode": "list",
-          "value": "REPLACE_POSTED_FOLDER_ID"
+          "value": "1-PJqU7bP9u3ZHNNcFNpuLYRF5besFpKW"
         },
         "options": {}
       },
@@ -153,7 +182,10 @@
       "name": "Move to posted folder",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [1920, 200],
+      "position": [
+        1920,
+        200
+      ],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "",
@@ -260,5 +292,7 @@
     }
   },
   "pinData": {},
-  "meta": { "templateCredsSetupCompleted": false }
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
 }

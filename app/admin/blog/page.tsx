@@ -69,9 +69,14 @@ export default async function AdminBlogListPage() {
           <h1 className="text-3xl font-bold tracking-tight">Blog Posts</h1>
           <p className="mt-1 text-muted-foreground">Create and manage your blog content</p>
         </div>
-        <Button className="bg-brand-red text-white hover:bg-brand-red-dark" asChild>
-          <Link href="/admin/blog/new">+ New Post</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/blog/ai-draft">AI draft</Link>
+          </Button>
+          <Button className="bg-brand-red text-white hover:bg-brand-red-dark" asChild>
+            <Link href="/admin/blog/new">+ New Post</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-md border bg-card">

@@ -6,6 +6,20 @@ import { BlogPostSchema } from '@/lib/validations'
 import type { Json } from '@/types/database.types'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
+
+const AiBlogDraftSchema = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(300),
+  context: z.string().trim().min(1, 'Context is required').max(60_000),
+  cover_image_url: z
+    .string()
+    .trim()
+    .optional()
+    .transform((s) => (s === '' ? undefined : s))
+    .refine((s) => s === undefined || /^https:\/\//i.test(s), {
+      message: 'Cover image must be an https URL',
+    }),
+})
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -277,4 +291,65 @@ export async function unpublishPost(id: string) {
   revalidatePath('/blog')
   revalidatePath('/admin/blog')
   return { success: true as const }
+}
+
+export async function queueAiBlogDraft(formData: FormData) {
+  const adminCheck = await requireAdmin()
+  if ('error' in adminCheck) {
+    return { error: adminCheck.error }
+  }
+
+  const webhookUrl = String(process.env.N8N_BLOG_DRAFT_WEBHOOK_URL ?? '').trim()
+  if (!webhookUrl) {
+    return {
+      error:
+        'N8N_BLOG_DRAFT_WEBHOOK_URL is not configured. Add it to your server environment.',
+    }
+  }
+
+  const parsed = AiBlogDraftSchema.safeParse({
+    title: String(formData.get('title') ?? ''),
+    context: String(formData.get('context') ?? ''),
+    cover_image_url: String(formData.get('cover_image_url') ?? ''),
+  })
+
+  if (!parsed.success) {
+    const msg =
+      parsed.error.flatten().formErrors[0] ??
+      parsed.error.errors[0]?.message ??
+      'Validation failed'
+    return { error: msg }
+  }
+
+  const { title, context, cover_image_url } = parsed.data
+  const body: { title: string; context: string; cover_image_url?: string } = {
+    title,
+    context,
+  }
+  if (cover_image_url) {
+    body.cover_image_url = cover_image_url
+  }
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(180_000),
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      return {
+        error:
+          text.trim().slice(0, 500) ||
+          `Automation returned ${res.status} ${res.statusText}`.trim(),
+      }
+    }
+
+    return { success: true as const }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Request failed'
+    return { error: message }
+  }
 }

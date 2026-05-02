@@ -9,6 +9,7 @@ const staticNavItems = [
   { label: 'Questions', href: '/admin/questions' },
   { label: 'Topics', href: '/admin/topics' },
   { label: 'Blog Posts', href: '/admin/blog' },
+  { label: 'AI blog draft', href: '/admin/blog/ai-draft' },
   { label: 'Users', href: '/admin/users' },
   { label: 'Ad Settings', href: '/admin/settings' },
 ]
@@ -37,7 +38,10 @@ export function AdminNav({ unreadContactCount = 0 }: AdminNavProps) {
         const isActive =
           item.href === '/admin'
             ? pathname === '/admin'
-            : pathname.startsWith(item.href)
+            : item.href === '/admin/blog'
+              ? pathname.startsWith('/admin/blog') &&
+                !pathname.startsWith('/admin/blog/ai-draft')
+              : pathname.startsWith(item.href)
 
         return (
           <Link
