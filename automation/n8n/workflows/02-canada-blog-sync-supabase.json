@@ -219,6 +219,7 @@
     },
     "SplitInBatches": {
       "main": [
+        [],
         [
           {
             "node": "Keep Drive file id",
