@@ -1,6 +1,6 @@
 /**
- * n8n Code node — run once per item, after "LLM (OpenAI or Claude)".
- * Input item 0: { llmJsonText } from call-llm-openai-or-claude.js
+ * n8n Code node — run once per item, after "LLM (Claude)".
+ * Input item 0: { llmJsonText } from call-llm-claude.js
  * Form fields: node FORM_NODE (webhook normalize).
  */
 const FORM_NODE = 'Normalize input';

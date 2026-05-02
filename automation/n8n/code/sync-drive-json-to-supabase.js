@@ -17,11 +17,25 @@ if (!supabaseUrl || !key || !authorId) {
   throw new Error('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CITIZENREADY_BLOG_AUTHOR_ID in n8n variables');
 }
 
-const bin = items[0].binary?.data;
-if (!bin?.data) throw new Error('Expected binary.data from Drive download');
+/** With binaryDataMode: filesystem, binary.data is not raw base64 — use the helper. */
+let text;
+if (typeof this.helpers.getBinaryDataBuffer === 'function') {
+  const buf = await this.helpers.getBinaryDataBuffer(0, 'data');
+  if (!buf?.length) throw new Error('Empty binary from Drive download');
+  text = buf.toString('utf8');
+} else {
+  const bin = items[0].binary?.data;
+  if (!bin?.data) throw new Error('Expected binary.data from Drive download');
+  text = Buffer.from(bin.data, 'base64').toString('utf8');
+}
 
-const text = Buffer.from(bin.data, 'base64').toString('utf8');
-const draft = JSON.parse(text);
+let draft;
+try {
+  draft = JSON.parse(text);
+} catch (e) {
+  const preview = text.slice(0, 120).replace(/\s+/g, ' ');
+  throw new Error(`Drive file is not valid JSON (check file is UTF-8 blog draft). Preview: ${preview}`);
+}
 
 const slug = String(draft.slug || '').trim();
 if (!slug) throw new Error('Draft missing slug');
