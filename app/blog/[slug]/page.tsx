@@ -11,14 +11,15 @@ import { getAdSettings } from '@/lib/ad-settings'
 import { AdUnit } from '@/components/ads/AdUnit'
 import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
 import { getPostBySlug, getRelatedPosts, getProfileById, getPublishedSlugs } from '@/lib/blog/queries'
+export const dynamic = 'force-dynamic'
 
 type Params = Promise<{ slug: string }>
-
+/*
 export async function generateStaticParams() {
   const slugs = await getPublishedSlugs()
   return slugs.map((row) => ({ slug: row.slug }))
 }
-
+*/
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params
   const post = await getPostBySlug(slug)

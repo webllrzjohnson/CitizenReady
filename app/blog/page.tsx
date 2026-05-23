@@ -8,6 +8,7 @@ import { getAdSettings } from '@/lib/ad-settings'
 import { AdUnit } from '@/components/ads/AdUnit'
 import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
 import { getPublishedPosts, getProfilesByIds } from '@/lib/blog/queries'
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Blog & Updates',
