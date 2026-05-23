@@ -1,7 +1,5 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { createPublicSupabaseClient } from '@/lib/supabase/public'
-import { fromBlogPosts } from '@/lib/supabase/blog-from'
 import { format } from 'date-fns'
 import type { Metadata } from 'next'
 import { BookOpen, Newspaper, Zap } from 'lucide-react'
@@ -9,57 +7,23 @@ import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
 import { getAdSettings } from '@/lib/ad-settings'
 import { AdUnit } from '@/components/ads/AdUnit'
 import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
+import { getPublishedPosts, getProfilesByIds } from '@/lib/blog/queries'
 
 export const metadata: Metadata = {
   title: 'Blog & Updates',
   description: 'Tips and guides for Canadian citizenship test preparation.',
 }
 
-type PostCard = {
-  id: string
-  title: string
-  slug: string
-  excerpt: string | null
-  cover_image: string | null
-  published_at: string | null
-  author: { full_name: string | null; email: string } | null
-}
-
 export default async function BlogListingPage() {
-  const supabase = createPublicSupabaseClient()
-
-  const { data: raw, error } = await fromBlogPosts(supabase)
-    .select(
-      'id, title, slug, excerpt, cover_image, published_at, author_id',
-    )
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  const rows =
-    (raw ?? []) as unknown as {
-      id: string
-      title: string
-      slug: string
-      excerpt: string | null
-      cover_image: string | null
-      published_at: string | null
-      author_id: string
-    }[]
+  const rows = await getPublishedPosts()
 
   const authorIds = [...new Set(rows.map((r) => r.author_id))]
-  const { data: authors } =
-    authorIds.length > 0
-      ? await supabase.from('profiles').select('id, full_name, email').in('id', authorIds)
-      : { data: [] as { id: string; full_name: string | null; email: string }[] }
+  const authors = await getProfilesByIds(authorIds)
+  const authorMap = new Map(authors.map((a) => [a.id, a]))
 
-  const authorMap = new Map((authors ?? []).map((a) => [a.id, a]))
-
-  const posts: PostCard[] = rows.map((r) => ({
+  const posts = rows.map((r) => ({
     ...r,
+    content: typeof r.content === 'string' ? JSON.parse(r.content) : r.content,
     author: authorMap.get(r.author_id) ?? null,
   }))
 
@@ -106,7 +70,6 @@ export default async function BlogListingPage() {
           <UpgradeBanner />
         </div>
 
-        {/* Leaderboard ad below the featured upgrade banner */}
         <div className="mb-8">
           {adsEnabled ? (
             <AdUnit slot="blog-list-leaderboard" clientId={clientId} adsEnabled={adsEnabled} format="leaderboard" />
@@ -179,7 +142,6 @@ export default async function BlogListingPage() {
           )}
         </div>
 
-        {/* Rectangle ad at the bottom of the recent posts grid */}
         <div className="mt-10">
           {adsEnabled ? (
             <AdUnit slot="blog-list-rectangle" clientId={clientId} adsEnabled={adsEnabled} format="rectangle" />
