@@ -9,6 +9,8 @@ import { getTopicIcon } from '@/lib/topics/topic-icons'
 import { cn } from '@/lib/utils'
 import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const session = await getSession()
 

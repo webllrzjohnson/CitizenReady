@@ -2,6 +2,8 @@ import { getSession } from '@/lib/auth/session'
 import { DashboardSidebar } from './DashboardSidebar'
 import { GuestBanner } from '@/components/layout/GuestBanner'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({
   children,
 }: {
