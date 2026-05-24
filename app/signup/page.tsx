@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { SignupSchema, type SignupInput } from '@/lib/validations'
+import { signup } from '@/actions/auth'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,34 +19,12 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setSuccess(false)
     setIsLoading(true)
 
-    const result = SignupSchema.safeParse({
-      full_name: fullName,
-      email,
-      password,
-    })
+    const result = await signup({ email, password, full_name: fullName })
 
     if (!result.success) {
-      setError(result.error.errors[0].message)
-      setIsLoading(false)
-      return
-    }
-
-    const supabase = createClient()
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: result.data.email,
-      password: result.data.password,
-      options: {
-        data: {
-          full_name: result.data.full_name,
-        },
-      },
-    })
-
-    if (signUpError) {
-      setError(signUpError.message)
+      setError(result.error ?? 'Signup failed')
       setIsLoading(false)
       return
     }
@@ -61,20 +38,13 @@ export default function SignupPage() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Check your email</CardTitle>
-            <CardDescription>
-              We sent you a confirmation link. Click it to complete your signup.
-            </CardDescription>
+            <CardTitle>Account created!</CardTitle>
+            <CardDescription>You can now log in with your credentials.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-md bg-green-50 p-4 text-sm text-green-800">
-              Check your email to confirm your account.
-            </div>
-          </CardContent>
           <CardFooter>
             <Link href="/login" className="w-full">
               <Button variant="outline" className="w-full">
-                Back to login
+                Go to login
               </Button>
             </Link>
           </CardFooter>

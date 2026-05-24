@@ -1,181 +1,103 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { QuestionSchema } from '@/lib/validations'
 import { revalidatePath } from 'next/cache'
+import sql from '@/lib/db'
+import { getSession } from '@/lib/auth/session'
+import { QuestionSchema } from '@/lib/validations'
 
 async function requireAdmin() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return { error: 'Unauthorized' }
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || (profile as { role: string } | null)?.role !== 'admin') {
-    return { error: 'Unauthorized' }
-  }
-
-  return { supabase }
+  const session = await getSession()
+  if (!session) return { error: 'Unauthorized' }
+  if (session.role !== 'admin') return { error: 'Unauthorized' }
+  return { userId: session.id }
 }
 
 export async function createQuestion(formData: FormData) {
-  const adminCheck = await requireAdmin()
-  if ('error' in adminCheck) {
-    return { error: adminCheck.error }
-  }
-
-  const { supabase } = adminCheck
+  const check = await requireAdmin()
+  if ('error' in check) return { error: check.error }
 
   try {
-    const optionsRaw = formData.get('options')
-    const correctAnswersRaw = formData.get('correct_answers')
+    const options = JSON.parse(formData.get('options') as string || '[]')
+    const correct_answers = JSON.parse(formData.get('correct_answers') as string || '[]')
 
-    const options = optionsRaw ? JSON.parse(optionsRaw as string) : []
-    const correctAnswers = correctAnswersRaw ? JSON.parse(correctAnswersRaw as string) : []
-
-    const data = {
-      topic_id: formData.get('topic_id') as string,
-      type: formData.get('type') as string,
-      question_text: formData.get('question_text') as string,
+    const validated = QuestionSchema.parse({
+      topic_id: formData.get('topic_id'),
+      type: formData.get('type'),
+      question_text: formData.get('question_text'),
       options,
-      correct_answers: correctAnswers,
-      explanation: (formData.get('explanation') as string) || undefined,
-      difficulty: formData.get('difficulty') as string,
+      correct_answers,
+      explanation: formData.get('explanation') || undefined,
+      difficulty: formData.get('difficulty'),
       is_active: formData.get('is_active') === 'true',
-    }
-
-    const validated = QuestionSchema.parse(data)
-
-    const { error } = await supabase.from('questions').insert({
-      topic_id: validated.topic_id,
-      type: validated.type,
-      question_text: validated.question_text,
-      options: validated.options,
-      correct_answers: validated.correct_answers,
-      explanation: validated.explanation || null,
-      difficulty: validated.difficulty,
-      is_active: validated.is_active,
     })
 
-    if (error) {
-      return { error: error.message }
-    }
+    await sql`
+      INSERT INTO public.questions (topic_id, type, question_text, options, correct_answers, explanation, difficulty, is_active)
+      VALUES (${validated.topic_id}::uuid, ${validated.type}, ${validated.question_text},
+              ${JSON.stringify(validated.options)}, ${JSON.stringify(validated.correct_answers)},
+              ${validated.explanation || null}, ${validated.difficulty}, ${validated.is_active})
+    `
 
     revalidatePath('/admin/questions')
     return { success: true }
   } catch (error) {
-    if (error instanceof Error) {
-      return { error: error.message }
-    }
-    return { error: 'Failed to create question' }
+    return { error: error instanceof Error ? error.message : 'Failed to create question' }
   }
 }
 
 export async function updateQuestion(id: string, formData: FormData) {
-  const adminCheck = await requireAdmin()
-  if ('error' in adminCheck) {
-    return { error: adminCheck.error }
-  }
-
-  const { supabase } = adminCheck
+  const check = await requireAdmin()
+  if ('error' in check) return { error: check.error }
 
   try {
-    const optionsRaw = formData.get('options')
-    const correctAnswersRaw = formData.get('correct_answers')
+    const options = JSON.parse(formData.get('options') as string || '[]')
+    const correct_answers = JSON.parse(formData.get('correct_answers') as string || '[]')
 
-    const options = optionsRaw ? JSON.parse(optionsRaw as string) : []
-    const correctAnswers = correctAnswersRaw ? JSON.parse(correctAnswersRaw as string) : []
-
-    const data = {
-      topic_id: formData.get('topic_id') as string,
-      type: formData.get('type') as string,
-      question_text: formData.get('question_text') as string,
+    const validated = QuestionSchema.parse({
+      topic_id: formData.get('topic_id'),
+      type: formData.get('type'),
+      question_text: formData.get('question_text'),
       options,
-      correct_answers: correctAnswers,
-      explanation: (formData.get('explanation') as string) || undefined,
-      difficulty: formData.get('difficulty') as string,
+      correct_answers,
+      explanation: formData.get('explanation') || undefined,
+      difficulty: formData.get('difficulty'),
       is_active: formData.get('is_active') === 'true',
-    }
+    })
 
-    const validated = QuestionSchema.parse(data)
-
-    const { error } = await supabase
-      .from('questions')
-      .update({
-        topic_id: validated.topic_id,
-        type: validated.type,
-        question_text: validated.question_text,
-        options: validated.options,
-        correct_answers: validated.correct_answers,
-        explanation: validated.explanation || null,
-        difficulty: validated.difficulty,
-        is_active: validated.is_active,
-      })
-      .eq('id', id)
-
-    if (error) {
-      return { error: error.message }
-    }
+    await sql`
+      UPDATE public.questions SET
+        topic_id = ${validated.topic_id}::uuid,
+        type = ${validated.type},
+        question_text = ${validated.question_text},
+        options = ${JSON.stringify(validated.options)},
+        correct_answers = ${JSON.stringify(validated.correct_answers)},
+        explanation = ${validated.explanation || null},
+        difficulty = ${validated.difficulty},
+        is_active = ${validated.is_active}
+      WHERE id = ${id}::uuid
+    `
 
     revalidatePath('/admin/questions')
     return { success: true }
   } catch (error) {
-    if (error instanceof Error) {
-      return { error: error.message }
-    }
-    return { error: 'Failed to update question' }
+    return { error: error instanceof Error ? error.message : 'Failed to update question' }
   }
 }
 
 export async function deleteQuestion(id: string) {
-  const adminCheck = await requireAdmin()
-  if ('error' in adminCheck) {
-    return { error: adminCheck.error }
-  }
+  const check = await requireAdmin()
+  if ('error' in check) return { error: check.error }
 
-  const { supabase } = adminCheck
-
-  const { error } = await supabase
-    .from('questions')
-    .update({ is_active: false })
-    .eq('id', id)
-
-  if (error) {
-    return { error: error.message }
-  }
-
+  await sql`UPDATE public.questions SET is_active = false WHERE id = ${id}::uuid`
   revalidatePath('/admin/questions')
   return { success: true }
 }
 
 export async function toggleQuestion(id: string, is_active: boolean) {
-  const adminCheck = await requireAdmin()
-  if ('error' in adminCheck) {
-    return { error: adminCheck.error }
-  }
+  const check = await requireAdmin()
+  if ('error' in check) return { error: check.error }
 
-  const { supabase } = adminCheck
-
-  const { error } = await supabase
-    .from('questions')
-    .update({ is_active: !is_active })
-    .eq('id', id)
-
-  if (error) {
-    return { error: error.message }
-  }
-
+  await sql`UPDATE public.questions SET is_active = ${!is_active} WHERE id = ${id}::uuid`
   revalidatePath('/admin/questions')
   return { success: true }
 }

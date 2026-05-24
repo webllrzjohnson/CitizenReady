@@ -1,56 +1,27 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getSessionFromRequest } from '@/lib/auth/session-edge'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await getSessionFromRequest(request)
   const path = request.nextUrl.pathname
 
-  if (!user && path.startsWith('/admin')) {
+  if (!session && path.startsWith('/admin')) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (!user && path.startsWith('/dashboard/settings')) {
+  if (!session && path.startsWith('/dashboard/settings')) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && request.nextUrl.pathname.startsWith('/admin')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-  }
-
-  if (user && (
-    request.nextUrl.pathname === '/login' ||
-    request.nextUrl.pathname === '/signup' ||
-    request.nextUrl.pathname === '/'
-  )) {
+  if (session && path.startsWith('/admin') && session.role !== 'admin') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  return supabaseResponse
+  if (session && (path === '/login' || path === '/signup' || path === '/')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {

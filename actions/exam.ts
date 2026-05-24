@@ -1,233 +1,107 @@
 'use server'
 
-// @ts-nocheck - Supabase type inference issues with JSONB fields
-import { createClient } from '@/lib/supabase/server'
-import { EXAM_CONFIG } from '@/lib/constants'
 import { revalidatePath } from 'next/cache'
+import sql from '@/lib/db'
+import { getSession } from '@/lib/auth/session'
+import { EXAM_CONFIG } from '@/lib/constants'
 import { SubmitExamSchema } from '@/lib/validations'
 import type { Question } from '@/types'
-import type { Tables } from '@/types/database.types'
 
 export async function startMockExam() {
-  const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await getSession()
 
-  // Determine premium status for logged-in users
   let isPremium = false
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_premium, role')
-      .eq('id', user.id)
-      .single()
-    const row = profile as { is_premium?: boolean; role?: string } | null
-    isPremium = row?.role === 'admin' || row?.is_premium === true
+  if (session) {
+    const rows = await sql`SELECT is_premium, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
+    const profile = rows[0]
+    isPremium = profile?.role === 'admin' || profile?.is_premium === true
   }
 
-  console.log('[startMockExam] Fetching questions for mock exam')
+  const questions = await sql`
+    SELECT * FROM public.questions
+    WHERE is_active = true AND type IN ('single', 'boolean')
+    LIMIT 200
+  `
 
-  const { data: questionsData, error: questionsError } = await supabase
-    .from('questions')
-    .select('*')
-    .eq('is_active', true)
-    .in('type', ['single', 'boolean'])
-    .limit(200)
-
-  if (questionsError) {
-    console.error('[startMockExam] Supabase query error:', questionsError)
-    return { error: `Failed to load questions: ${questionsError.message}` }
-  }
-
-  if (!questionsData) {
-    console.error('[startMockExam] No data returned from query')
-    return { error: 'Failed to load questions: No data returned' }
-  }
-
-  const questions = questionsData as Tables<'questions'>[]
-  console.log('[startMockExam] Number of questions returned:', questions.length)
-
-  // Premium users get 20 questions; guests and free registered users get 10
   const targetCount = isPremium ? EXAM_CONFIG.TOTAL_QUESTIONS : EXAM_CONFIG.FREE_TOTAL_QUESTIONS
 
-  if (questions.length < targetCount) {
-    console.warn('[startMockExam] Not enough questions available:', questions.length)
-    return { error: 'Not enough questions available for mock exam' }
-  }
+  if (questions.length < targetCount) return { error: 'Not enough questions available for mock exam' }
 
   const shuffled = [...questions].sort(() => Math.random() - 0.5)
   const selected = shuffled.slice(0, targetCount)
-  const questionIds = selected.map(q => q.id)
+  const questionIds = selected.map((q: any) => q.id)
 
-  if (!user) {
-    const typedQuestionsGuest: Question[] = selected.map(q => ({
-      id: q.id,
-      topic_id: q.topic_id,
-      type: q.type as 'single' | 'multiple' | 'boolean' | 'fill' | 'matching',
-      question_text: q.question_text,
-      options: q.options as { key: string; text: string }[],
-      correct_answers: q.correct_answers as string[],
-      explanation: q.explanation,
-      difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
-      is_active: q.is_active,
-      created_at: q.created_at,
-    }))
-
-    return {
-      success: true,
-      sessionId: null,
-      questions: typedQuestionsGuest,
-      isGuest: true,
-    }
-  }
-
-  const { data: sessionData, error: sessionError } = await supabase
-    .from('quiz_sessions')
-    .insert({
-      user_id: user.id,
-      type: 'mock_exam',
-      topic_id: null,
-      total_q: targetCount,
-      question_ids: questionIds,
-    })
-    .select()
-    .single()
-
-  if (sessionError || !sessionData) {
-    console.error('[startMockExam] Failed to create session:', sessionError)
-    return { error: 'Failed to create mock exam session' }
-  }
-
-  const session = sessionData as Tables<'quiz_sessions'>
-
-  const typedQuestions: Question[] = selected.map(q => ({
+  const typedQuestions: Question[] = selected.map((q: any) => ({
     id: q.id,
     topic_id: q.topic_id,
-    type: q.type as 'single' | 'multiple' | 'boolean' | 'fill' | 'matching',
+    type: q.type,
     question_text: q.question_text,
-    options: q.options as { key: string; text: string }[],
-    correct_answers: q.correct_answers as string[],
+    options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+    correct_answers: typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : q.correct_answers,
     explanation: q.explanation,
-    difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+    difficulty: q.difficulty,
     is_active: q.is_active,
     created_at: q.created_at,
   }))
 
-  return {
-    success: true,
-    sessionId: session.id,
-    questions: typedQuestions,
-    isGuest: false,
+  if (!session) {
+    return { success: true, sessionId: null, questions: typedQuestions, isGuest: true }
   }
+
+  const sessionRows = await sql`
+    INSERT INTO public.quiz_sessions (user_id, type, topic_id, total_q, question_ids)
+    VALUES (${session.id}::uuid, 'mock_exam', null, ${targetCount}, ${JSON.stringify(questionIds)})
+    RETURNING id
+  `
+
+  return { success: true, sessionId: sessionRows[0].id, questions: typedQuestions, isGuest: false }
 }
 
-export async function submitMockExam(
-  sessionId: string,
-  answers: Record<string, string[]>
-) {
-  const supabase = await createClient()
-  
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return { error: 'You must be logged in' }
-  }
+export async function submitMockExam(sessionId: string, answers: Record<string, string[]>) {
+  const session = await getSession()
+  if (!session) return { error: 'You must be logged in' }
 
-  // Validate input
   const validation = SubmitExamSchema.safeParse({ session_id: sessionId, answers })
-  if (!validation.success) {
-    return { error: validation.error.errors[0]?.message || 'Invalid input' }
-  }
+  if (!validation.success) return { error: validation.error.errors[0]?.message || 'Invalid input' }
 
-  // Verify session belongs to current user
-  const { data: sessionData, error: sessionError } = await supabase
-    .from('quiz_sessions')
-    .select('user_id, question_ids')
-    .eq('id', sessionId)
-    .single()
+  const sessionRows = await sql`
+    SELECT user_id, question_ids FROM public.quiz_sessions WHERE id = ${sessionId}::uuid LIMIT 1
+  `
+  if (sessionRows.length === 0) return { error: 'Invalid session' }
+  if (sessionRows[0].user_id !== session.id) return { error: 'Invalid session' }
 
-  if (sessionError || !sessionData) {
-    return { error: 'Invalid session' }
-  }
+  const questionIds = typeof sessionRows[0].question_ids === 'string'
+    ? JSON.parse(sessionRows[0].question_ids)
+    : sessionRows[0].question_ids
 
-  const session = sessionData as { user_id: string; question_ids: unknown }
+  const questionsData = await sql`
+    SELECT id, correct_answers, explanation FROM public.questions WHERE id = ANY(${sql.array(questionIds)}::uuid[])
+  `
 
-  if (session.user_id !== user.id) {
-    return { error: 'Invalid session' }
-  }
+  const questionsMap = new Map(questionsData.map((q: any) => [q.id, {
+    correct_answers: typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : q.correct_answers,
+    explanation: q.explanation,
+  }]))
 
-  const questionIds = session.question_ids as string[]
-
-  // Fetch correct answers and explanations for all questions
-  const { data: questionsData, error: questionsError } = await supabase
-    .from('questions')
-    .select('id, correct_answers, explanation')
-    .in('id', questionIds)
-
-  if (questionsError || !questionsData) {
-    return { error: 'Failed to load question data' }
-  }
-
-  const questionsMap = new Map(
-    (questionsData as Array<{ id: string; correct_answers: unknown; explanation: string }>).map(q => [
-      q.id,
-      {
-        correct_answers: q.correct_answers as string[],
-        explanation: q.explanation,
-      }
-    ])
-  )
-
-  // Calculate score and prepare attempts
   let score = 0
-  const attempts = questionIds.map(questionId => {
+  const attempts = questionIds.map((questionId: string) => {
     const userAnswer = answers[questionId] || []
     const questionData = questionsMap.get(questionId)
-    
-    if (!questionData) {
-      return null
-    }
+    if (!questionData) return null
+    const correctAnswers = (questionData as any).correct_answers as string[]
+    const isCorrect = userAnswer.length === correctAnswers.length && userAnswer.every((a: string) => correctAnswers.includes(a))
+    if (isCorrect) score++
+    return { session_id: sessionId, question_id: questionId, user_answer: userAnswer, is_correct: isCorrect, time_spent_ms: 0 }
+  }).filter(Boolean)
 
-    const correctAnswers = questionData.correct_answers
-    const isCorrect =
-      userAnswer.length === correctAnswers.length &&
-      userAnswer.every(a => correctAnswers.includes(a))
-
-    if (isCorrect) {
-      score++
-    }
-
-    return {
-      session_id: sessionId,
-      question_id: questionId,
-      user_answer: userAnswer,
-      is_correct: isCorrect,
-      time_spent_ms: 0,
-    }
-  }).filter((a): a is NonNullable<typeof a> => a !== null)
-
-  // Insert all attempts in a single query
-  const { error: attemptsError } = await supabase
-    .from('question_attempts')
-    .insert(attempts)
-
-  if (attemptsError) {
-    console.error('[submitMockExam] Failed to save attempts:', attemptsError)
-    return { error: 'Failed to save exam results' }
+  for (const attempt of attempts) {
+    await sql`
+      INSERT INTO public.question_attempts (session_id, question_id, user_answer, is_correct, time_spent_ms)
+      VALUES (${(attempt as any).session_id}::uuid, ${(attempt as any).question_id}::uuid, ${JSON.stringify((attempt as any).user_answer)}, ${(attempt as any).is_correct}, ${(attempt as any).time_spent_ms})
+    `
   }
 
-  // Update session with score and completion time
-  const { error: updateError } = await supabase
-    .from('quiz_sessions')
-    .update({
-      score,
-      completed_at: new Date().toISOString(),
-    })
-    .eq('id', sessionId)
-
-  if (updateError) {
-    console.error('[submitMockExam] Failed to update session:', updateError)
-    return { error: 'Failed to update exam results' }
-  }
+  await sql`UPDATE public.quiz_sessions SET score = ${score}, completed_at = now() WHERE id = ${sessionId}::uuid`
 
   revalidatePath('/dashboard/progress')
   revalidatePath('/dashboard')
@@ -236,9 +110,6 @@ export async function submitMockExam(
     success: true,
     score,
     total: questionIds.length,
-    attempts: attempts.map(a => ({
-      question_id: a.question_id,
-      is_correct: a.is_correct,
-    })),
+    attempts: attempts.map((a: any) => ({ question_id: a.question_id, is_correct: a.is_correct })),
   }
 }

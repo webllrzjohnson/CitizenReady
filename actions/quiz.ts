@@ -1,132 +1,66 @@
 'use server'
 
-// @ts-nocheck - Supabase type inference issues with JSONB fields
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import sql from '@/lib/db'
+import { getSession } from '@/lib/auth/session'
 import { SubmitAnswerSchema } from '@/lib/validations'
 import type { Question } from '@/types'
-import type { Tables } from '@/types/database.types'
 
 export async function startPracticeSession(topicId: string, topicSlug: string) {
-  const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await getSession()
 
-  console.log('[startPracticeSession] Querying questions for topicId:', topicId)
+  const questions = await sql`
+    SELECT * FROM public.questions
+    WHERE topic_id = ${topicId}::uuid AND is_active = true AND type IN ('single', 'multiple', 'boolean')
+    LIMIT 100
+  `
 
-  // Note: Fill-in-the-blank questions are converted to single choice during seeding
-  // TODO: Add support for 'matching' question type
-  const { data: questionsData, error: questionsError } = await supabase
-    .from('questions')
-    .select('*')
-    .eq('topic_id', topicId)
-    .eq('is_active', true)
-    .in('type', ['single', 'multiple', 'boolean'])
-    .limit(100)
-
-  if (questionsError) {
-    console.error('[startPracticeSession] Supabase query error:', questionsError)
-    return { error: `Failed to load questions: ${questionsError.message}` }
-  }
-
-  if (!questionsData) {
-    console.error('[startPracticeSession] No data returned from query')
-    return { error: 'Failed to load questions: No data returned' }
-  }
-
-  const questions = questionsData as Tables<'questions'>[]
-  console.log('[startPracticeSession] Number of questions returned:', questions.length)
-
-  if (questions.length === 0) {
-    console.warn('[startPracticeSession] No questions found for topicId:', topicId)
-    return { error: 'No questions available for this topic' }
-  }
+  if (questions.length === 0) return { error: 'No questions available for this topic' }
 
   const shuffled = [...questions].sort(() => Math.random() - 0.5)
   const selected = shuffled.slice(0, Math.min(10, shuffled.length))
-  const questionIds = selected.map(q => q.id)
+  const questionIds = selected.map((q: any) => q.id)
 
-  if (!user) {
-    const typedQuestionsGuest: Question[] = selected.map(q => ({
-      id: q.id,
-      topic_id: q.topic_id,
-      type: q.type as 'single' | 'multiple' | 'boolean' | 'fill' | 'matching',
-      question_text: q.question_text,
-      options: q.options as { key: string; text: string }[],
-      correct_answers: q.correct_answers as string[],
-      explanation: q.explanation,
-      difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
-      is_active: q.is_active,
-      created_at: q.created_at,
-    }))
-
-    return {
-      success: true,
-      sessionId: null,
-      questions: typedQuestionsGuest,
-      isGuest: true,
-    }
-  }
-
-  const { data: sessionData, error: sessionError } = await supabase
-    .from('quiz_sessions')
-    .insert({
-      user_id: user.id,
-      type: 'practice',
-      topic_id: topicId,
-      total_q: selected.length,
-      question_ids: questionIds,
-    })
-    .select()
-    .single()
-
-  if (sessionError || !sessionData) {
-    return { error: 'Failed to create practice session' }
-  }
-
-  const session = sessionData as Tables<'quiz_sessions'>
-
-  const typedQuestions: Question[] = selected.map(q => ({
+  const typedQuestions: Question[] = selected.map((q: any) => ({
     id: q.id,
     topic_id: q.topic_id,
-    type: q.type as 'single' | 'multiple' | 'boolean' | 'fill' | 'matching',
+    type: q.type,
     question_text: q.question_text,
-    options: q.options as { key: string; text: string }[],
-    correct_answers: q.correct_answers as string[],
+    options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+    correct_answers: typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : q.correct_answers,
     explanation: q.explanation,
-    difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+    difficulty: q.difficulty,
     is_active: q.is_active,
     created_at: q.created_at,
   }))
 
-  return {
-    success: true,
-    sessionId: session.id,
-    questions: typedQuestions,
-    isGuest: false,
+  if (!session) {
+    return { success: true, sessionId: null, questions: typedQuestions, isGuest: true }
   }
+
+  const sessionRows = await sql`
+    INSERT INTO public.quiz_sessions (user_id, type, topic_id, total_q, question_ids)
+    VALUES (${session.id}::uuid, 'practice', ${topicId}::uuid, ${selected.length}, ${JSON.stringify(questionIds)})
+    RETURNING id
+  `
+
+  return { success: true, sessionId: sessionRows[0].id, questions: typedQuestions, isGuest: false }
 }
 
 export async function submitAnswer(formData: FormData) {
-  const supabase = await createClient()
-  
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return { error: 'You must be logged in' }
-  }
+  const session = await getSession()
+  if (!session) return { error: 'You must be logged in' }
 
-  const sessionId = formData.get('session_id')
-  const questionId = formData.get('question_id')
-  const userAnswerJson = formData.get('user_answer')
+  const sessionId = formData.get('session_id') as string
+  const questionId = formData.get('question_id') as string
+  const userAnswerJson = formData.get('user_answer') as string
   const timeSpentMs = formData.get('time_spent_ms')
 
-  if (!sessionId || !questionId || !userAnswerJson) {
-    return { error: 'Missing required fields' }
-  }
+  if (!sessionId || !questionId || !userAnswerJson) return { error: 'Missing required fields' }
 
   let userAnswer: string[]
   try {
-    userAnswer = JSON.parse(userAnswerJson as string)
+    userAnswer = JSON.parse(userAnswerJson)
   } catch {
     return { error: 'Invalid answer format' }
   }
@@ -137,121 +71,42 @@ export async function submitAnswer(formData: FormData) {
     user_answer: userAnswer,
     time_spent_ms: timeSpentMs ? parseInt(timeSpentMs as string) : 0,
   })
+  if (!validation.success) return { error: validation.error.errors[0]?.message || 'Invalid input' }
 
-  if (!validation.success) {
-    return { error: validation.error.errors[0]?.message || 'Invalid input' }
-  }
+  const sessionRows = await sql`SELECT user_id FROM public.quiz_sessions WHERE id = ${sessionId}::uuid LIMIT 1`
+  if (sessionRows.length === 0 || sessionRows[0].user_id !== session.id) return { error: 'Invalid session' }
 
-  const { data: sessionData, error: sessionError } = await supabase
-    .from('quiz_sessions')
-    .select('user_id')
-    .eq('id', sessionId)
-    .single()
+  const questionRows = await sql`SELECT correct_answers, explanation FROM public.questions WHERE id = ${questionId}::uuid LIMIT 1`
+  if (questionRows.length === 0) return { error: 'Question not found' }
 
-  if (sessionError || !sessionData) {
-    return { error: 'Invalid session' }
-  }
+  const correctAnswers = typeof questionRows[0].correct_answers === 'string'
+    ? JSON.parse(questionRows[0].correct_answers)
+    : questionRows[0].correct_answers
 
-  const session = sessionData as { user_id: string }
+  const isCorrect = userAnswer.length === correctAnswers.length && userAnswer.every((a: string) => correctAnswers.includes(a))
 
-  if (session.user_id !== user.id) {
-    return { error: 'Invalid session' }
-  }
+  await sql`
+    INSERT INTO public.question_attempts (session_id, question_id, user_answer, is_correct, time_spent_ms)
+    VALUES (${sessionId}::uuid, ${questionId}::uuid, ${JSON.stringify(userAnswer)}, ${isCorrect}, ${validation.data.time_spent_ms || 0})
+  `
 
-  const { data: questionData, error: questionError } = await supabase
-    .from('questions')
-    .select('correct_answers, explanation')
-    .eq('id', questionId)
-    .single()
-
-  if (questionError || !questionData) {
-    return { error: 'Question not found' }
-  }
-
-  const question = questionData as { correct_answers: unknown; explanation: string | null }
-
-  const correctAnswers = question.correct_answers as string[]
-  const isCorrect =
-    userAnswer.length === correctAnswers.length &&
-    userAnswer.every(a => correctAnswers.includes(a))
-
-  const { error: attemptError } = await supabase
-    .from('question_attempts')
-    .insert({
-      session_id: sessionId,
-      question_id: questionId,
-      user_answer: userAnswer,
-      is_correct: isCorrect,
-      time_spent_ms: validation.data.time_spent_ms || 0,
-    })
-
-  if (attemptError) {
-    return { error: 'Failed to save answer' }
-  }
-
-  return {
-    success: true,
-    is_correct: isCorrect,
-    correct_answers: correctAnswers,
-    explanation: question.explanation,
-  }
+  return { success: true, is_correct: isCorrect, correct_answers: correctAnswers, explanation: questionRows[0].explanation }
 }
 
 export async function completeSession(sessionId: string) {
-  const supabase = await createClient()
-  
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return { error: 'You must be logged in' }
-  }
+  const session = await getSession()
+  if (!session) return { error: 'You must be logged in' }
 
-  const { data: sessionData, error: sessionError } = await supabase
-    .from('quiz_sessions')
-    .select('user_id, total_q')
-    .eq('id', sessionId)
-    .single()
+  const sessionRows = await sql`SELECT user_id, total_q FROM public.quiz_sessions WHERE id = ${sessionId}::uuid LIMIT 1`
+  if (sessionRows.length === 0 || sessionRows[0].user_id !== session.id) return { error: 'Invalid session' }
 
-  if (sessionError || !sessionData) {
-    return { error: 'Invalid session' }
-  }
+  const attempts = await sql`SELECT is_correct FROM public.question_attempts WHERE session_id = ${sessionId}::uuid`
+  const score = attempts.filter((a: any) => a.is_correct).length
 
-  const session = sessionData as { user_id: string; total_q: number }
-
-  if (session.user_id !== user.id) {
-    return { error: 'Invalid session' }
-  }
-
-  const { data: attemptsData, error: attemptsError } = await supabase
-    .from('question_attempts')
-    .select('is_correct')
-    .eq('session_id', sessionId)
-
-  if (attemptsError) {
-    return { error: 'Failed to load attempts' }
-  }
-
-  const attempts = (attemptsData || []) as { is_correct: boolean }[]
-
-  const score = attempts.filter(a => a.is_correct).length
-
-  const { error: updateError } = await supabase
-    .from('quiz_sessions')
-    .update({
-      score,
-      completed_at: new Date().toISOString(),
-    })
-    .eq('id', sessionId)
-
-  if (updateError) {
-    return { error: 'Failed to complete session' }
-  }
+  await sql`UPDATE public.quiz_sessions SET score = ${score}, completed_at = now() WHERE id = ${sessionId}::uuid`
 
   revalidatePath('/dashboard/progress')
   revalidatePath('/dashboard')
 
-  return {
-    success: true,
-    score,
-    total: session.total_q,
-  }
+  return { success: true, score, total: sessionRows[0].total_q }
 }

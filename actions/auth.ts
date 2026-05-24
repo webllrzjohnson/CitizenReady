@@ -1,51 +1,81 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import bcrypt from 'bcryptjs'
 import { redirect } from 'next/navigation'
-import { ROUTES } from '@/lib/constants'
+import sql from '@/lib/db'
+import { createSession, getSession, deleteSession } from '@/lib/auth/session'
+import { LoginSchema, SignupSchema } from '@/lib/validations'
 
 export async function getCurrentUser() {
-  const supabase = await createClient()
-  
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
-  if (authError || !user) {
-    return null
-  }
-  
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single<{ id: string; email: string; full_name: string | null; role: string }>()
-  
-  if (profileError || !profile) {
-    return null
-  }
-  
-  return {
-    id: profile.id,
-    email: profile.email,
-    display_name: profile.full_name,
-    role: profile.role as 'admin' | 'user',
-  }
+  return getSession()
 }
 
-export async function login() {
-  return { success: false, error: 'Not implemented' }
+export async function login(formData: { email: string; password: string }) {
+  const result = LoginSchema.safeParse(formData)
+  if (!result.success) {
+    return { success: false, error: result.error.errors[0].message }
+  }
+
+  const { email, password } = result.data
+
+  const rows = await sql`
+    SELECT id, email, full_name, role, password_hash
+    FROM public.profiles
+    WHERE email = ${email}
+    LIMIT 1
+  `
+
+  const user = rows[0]
+  if (!user || !user.password_hash) {
+    return { success: false, error: 'Invalid email or password' }
+  }
+
+  const valid = await bcrypt.compare(password, user.password_hash)
+  if (!valid) {
+    return { success: false, error: 'Invalid email or password' }
+  }
+
+  await createSession({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    full_name: user.full_name,
+  })
+
+  return { success: true }
 }
 
-export async function signup() {
-  return { success: false, error: 'Not implemented' }
+export async function signup(formData: { email: string; password: string; full_name: string }) {
+  const result = SignupSchema.safeParse({
+    email: formData.email,
+    password: formData.password,
+    full_name: formData.full_name,
+  })
+  if (!result.success) {
+    return { success: false, error: result.error.errors[0].message }
+  }
+
+  const { email, password, full_name } = result.data
+
+  // Check if email already exists
+  const existing = await sql`
+    SELECT id FROM public.profiles WHERE email = ${email} LIMIT 1
+  `
+  if (existing.length > 0) {
+    return { success: false, error: 'An account with this email already exists' }
+  }
+
+  const password_hash = await bcrypt.hash(password, 12)
+
+  await sql`
+    INSERT INTO public.profiles (email, full_name, password_hash, role)
+    VALUES (${email}, ${full_name}, ${password_hash}, 'user')
+  `
+
+  return { success: true }
 }
 
 export async function logout() {
-  const supabase = await createClient()
-  const { error } = await supabase.auth.signOut()
-  
-  if (error) {
-    return { success: false, error: error.message }
-  }
-  
-  redirect(ROUTES.HOME)
+  await deleteSession()
+  redirect('/')
 }

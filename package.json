@@ -25,9 +25,11 @@
     "@tiptap/extension-underline": "^3.22.5",
     "@tiptap/react": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "jose": "^6.2.3",
     "lucide-react": "^0.462.0",
     "next": "^15.3.6",
     "postgres": "^3.4.9",
@@ -43,6 +45,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
