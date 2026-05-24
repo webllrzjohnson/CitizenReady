@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
+import sql from '@/lib/db'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Library, BookOpen, FileText, TrendingUp, ArrowRight } from 'lucide-react'
@@ -9,35 +10,23 @@ import { cn } from '@/lib/utils'
 import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await getSession()
 
-  const { data: topics } = await supabase
-    .from('topics')
-    .select('*')
-    .order('sort_order')
+  const topics = await sql<Topic[]>`
+    SELECT * FROM public.topics ORDER BY sort_order
+  `
 
   let countMap: Record<string, number> = {}
-  if (user) {
-    const { data: questionCounts } = await supabase.rpc('get_question_counts_by_topic')
-    ;(questionCounts as Array<{ topic_id: string; count: number }> | null)?.forEach(
-      (row: { topic_id: string; count: number }) => {
-        countMap[row.topic_id] = Number(row.count)
-      }
-    )
-  } else {
-    const { data: qRows } = await supabase
-      .from('questions')
-      .select('topic_id')
-      .eq('is_active', true)
-    ;(qRows as Array<{ topic_id: string | null }> | null)?.forEach((row) => {
-      if (row.topic_id) {
-        countMap[row.topic_id] = (countMap[row.topic_id] ?? 0) + 1
-      }
-    })
-  }
+  const qRows = await sql<{ topic_id: string }[]>`
+    SELECT topic_id FROM public.questions WHERE is_active = true
+  `
+  qRows.forEach((row) => {
+    if (row.topic_id) {
+      countMap[row.topic_id] = (countMap[row.topic_id] ?? 0) + 1
+    }
+  })
 
-  if (!user) {
+  if (!session) {
     return (
       <div className="mx-auto max-w-4xl space-y-8 pb-8">
         <div>
@@ -91,7 +80,7 @@ export default async function DashboardPage() {
         <div>
           <h2 className="mb-4 text-xl font-semibold text-gray-900">Practice by topic</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(topics as Topic[] | null)?.map((topic: Topic) => {
+            {topics.map((topic: Topic) => {
               const questionCount = countMap[topic.id] || 0
               const { icon, bg } = getTopicIcon(topic.slug)
               return (
@@ -120,52 +109,38 @@ export default async function DashboardPage() {
     )
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, is_premium, role')
-    .eq('id', user.id)
-    .single<{ full_name: string | null; is_premium: boolean | null; role: string | null }>()
-
+  const profileRows = await sql<{ full_name: string | null; is_premium: boolean; role: string }[]>`
+    SELECT full_name, is_premium, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1
+  `
+  const profile = profileRows[0] ?? null
   const isPremium = profile?.role === 'admin' || profile?.is_premium === true
 
-  const { count: sessionCount } = await supabase
-    .from('quiz_sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .not('completed_at', 'is', null)
+  const sessionCountRows = await sql<{ count: string }[]>`
+    SELECT COUNT(*) as count FROM public.quiz_sessions
+    WHERE user_id = ${session.id}::uuid AND completed_at IS NOT NULL
+  `
+  const sessionCount = parseInt(sessionCountRows[0]?.count ?? '0')
 
-  const { data: sessions } = await supabase
-    .from('quiz_sessions')
-    .select('score, total_q')
-    .eq('user_id', user.id)
-    .not('completed_at', 'is', null)
-    .not('score', 'is', null)
-
-  const typedSessions = sessions as Array<{ score: number; total_q: number }> | null
-  const avgScore = typedSessions?.length
-    ? Math.round(
-        typedSessions.reduce((sum, s) => sum + (s.score / s.total_q) * 100, 0) /
-          typedSessions.length
-      )
+  const sessions = await sql<{ score: number; total_q: number }[]>`
+    SELECT score, total_q FROM public.quiz_sessions
+    WHERE user_id = ${session.id}::uuid AND completed_at IS NOT NULL AND score IS NOT NULL
+  `
+  const avgScore = sessions.length
+    ? Math.round(sessions.reduce((sum, s) => sum + (s.score / s.total_q) * 100, 0) / sessions.length)
     : 0
 
-  const { data: bestScores } = await supabase
-    .from('quiz_sessions')
-    .select('topic_id, score, total_q')
-    .eq('user_id', user.id)
-    .eq('type', 'practice')
-    .not('completed_at', 'is', null)
-
+  const bestScores = await sql<{ topic_id: string; score: number; total_q: number }[]>`
+    SELECT topic_id, score, total_q FROM public.quiz_sessions
+    WHERE user_id = ${session.id}::uuid AND type = 'practice' AND completed_at IS NOT NULL
+  `
   const scoreMap: Record<string, { score: number; total: number }> = {}
-  ;(bestScores as Array<{ topic_id: string | null; score: number | null; total_q: number }> | null)?.forEach(
-    (s) => {
-      if (s.topic_id && s.score !== null) {
-        if (!scoreMap[s.topic_id] || s.score > scoreMap[s.topic_id].score) {
-          scoreMap[s.topic_id] = { score: s.score, total: s.total_q }
-        }
+  bestScores.forEach((s) => {
+    if (s.topic_id && s.score !== null) {
+      if (!scoreMap[s.topic_id] || s.score > scoreMap[s.topic_id].score) {
+        scoreMap[s.topic_id] = { score: s.score, total: s.total_q }
       }
     }
-  )
+  })
 
   const quickLinks = [
     { href: '/dashboard/practice', label: 'Practice', icon: BookOpen, desc: 'Topic-by-topic questions' },
@@ -183,13 +158,11 @@ export default async function DashboardPage() {
         <p className="mt-1 text-gray-500">Continue your Canadian citizenship exam preparation</p>
       </div>
 
-      {/* Upgrade nudge for free users */}
       {!isPremium && <UpgradeBanner />}
 
-      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <p className="text-3xl font-extrabold text-gray-900">{sessionCount ?? 0}</p>
+          <p className="text-3xl font-extrabold text-gray-900">{sessionCount}</p>
           <p className="mt-1 text-sm text-gray-500">Total sessions</p>
         </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -202,7 +175,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick links */}
       <div className="grid gap-4 sm:grid-cols-2">
         {quickLinks.map(({ href, label, icon: Icon, desc }) => (
           <Link
@@ -222,11 +194,10 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Practice by topic */}
       <div>
         <h2 className="mb-4 text-xl font-semibold text-gray-900">Practice by topic</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {(topics as Topic[] | null)?.map((topic: Topic) => {
+          {topics.map((topic: Topic) => {
             const questionCount = countMap[topic.id] || 0
             const bestScore = scoreMap[topic.id]
             const bestScorePercent = bestScore

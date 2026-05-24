@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
 import { DashboardSidebar } from './DashboardSidebar'
 import { GuestBanner } from '@/components/layout/GuestBanner'
 
@@ -7,9 +7,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const isGuest = !user
+  const session = await getSession()
+  const isGuest = !session
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
