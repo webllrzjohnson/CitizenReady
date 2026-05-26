@@ -151,7 +151,7 @@ export default async function ProgressPage() {
         </div>
       </div>
 
-      <ScoreChart scores={mockExamScores || []} />
+      <ScoreChart scores={mockExamScores as any[] || []} />
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-100 px-6 py-4">
