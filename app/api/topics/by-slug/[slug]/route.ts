@@ -1,22 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import sql from '@/lib/db'
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-  const supabase = await createClient()
+  const rows = await sql`SELECT * FROM public.topics WHERE slug = ${slug} LIMIT 1`
 
-  const { data: topic, error } = await supabase
-    .from('topics')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-
-  if (error || !topic) {
+  if (rows.length === 0) {
     return NextResponse.json({ error: 'Topic not found' }, { status: 404 })
   }
 
-  return NextResponse.json(topic)
+  return NextResponse.json(rows[0])
 }
