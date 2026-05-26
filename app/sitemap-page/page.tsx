@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
+import sql from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Sitemap',
@@ -35,25 +38,14 @@ const adminPages = [
   { label: 'Users', href: '/admin/users' },
 ]
 
-function SitemapSection({
-  title,
-  links,
-}: {
-  title: string
-  links: { label: string; href: string }[]
-}) {
+function SitemapSection({ title, links }: { title: string; links: { label: string; href: string }[] }) {
   return (
     <div>
       <h2 className="mb-3 text-base font-bold text-brand-navy">{title}</h2>
       <ul className="space-y-2">
         {links.map((link) => (
           <li key={link.href}>
-            <Link
-              href={link.href}
-              className="text-sm text-brand-red hover:underline"
-            >
-              {link.label}
-            </Link>
+            <Link href={link.href} className="text-sm text-brand-red hover:underline">{link.label}</Link>
           </li>
         ))}
       </ul>
@@ -62,19 +54,12 @@ function SitemapSection({
 }
 
 export default async function SitemapPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const session = await getSession()
 
   let isAdmin = false
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    isAdmin = (profile as { role: string } | null)?.role === 'admin'
+  if (session) {
+    const rows = await sql`SELECT role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
+    isAdmin = rows[0]?.role === 'admin'
   }
 
   return (
@@ -85,7 +70,6 @@ export default async function SitemapPage() {
           <p className="text-white/70">All pages on CitizenReady</p>
         </div>
       </section>
-
       <section className="container mx-auto max-w-4xl px-4 py-12">
         <div className="card p-8">
           <div className="grid gap-10 sm:grid-cols-2">

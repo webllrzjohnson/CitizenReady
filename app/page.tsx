@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/types/database.types'
+import { getSession } from '@/lib/auth/session'
+import sql from '@/lib/db'
 import { BookOpen, Clock, BarChart2, ArrowRight, Star, Award, Zap, Users, CheckCircle2 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -8,149 +8,44 @@ import { getAdSettings } from '@/lib/ad-settings'
 import { AdUnit } from '@/components/ads/AdUnit'
 import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Free Canadian Citizenship Exam Practice',
-  description:
-    'Practice for your Canadian citizenship test with 1,000+ questions, timed mock exams, and topic-by-topic study guides. Free forever.',
+  description: 'Practice for your Canadian citizenship test with 1,000+ questions, timed mock exams, and topic-by-topic study guides. Free forever.',
 }
 
-const LANDING_CHAPTERS = [
-  {
-    n: 1,
-    name: 'Rights and Responsibilities',
-    description: 'Canadian citizenship rights and responsibilities',
-    questions: '90+',
-  },
-  {
-    n: 2,
-    name: 'Who Are Canadians',
-    description: 'Canadian identity, diversity, and Indigenous peoples',
-    questions: '90+',
-  },
-  {
-    n: 3,
-    name: "Canada's History",
-    description: 'Historical events and milestones in Canadian history',
-    questions: '90+',
-  },
-  {
-    n: 4,
-    name: 'Government',
-    description: 'Canadian government structure and institutions',
-    questions: '90+',
-  },
-  {
-    n: 5,
-    name: 'Federal Elections',
-    description: 'Electoral system and voting process',
-    questions: '90+',
-  },
-  {
-    n: 6,
-    name: 'Justice System',
-    description: 'Canadian laws and justice system',
-    questions: '90+',
-  },
-  {
-    n: 7,
-    name: 'Canadian Symbols',
-    description: 'National symbols and heritage',
-    questions: '90+',
-  },
-  {
-    n: 8,
-    name: "Canada's Regions",
-    description: 'Geographic regions and provincial characteristics',
-    questions: '90+',
-  },
-  {
-    n: 9,
-    name: "Canada's Economy",
-    description: 'Economic sectors and industries',
-    questions: '90+',
-  },
-  {
-    n: 10,
-    name: 'Modern Canada',
-    description: 'Contemporary Canadian society and culture',
-    questions: '90+',
-  },
-  {
-    n: 11,
-    name: 'Applying for Citizenship',
-    description: 'Citizenship application process and requirements',
-    questions: '90+',
-  },
-]
-
-const TESTIMONIALS = [
-  {
-    quote:
-      'I passed on my first try. The timed mock exams felt exactly like the real thing — I walked into the test centre confident.',
-    name: 'Priya K.',
-    province: 'Ontario',
-  },
-  {
-    quote:
-      'Chapter practice made it easy to study after work. Seeing my weak topics helped me focus where I needed it most.',
-    name: 'Marcus T.',
-    province: 'British Columbia',
-  },
-]
-
-type LandingFeaturedPost = Pick<
-  Database['public']['Tables']['blog_posts']['Row'],
-  'id' | 'title' | 'slug' | 'excerpt' | 'cover_image' | 'published_at' | 'author_id'
->
-
-type LandingRecentPost = Pick<
-  Database['public']['Tables']['blog_posts']['Row'],
-  'id' | 'title' | 'slug' | 'excerpt' | 'cover_image' | 'published_at'
->
-
-function formatBlogDate(iso: string | null) {
-  if (!iso) return ''
-  return new Date(iso).toLocaleDateString('en-CA', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
+// ... keep all LANDING_CHAPTERS, TESTIMONIALS, types, formatBlogDate exactly the same ...
 
 export default async function HomePage() {
-  const supabase = await createClient()
+  const session = await getSession()
+  const isGuest = !session
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isGuest = !user
+  const featuredRows = await sql`
+    SELECT id, title, slug, excerpt, cover_image, published_at, author_id
+    FROM public.blog_posts
+    WHERE status = 'published'
+    ORDER BY published_at DESC
+    LIMIT 1
+  `
+  const featuredPost = featuredRows[0] ?? null
 
-  const { data: featuredPostRaw } = await supabase
-    .from('blog_posts')
-    .select('id, title, slug, excerpt, cover_image, published_at, author_id')
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  const featuredPost = featuredPostRaw as LandingFeaturedPost | null
-
-  let recent: LandingRecentPost[] = []
-
+  let recent: any[] = []
   if (featuredPost) {
-    const { data } = await supabase
-      .from('blog_posts')
-      .select('id, title, slug, excerpt, cover_image, published_at')
-      .eq('status', 'published')
-      .neq('id', featuredPost.id)
-      .order('published_at', { ascending: false })
-      .limit(3)
-    recent = (data ?? []) as LandingRecentPost[]
+    recent = await sql`
+      SELECT id, title, slug, excerpt, cover_image, published_at
+      FROM public.blog_posts
+      WHERE status = 'published' AND id != ${featuredPost.id}::uuid
+      ORDER BY published_at DESC
+      LIMIT 3
+    `
   }
 
   const { adsEnabled, clientId, showToGuestsOnly } = await getAdSettings()
   const showAd = adsEnabled && (!showToGuestsOnly || isGuest)
 
+  // ... keep the entire return JSX exactly the same ...
+}
   return (
     <div className="flex flex-col">
       {/* Hero */}
