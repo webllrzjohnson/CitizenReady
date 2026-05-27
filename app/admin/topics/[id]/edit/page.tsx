@@ -1,30 +1,23 @@
-import { createClient } from '@/lib/supabase/server'
+import sql from '@/lib/db'
 import { TopicForm } from '@/components/admin/TopicForm'
 import { notFound } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
 
 type Params = Promise<{ id: string }>
 
 export default async function EditTopicPage({ params }: { params: Params }) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: topic } = await supabase
-    .from('topics')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const rows = await sql`SELECT * FROM public.topics WHERE id = ${id}::uuid LIMIT 1`
+  if (rows.length === 0) notFound()
 
-  if (!topic) {
-    notFound()
-  }
-
-  const typedTopic = topic as any
-
+  const topic = rows[0]
   const defaultValues = {
-    name: typedTopic.name,
-    slug: typedTopic.slug,
-    description: typedTopic.description || undefined,
-    sort_order: typedTopic.sort_order,
+    name: topic.name,
+    slug: topic.slug,
+    description: topic.description || undefined,
+    sort_order: topic.sort_order,
   }
 
   return (
@@ -33,7 +26,6 @@ export default async function EditTopicPage({ params }: { params: Params }) {
         <h1 className="text-3xl font-bold">Edit Topic</h1>
         <p className="text-muted-foreground mt-2">Update the topic details</p>
       </div>
-
       <TopicForm mode="edit" topicId={id} defaultValues={defaultValues} />
     </div>
   )

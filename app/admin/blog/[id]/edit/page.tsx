@@ -1,35 +1,20 @@
-import { createClient } from '@/lib/supabase/server'
-import { fromBlogPosts } from '@/lib/supabase/blog-from'
+import sql from '@/lib/db'
 import { BlogEditorPage } from '@/components/blog/BlogEditorPage'
 import { notFound } from 'next/navigation'
 import type { BlogPost } from '@/types'
-import type { Json } from '@/types/database.types'
+
+export const dynamic = 'force-dynamic'
 
 type Params = Promise<{ id: string }>
 
 export default async function AdminEditBlogPage({ params }: { params: Params }) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: row, error } = await fromBlogPosts(supabase).select('*').eq('id', id).single()
+  const rows = await sql`SELECT * FROM public.blog_posts WHERE id = ${id}::uuid LIMIT 1`
+  if (rows.length === 0) notFound()
 
-  if (error || !row) {
-    notFound()
-  }
-
-  const post = row as {
-    id: string
-    title: string
-    slug: string
-    excerpt: string | null
-    cover_image: string | null
-    content: Json
-    author_id: string
-    status: string
-    published_at: string | null
-    created_at: string
-    updated_at: string
-  }
+  const post = rows[0]
+  const content = typeof post.content === 'string' ? JSON.parse(post.content) : post.content
 
   const defaultValues: Partial<BlogPost> = {
     id: post.id,
@@ -37,7 +22,7 @@ export default async function AdminEditBlogPage({ params }: { params: Params }) 
     slug: post.slug,
     excerpt: post.excerpt,
     cover_image: post.cover_image,
-    content: post.content as Record<string, unknown>,
+    content,
     author_id: post.author_id,
     status: post.status === 'published' ? 'published' : 'draft',
     published_at: post.published_at,

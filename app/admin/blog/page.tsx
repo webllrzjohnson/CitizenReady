@@ -1,63 +1,30 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { fromBlogPosts } from '@/lib/supabase/blog-from'
+import sql from '@/lib/db'
 import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import type { BlogPost } from '@/types'
 import { BlogPublishToggle } from '@/components/blog/BlogPublishToggle'
 import { DeletePostDialog } from '@/components/blog/DeletePostDialog'
 
-type PostRow = {
-  id: string
-  title: string
-  slug: string
-  status: string
-  published_at: string | null
-  updated_at: string
-  author_id: string
-  author: { full_name: string | null; email: string } | null
-}
+export const dynamic = 'force-dynamic'
 
 export default async function AdminBlogListPage() {
-  const supabase = await createClient()
+  const rows = await sql`
+    SELECT id, title, slug, status, published_at, updated_at, author_id
+    FROM public.blog_posts
+    ORDER BY updated_at DESC
+  `
 
-  const { data: raw, error } = await fromBlogPosts(supabase)
-    .select('id, title, slug, status, published_at, updated_at, author_id')
-    .order('updated_at', { ascending: false })
+  const authorIds = [...new Set(rows.map((r: any) => r.author_id))]
+  const authors = authorIds.length > 0
+    ? await sql`SELECT id, full_name, email FROM public.profiles WHERE id = ANY(${sql.array(authorIds)}::uuid[])`
+    : []
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  const authorMap = new Map(authors.map((a: any) => [a.id, a]))
 
-  const rows =
-    (raw ?? []) as unknown as {
-      id: string
-      title: string
-      slug: string
-      status: string
-      published_at: string | null
-      updated_at: string
-      author_id: string
-    }[]
-
-  const authorIds = [...new Set(rows.map((r) => r.author_id))]
-  const { data: authors } =
-    authorIds.length > 0
-      ? await supabase.from('profiles').select('id, full_name, email').in('id', authorIds)
-      : { data: [] as { id: string; full_name: string | null; email: string }[] }
-
-  const authorMap = new Map((authors ?? []).map((a) => [a.id, a]))
-
-  const posts: PostRow[] = rows.map((r) => ({
+  const posts = rows.map((r: any) => ({
     ...r,
     author: authorMap.get(r.author_id) ?? null,
   }))
@@ -93,29 +60,22 @@ export default async function AdminBlogListPage() {
           <TableBody>
             {posts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  No posts yet. Create your first post.
-                </TableCell>
+                <TableCell colSpan={5} className="text-center text-muted-foreground">No posts yet. Create your first post.</TableCell>
               </TableRow>
             ) : (
-              posts.map((post) => {
+              posts.map((post: any) => {
                 const status = post.status === 'published' ? 'published' : 'draft'
                 const dateStr = post.published_at ?? post.updated_at
                 const date = dateStr ? format(new Date(dateStr), 'MMM d, yyyy') : '—'
-                const authorName =
-                  post.author?.full_name?.trim() || post.author?.email || '—'
+                const authorName = post.author?.full_name?.trim() || post.author?.email || '—'
                 return (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">{post.title}</TableCell>
                     <TableCell>
                       {status === 'published' ? (
-                        <Badge className="border-0 bg-green-100 font-medium text-green-800 hover:bg-green-100">
-                          Published
-                        </Badge>
+                        <Badge className="border-0 bg-green-100 font-medium text-green-800 hover:bg-green-100">Published</Badge>
                       ) : (
-                        <Badge variant="secondary" className="font-medium text-gray-700">
-                          Draft
-                        </Badge>
+                        <Badge variant="secondary" className="font-medium text-gray-700">Draft</Badge>
                       )}
                     </TableCell>
                     <TableCell>{authorName}</TableCell>
@@ -125,18 +85,9 @@ export default async function AdminBlogListPage() {
                         <Button variant="outline" size="sm" asChild>
                           <Link href={`/admin/blog/${post.id}/edit`}>Edit</Link>
                         </Button>
-                        <BlogPublishToggle
-                          postId={post.id}
-                          status={status as BlogPost['status']}
-                        />
-                        <DeletePostDialog
-                          postId={post.id}
-                          postTitle={post.title}
-                          trigger={
-                            <Button variant="ghost" size="sm" className="text-destructive">
-                              Delete
-                            </Button>
-                          }
+                        <BlogPublishToggle postId={post.id} status={status as BlogPost['status']} />
+                        <DeletePostDialog postId={post.id} postTitle={post.title}
+                          trigger={<Button variant="ghost" size="sm" className="text-destructive">Delete</Button>}
                         />
                       </div>
                     </TableCell>

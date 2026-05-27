@@ -1,89 +1,73 @@
-import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import sql from '@/lib/db'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { QuestionActions } from '@/components/admin/QuestionActions'
 import { QuestionFilters } from '@/components/admin/QuestionFilters'
 
-type SearchParams = Promise<{
-  q?: string
-  topic?: string
-  status?: string
-  page?: string
-}>
+export const dynamic = 'force-dynamic'
 
-export default async function QuestionsPage({
-  searchParams,
-}: {
-  searchParams: SearchParams
-}) {
+type SearchParams = Promise<{ q?: string; topic?: string; status?: string; page?: string }>
+
+export default async function QuestionsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
   const search = params.q || ''
   const topicFilter = params.topic || 'all'
   const statusFilter = params.status || 'all'
   const page = parseInt(params.page || '1')
   const perPage = 20
+  const offset = (page - 1) * perPage
 
-  const supabase = await createClient()
-
-  let query = supabase
-    .from('questions')
-    .select(
-      `
-      *,
-      topics!inner(id, name)
-    `,
-      { count: 'exact' }
-    )
+  const conditions: string[] = []
+  const values: any[] = []
+  let paramIdx = 1
 
   if (search) {
-    query = query.ilike('question_text', `%${search}%`)
+    conditions.push(`q.question_text ILIKE $${paramIdx++}`)
+    values.push(`%${search}%`)
   }
-
   if (topicFilter && topicFilter !== 'all') {
-    query = query.eq('topic_id', topicFilter)
+    conditions.push(`q.topic_id = $${paramIdx++}::uuid`)
+    values.push(topicFilter)
   }
-
   if (statusFilter === 'active') {
-    query = query.eq('is_active', true)
+    conditions.push(`q.is_active = true`)
   } else if (statusFilter === 'inactive') {
-    query = query.eq('is_active', false)
+    conditions.push(`q.is_active = false`)
   }
 
-  const { data: questions, count } = await query
-    .order('created_at', { ascending: false })
-    .range((page - 1) * perPage, page * perPage - 1)
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-  const { data: topics } = await supabase
-    .from('topics')
-    .select('id, name')
-    .order('name')
+  const [questions, countRows, topics] = await Promise.all([
+    sql.unsafe(`
+      SELECT q.*, t.name as topic_name
+      FROM public.questions q
+      LEFT JOIN public.topics t ON t.id = q.topic_id
+      ${whereClause}
+      ORDER BY q.created_at DESC
+      LIMIT ${perPage} OFFSET ${offset}
+    `, values),
+    sql.unsafe(`
+      SELECT COUNT(*) as count FROM public.questions q ${whereClause}
+    `, values),
+    sql`SELECT id, name FROM public.topics ORDER BY name`,
+  ])
 
-  const totalPages = count ? Math.ceil(count / perPage) : 1
+  const count = parseInt(countRows[0]?.count ?? '0')
+  const totalPages = Math.ceil(count / perPage) || 1
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Questions</h1>
-          <p className="text-muted-foreground mt-2">
-            Showing {questions?.length || 0} of {count || 0} questions
-          </p>
+          <p className="text-muted-foreground mt-2">Showing {questions.length} of {count} questions</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/questions/new">+ New Question</Link>
-        </Button>
+        <Button asChild><Link href="/admin/questions/new">+ New Question</Link></Button>
       </div>
 
-      <QuestionFilters topics={topics || []} />
+      <QuestionFilters topics={topics} />
 
       <div className="rounded-md border">
         <Table>
@@ -98,46 +82,21 @@ export default async function QuestionsPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!questions || questions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  No questions found
-                </TableCell>
-              </TableRow>
+            {questions.length === 0 ? (
+              <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No questions found</TableCell></TableRow>
             ) : (
               questions.map((question: any) => (
                 <TableRow key={question.id}>
-                  <TableCell className="max-w-[400px]">
-                    <div className="line-clamp-2">{question.question_text}</div>
-                  </TableCell>
-                  <TableCell>{question.topics?.name}</TableCell>
+                  <TableCell className="max-w-[400px]"><div className="line-clamp-2">{question.question_text}</div></TableCell>
+                  <TableCell>{question.topic_name}</TableCell>
+                  <TableCell><Badge variant="secondary">{question.type}</Badge></TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{question.type}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        question.difficulty === 'easy'
-                          ? 'default'
-                          : question.difficulty === 'medium'
-                            ? 'secondary'
-                            : 'destructive'
-                      }
-                    >
+                    <Badge variant={question.difficulty === 'easy' ? 'default' : question.difficulty === 'medium' ? 'secondary' : 'destructive'}>
                       {question.difficulty}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={question.is_active ? 'default' : 'outline'}>
-                      {question.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <QuestionActions
-                      questionId={question.id}
-                      isActive={question.is_active}
-                    />
-                  </TableCell>
+                  <TableCell><Badge variant={question.is_active ? 'default' : 'outline'}>{question.is_active ? 'Active' : 'Inactive'}</Badge></TableCell>
+                  <TableCell className="text-right"><QuestionActions questionId={question.id} isActive={question.is_active} /></TableCell>
                 </TableRow>
               ))
             )}
@@ -149,33 +108,13 @@ export default async function QuestionsPage({
         <div className="flex items-center justify-center gap-2">
           {page > 1 && (
             <Button variant="outline" asChild>
-              <Link
-                href={`/admin/questions?${new URLSearchParams({
-                  ...(search && { q: search }),
-                  ...(topicFilter && { topic: topicFilter }),
-                  ...(statusFilter && { status: statusFilter }),
-                  page: String(page - 1),
-                }).toString()}`}
-              >
-                Previous
-              </Link>
+              <Link href={`/admin/questions?${new URLSearchParams({ ...(search && { q: search }), ...(topicFilter && { topic: topicFilter }), ...(statusFilter && { status: statusFilter }), page: String(page - 1) }).toString()}`}>Previous</Link>
             </Button>
           )}
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
+          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
           {page < totalPages && (
             <Button variant="outline" asChild>
-              <Link
-                href={`/admin/questions?${new URLSearchParams({
-                  ...(search && { q: search }),
-                  ...(topicFilter && { topic: topicFilter }),
-                  ...(statusFilter && { status: statusFilter }),
-                  page: String(page + 1),
-                }).toString()}`}
-              >
-                Next
-              </Link>
+              <Link href={`/admin/questions?${new URLSearchParams({ ...(search && { q: search }), ...(topicFilter && { topic: topicFilter }), ...(statusFilter && { status: statusFilter }), page: String(page + 1) }).toString()}`}>Next</Link>
             </Button>
           )}
         </div>
