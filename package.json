@@ -13,8 +13,6 @@
     "seed": "tsx scripts/seed-questions.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.104.1",
     "@tiptap/extension-blockquote": "^3.22.5",
     "@tiptap/extension-heading": "^3.22.5",
     "@tiptap/extension-horizontal-rule": "^3.22.5",
