@@ -67,7 +67,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
         <Button asChild><Link href="/admin/questions/new">+ New Question</Link></Button>
       </div>
 
-      <QuestionFilters topics={topics} />
+      <QuestionFilters topics={topics as any[]} />
 
       <div className="rounded-md border">
         <Table>
