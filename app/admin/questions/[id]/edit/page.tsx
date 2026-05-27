@@ -34,7 +34,7 @@ export default async function EditQuestionPage({ params }: { params: Params }) {
         <h1 className="text-3xl font-bold">Edit Question</h1>
         <p className="text-muted-foreground mt-2">Update the question details</p>
       </div>
-      <QuestionForm mode="edit" questionId={id} defaultValues={defaultValues} topics={topics} />
+      <QuestionForm mode="edit" questionId={id} defaultValues={defaultValues} topics={topics as any[]} />
     </div>
   )
 }

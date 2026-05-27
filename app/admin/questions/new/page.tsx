@@ -12,7 +12,7 @@ export default async function NewQuestionPage() {
         <h1 className="text-3xl font-bold">New Question</h1>
         <p className="text-muted-foreground mt-2">Create a new question for the question bank</p>
       </div>
-      <QuestionForm mode="create" topics={topics} />
+      <QuestionForm mode="create" topics={topics as any[]} />
     </div>
   )
 }
