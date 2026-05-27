@@ -27,7 +27,7 @@ export default async function AdminContactMessagesPage() {
       <p className="mb-6 text-sm text-muted-foreground">
         Click any row to expand and read the full message. Unread messages are highlighted with an amber border.
       </p>
-      <ContactMessagesTable messages={rows} />
+      <ContactMessagesTable messages={rows as any[]} />
     </div>
   )
 }
