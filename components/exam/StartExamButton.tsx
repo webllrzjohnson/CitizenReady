@@ -5,7 +5,6 @@ import { unstable_rethrow, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { startMockExam } from '@/actions/exam'
 import { useToast } from '@/hooks/use-toast'
-import { createClient } from '@/lib/supabase/client'
 
 const GUEST_EXAM_PAYLOAD_KEY = 'citizenready_guest_exam_payload'
 const GUEST_EXAM_USED_KEY = 'citizenready_guest_mock_exam_used'
@@ -21,8 +20,8 @@ export function StartExamButton() {
     startTransition(() => {
       void (async () => {
         try {
-          const supabase = createClient()
-          const { data: { user } } = await supabase.auth.getUser()
+          const sessionRes = await fetch('/api/auth/session')
+          const { user } = await sessionRes.json()
 
           if (
             !user &&
@@ -40,20 +39,13 @@ export function StartExamButton() {
           const result = await startMockExam()
 
           if (result.error) {
-            toast({
-              title: 'Error',
-              description: result.error,
-              variant: 'destructive',
-            })
+            toast({ title: 'Error', description: result.error, variant: 'destructive' })
             setIsStarting(false)
             return
           }
 
           if (result.success && result.isGuest && result.questions) {
-            sessionStorage.setItem(
-              GUEST_EXAM_PAYLOAD_KEY,
-              JSON.stringify({ questions: result.questions })
-            )
+            sessionStorage.setItem(GUEST_EXAM_PAYLOAD_KEY, JSON.stringify({ questions: result.questions }))
             router.push('/dashboard/mock-exam/guest')
             setIsStarting(false)
             return
@@ -65,11 +57,7 @@ export function StartExamButton() {
           setIsStarting(false)
         } catch (error) {
           unstable_rethrow(error)
-          toast({
-            title: 'Error',
-            description: 'Failed to start exam. Please try again.',
-            variant: 'destructive',
-          })
+          toast({ title: 'Error', description: 'Failed to start exam. Please try again.', variant: 'destructive' })
           setIsStarting(false)
         }
       })()
@@ -77,12 +65,7 @@ export function StartExamButton() {
   }
 
   return (
-    <Button
-      onClick={handleStartExam}
-      disabled={isPending || isStarting}
-      size="lg"
-      className="w-full sm:w-auto"
-    >
+    <Button onClick={handleStartExam} disabled={isPending || isStarting} size="lg" className="w-full sm:w-auto">
       {isStarting ? (
         <>
           <span className="mr-2">Starting exam...</span>
