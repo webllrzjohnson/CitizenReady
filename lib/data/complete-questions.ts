@@ -1,8 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import sql from '@/lib/db'
 import { QUESTION_BANK_FREE_PREVIEW_COUNT } from '@/lib/question-bank'
 import type { Question, Topic } from '@/types'
-import type { Json } from '@/types/database.types'
-import type { Tables } from '@/types/database.types'
 
 export type TopicWithQuestions = Topic & {
   questions: Question[]
@@ -31,25 +29,19 @@ function pickRandomQuestionIds(ids: string[], n: number): string[] {
   return copy.slice(0, Math.min(n, copy.length))
 }
 
-function parseOptions(raw: Json | null): { key: string; text: string }[] {
-  if (!Array.isArray(raw)) return []
-  return raw.filter(
-    (o): o is { key: string; text: string } =>
-      typeof o === 'object' &&
-      o !== null &&
-      'key' in o &&
-      'text' in o &&
-      typeof (o as { key: unknown }).key === 'string' &&
-      typeof (o as { text: unknown }).text === 'string'
-  )
+function parseOptions(raw: any): { key: string; text: string }[] {
+  const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
+  if (!Array.isArray(arr)) return []
+  return arr.filter((o: any) => o && typeof o.key === 'string' && typeof o.text === 'string')
 }
 
-function parseCorrectAnswers(raw: Json | null): string[] {
-  if (!Array.isArray(raw)) return []
-  return raw.filter((x): x is string => typeof x === 'string')
+function parseCorrectAnswers(raw: any): string[] {
+  const arr = typeof raw === 'string' ? JSON.parse(raw) : raw
+  if (!Array.isArray(arr)) return []
+  return arr.filter((x: any): x is string => typeof x === 'string')
 }
 
-function rowToQuestion(row: Tables<'questions'>): Question {
+function rowToQuestion(row: any): Question {
   return {
     id: row.id,
     topic_id: row.topic_id,
@@ -64,11 +56,6 @@ function rowToQuestion(row: Tables<'questions'>): Question {
   }
 }
 
-/**
- * Question bank for /study/complete-questions.
- * Non–Plus: only a random subset of questions is loaded as preview; chapter bodies stay locked (no leaked text).
- * Plus/admin: full catalog per chapter.
- */
 export async function getQuestionBankEntries(premiumAccess: boolean): Promise<{
   topics: QuestionBankTopicEntry[]
   previewQuestions: QuestionBankPreviewItem[]
@@ -76,57 +63,25 @@ export async function getQuestionBankEntries(premiumAccess: boolean): Promise<{
   unlockedQuestionCount: number
   lockedTopicCount: number
 }> {
-  const supabase = await createClient()
+  const empty = { topics: [], previewQuestions: [], totalQuestions: 0, unlockedQuestionCount: 0, lockedTopicCount: 0 }
 
-  const { data: topicRows, error: topicsError } = await supabase
-    .from('topics')
-    .select('id, name, slug, description, sort_order')
-    .order('sort_order', { ascending: true })
+  const topicRows = await sql`
+    SELECT id, name, slug, description, sort_order
+    FROM public.topics
+    ORDER BY sort_order ASC
+  `
+  if (!topicRows.length) return empty
 
-  if (topicsError || !topicRows) {
-    console.error('[getQuestionBankEntries] topics', topicsError)
-    return {
-      topics: [],
-      previewQuestions: [],
-      totalQuestions: 0,
-      unlockedQuestionCount: 0,
-      lockedTopicCount: 0,
-    }
-  }
+  const topicMeta = new Map(topicRows.map((t: any) => [t.id, { name: t.name, slug: t.slug }]))
 
-  type TopicRow = {
-    id: string
-    name: string
-    slug: string
-    description: string | null
-    sort_order: number
-  }
-
-  const topicsSorted = topicRows as unknown as TopicRow[]
-  const topicMeta = new Map(topicsSorted.map((t) => [t.id, { name: t.name, slug: t.slug }]))
-
-  const { data: idRows, error: idsError } = await supabase
-    .from('questions')
-    .select('id, topic_id')
-    .eq('is_active', true)
-    .in('type', ['single', 'multiple', 'boolean'])
-
-  if (idsError || !idRows) {
-    console.error('[getQuestionBankEntries] question ids', idsError)
-    return {
-      topics: [],
-      previewQuestions: [],
-      totalQuestions: 0,
-      unlockedQuestionCount: 0,
-      lockedTopicCount: 0,
-    }
-  }
-
-  const questionIdRows = idRows as unknown as { id: string; topic_id: string }[]
+  const idRows = await sql`
+    SELECT id, topic_id FROM public.questions
+    WHERE is_active = true AND type IN ('single', 'multiple', 'boolean')
+  `
 
   const countByTopic = new Map<string, number>()
   const idsByTopic = new Map<string, string[]>()
-  for (const row of questionIdRows) {
+  for (const row of idRows) {
     const tid = row.topic_id
     countByTopic.set(tid, (countByTopic.get(tid) ?? 0) + 1)
     const list = idsByTopic.get(tid) ?? []
@@ -134,41 +89,25 @@ export async function getQuestionBankEntries(premiumAccess: boolean): Promise<{
     idsByTopic.set(tid, list)
   }
 
-  const topicsWithContent = topicsSorted.filter((t) => (countByTopic.get(t.id) ?? 0) > 0)
-
-  const freeTopicIds = new Set(
-    premiumAccess ? topicsWithContent.map((t) => t.id) : []
-  )
-
+  const topicsWithContent = topicRows.filter((t: any) => (countByTopic.get(t.id) ?? 0) > 0)
+  const freeTopicIds = new Set(premiumAccess ? topicsWithContent.map((t: any) => t.id) : [])
   const unlockedChapterIdList = [...freeTopicIds].flatMap((tid) => idsByTopic.get(tid) ?? [])
+  const allQuestionIds = idRows.map((r: any) => r.id)
+  const previewIdList = premiumAccess ? [] : pickRandomQuestionIds(allQuestionIds, QUESTION_BANK_FREE_PREVIEW_COUNT)
+  const idsToFetchFull = premiumAccess ? unlockedChapterIdList : previewIdList
 
-  const allQuestionIds = questionIdRows.map((r) => r.id)
-  const previewIdList = premiumAccess
-    ? []
-    : pickRandomQuestionIds(allQuestionIds, QUESTION_BANK_FREE_PREVIEW_COUNT)
-
-  const idsToFetchFull = premiumAccess
-    ? unlockedChapterIdList
-    : previewIdList
-
-  let fullRows: Tables<'questions'>[] = []
+  let fullRows: any[] = []
   if (idsToFetchFull.length > 0) {
-    const { data: questionRows, error: questionsError } = await supabase
-      .from('questions')
-      .select('*')
-      .in('id', idsToFetchFull)
-      .order('created_at', { ascending: true })
-
-    if (questionsError) {
-      console.error('[getQuestionBankEntries] questions', questionsError)
+    const questionRows = await sql`
+      SELECT * FROM public.questions
+      WHERE id = ANY(${sql.array(idsToFetchFull)}::uuid[])
+      ORDER BY created_at ASC
+    `
+    if (premiumAccess) {
+      fullRows = questionRows
     } else {
-      const rows = (questionRows ?? []) as Tables<'questions'>[]
-      if (premiumAccess) {
-        fullRows = rows
-      } else {
-        const byId = new Map(rows.map((r) => [r.id, r]))
-        fullRows = previewIdList.map((id) => byId.get(id)).filter((r): r is Tables<'questions'> => r != null)
-      }
+      const byId = new Map(questionRows.map((r: any) => [r.id, r]))
+      fullRows = previewIdList.map((id) => byId.get(id)).filter(Boolean)
     }
   }
 
@@ -187,14 +126,10 @@ export async function getQuestionBankEntries(premiumAccess: boolean): Promise<{
     : fullRows.map((row) => {
         const q = rowToQuestion(row)
         const meta = topicMeta.get(q.topic_id)
-        return {
-          ...q,
-          topic_name: meta?.name ?? 'Topic',
-          topic_slug: meta?.slug ?? '',
-        }
+        return { ...q, topic_name: meta?.name ?? 'Topic', topic_slug: meta?.slug ?? '' }
       })
 
-  const topics: QuestionBankTopicEntry[] = topicsSorted.map((t) => {
+  const topics: QuestionBankTopicEntry[] = topicRows.map((t: any) => {
     const questionCount = countByTopic.get(t.id) ?? 0
     const isLocked = !premiumAccess && questionCount > 0
     return {
@@ -209,19 +144,13 @@ export async function getQuestionBankEntries(premiumAccess: boolean): Promise<{
     }
   })
 
-  const totalQuestions = questionIdRows.length
+  const totalQuestions = idRows.length
   const unlockedQuestionCount = premiumAccess
-    ? topics.reduce((n, t) => n + t.questions.length, 0)
+    ? topics.reduce((n: number, t: any) => n + t.questions.length, 0)
     : previewQuestions.length
   const lockedTopicCount = premiumAccess
-    ? topics.filter((t) => t.questionCount > 0 && t.isLocked).length
-    : topics.filter((t) => t.questionCount > 0).length
+    ? topics.filter((t: any) => t.questionCount > 0 && t.isLocked).length
+    : topics.filter((t: any) => t.questionCount > 0).length
 
-  return {
-    topics,
-    previewQuestions,
-    totalQuestions,
-    unlockedQuestionCount,
-    lockedTopicCount,
-  }
+  return { topics, previewQuestions, totalQuestions, unlockedQuestionCount, lockedTopicCount }
 }

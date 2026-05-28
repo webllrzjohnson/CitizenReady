@@ -1,4 +1,4 @@
-import { createPublicSupabaseClient } from '@/lib/supabase/public'
+import sql from '@/lib/db'
 
 export interface AdSettings {
   adsEnabled: boolean
@@ -8,9 +8,8 @@ export interface AdSettings {
 
 export async function getAdSettings(): Promise<AdSettings> {
   try {
-    const supabase = createPublicSupabaseClient()
-    const { data } = await supabase.from('site_settings').select('key, value')
-    const map = new Map<string, string>((data ?? []).map((r) => [r.key, r.value]))
+    const rows = await sql`SELECT key, value FROM public.site_settings`
+    const map = new Map<string, string>(rows.map((r: any) => [r.key, r.value]))
     return {
       adsEnabled: map.get('ads_enabled') === 'true',
       clientId: map.get('adsense_client_id') ?? '',
