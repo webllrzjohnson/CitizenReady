@@ -164,6 +164,9 @@ export function Navbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/dashboard">Dashboard</Link></DropdownMenuItem>
+                  {user.role === 'admin' && (
+                    <DropdownMenuItem asChild><Link href="/admin">Admin</Link></DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onSelect={() => void handleSignOut()}>Sign Out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
