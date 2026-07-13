@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { queueAiBlogDraft } from '@/actions/blog'
+import { generateAiBlogDraft } from '@/actions/blog'
 import { toast } from '@/hooks/use-toast'
 
 export function AiBlogDraftForm() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [title, setTitle] = useState('')
   const [context, setContext] = useState('')
@@ -23,12 +25,12 @@ export function AiBlogDraftForm() {
     formData.append('context', context)
     formData.append('cover_image_url', coverImageUrl)
 
-    const result = await queueAiBlogDraft(formData)
+    const result = await generateAiBlogDraft(formData)
     setIsLoading(false)
 
     if (result.error) {
       toast({
-        title: 'Could not queue draft',
+        title: 'Could not generate draft',
         description: result.error,
         variant: 'destructive',
       })
@@ -36,13 +38,10 @@ export function AiBlogDraftForm() {
     }
 
     toast({
-      title: 'Draft queued',
-      description:
-        'n8n will write a JSON file to your Drive queue. The sync job can publish it to the blog within a few minutes.',
+      title: 'Draft created',
+      description: 'Review and edit the post, then publish when ready.',
     })
-    setTitle('')
-    setContext('')
-    setCoverImageUrl('')
+    router.push(`/admin/blog/${result.data.id}/edit`)
   }
 
   return (
@@ -92,7 +91,7 @@ export function AiBlogDraftForm() {
         className="bg-brand-red text-white hover:bg-brand-red-dark"
         disabled={isLoading}
       >
-        {isLoading ? 'Sending…' : 'Queue AI draft'}
+        {isLoading ? 'Generating…' : 'Generate AI draft'}
       </Button>
     </form>
   )

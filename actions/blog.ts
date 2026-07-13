@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import sql from '@/lib/db'
 import { getSession } from '@/lib/auth/session'
+import { generateBlogDraftFromClaude } from '@/lib/blog/ai-generate'
 import { BlogPostSchema } from '@/lib/validations'
 
 const AiBlogDraftSchema = z.object({
@@ -171,12 +172,9 @@ export async function unpublishPost(id: string) {
   return { success: true as const }
 }
 
-export async function queueAiBlogDraft(formData: FormData) {
+export async function generateAiBlogDraft(formData: FormData) {
   const check = await requireAdmin()
   if ('error' in check) return { error: check.error }
-
-  const webhookUrl = String(process.env.N8N_BLOG_DRAFT_WEBHOOK_URL ?? '').trim()
-  if (!webhookUrl) return { error: 'N8N_BLOG_DRAFT_WEBHOOK_URL is not configured.' }
 
   const parsed = AiBlogDraftSchema.safeParse({
     title: String(formData.get('title') ?? ''),
@@ -189,24 +187,40 @@ export async function queueAiBlogDraft(formData: FormData) {
   }
 
   const { title, context, cover_image_url } = parsed.data
-  const body: { title: string; context: string; cover_image_url?: string } = { title, context }
-  if (cover_image_url) body.cover_image_url = cover_image_url
+  const generated = await generateBlogDraftFromClaude({
+    title,
+    context,
+    cover_image_url,
+  })
+  if ('error' in generated) return { error: generated.error }
 
-  try {
-    const res = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(180_000),
-    })
+  const draft = generated.data
 
-    if (!res.ok) {
-      const text = await res.text()
-      return { error: text.trim().slice(0, 500) || `Automation returned ${res.status}` }
-    }
-
-    return { success: true as const }
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Request failed' }
+  const existing = await sql`SELECT id FROM public.blog_posts WHERE slug = ${draft.slug} LIMIT 1`
+  if (existing.length > 0) {
+    return { error: `Slug "${draft.slug}" is already in use. Try a more specific title.` }
   }
+
+  const rows = await sql`
+    INSERT INTO public.blog_posts (title, slug, excerpt, cover_image, content, author_id, status, published_at)
+    VALUES (
+      ${draft.title},
+      ${draft.slug},
+      ${draft.excerpt},
+      ${draft.cover_image},
+      ${JSON.stringify(draft.content)},
+      ${check.userId}::uuid,
+      'draft',
+      NULL
+    )
+    RETURNING id, slug
+  `
+
+  const row = rows[0] as { id: string; slug: string } | undefined
+  if (!row) return { error: 'Failed to save draft' }
+
+  revalidatePath('/blog')
+  revalidatePath('/admin/blog')
+
+  return { success: true as const, data: { id: row.id, slug: row.slug } }
 }

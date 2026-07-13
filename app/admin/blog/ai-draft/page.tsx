@@ -9,8 +9,8 @@ export default function AdminAiBlogDraftPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">AI blog draft</h1>
           <p className="mt-1 max-w-2xl text-muted-foreground">
-            Sends title and context to your n8n webhook. The automation generates JSON, uploads it to
-            Google Drive, and your scheduled workflow can insert it into Supabase when the slug is new.
+            Provide a title and context. Claude generates a TipTap draft and saves it as a draft
+            post for you to review, edit, and publish.
           </p>
         </div>
         <Button variant="outline" asChild>
