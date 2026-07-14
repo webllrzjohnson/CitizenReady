@@ -83,8 +83,8 @@ const sections = [
     title: '5. Data Storage & Security',
     content: (
       <p>
-        Your data is stored securely using Supabase, hosted on servers in the United States. We use
-        industry-standard encryption and security practices.
+        Your data is stored securely in a PostgreSQL database, with access protected by encryption
+        and industry-standard security practices.
       </p>
     ),
   },
@@ -101,7 +101,7 @@ const sections = [
     title: '7. Third Party Services',
     content: (
       <ul className="list-disc space-y-1 pl-5">
-        <li>Supabase (database and authentication)</li>
+        <li>PostgreSQL (database)</li>
         <li>Vercel (hosting)</li>
         <li>Google AdSense (advertising)</li>
         <li>Resend (transactional email)</li>

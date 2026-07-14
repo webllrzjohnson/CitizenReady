@@ -4,7 +4,8 @@
 - Next.js 14+ with App Router
 - TypeScript
 - Tailwind CSS + shadcn/ui
-- Supabase (Auth + Database)
+- PostgreSQL via `postgres` (lib/db.ts)
+- JWT cookie auth (lib/auth/session.ts)
 - Zod for validation
 - Server Actions for mutations
 
@@ -19,13 +20,12 @@
 ## File Organization
 - Place Server Actions in /actions
 - Keep types in /types
-- Use /lib for utilities and Supabase clients
+- Use /lib for utilities (db, auth, validations)
 - Components in /components with subfolders by domain
 
 ## Database
-- All queries use RLS - no service role key in frontend
-- Use createClient() from lib/supabase/server in Server Components
-- Use createClient() from lib/supabase/client in Client Components
+- Query Postgres with `sql` from lib/db.ts
+- Auth via getSession() / createSession() from lib/auth/session
 - Validate all inputs with Zod schemas from lib/validations.ts
 
 ## UI/UX
