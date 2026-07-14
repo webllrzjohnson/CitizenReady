@@ -9,15 +9,28 @@ import { Textarea } from '@/components/ui/textarea'
 import { generateAiBlogDraft } from '@/actions/blog'
 import { toast } from '@/hooks/use-toast'
 
+const CONTEXT_MAX = 60_000
+
 export function AiBlogDraftForm() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [title, setTitle] = useState('')
   const [context, setContext] = useState('')
   const [coverImageUrl, setCoverImageUrl] = useState('')
+  const contextLength = context.length
+  const contextNearLimit = contextLength > CONTEXT_MAX * 0.9
+  const contextOverLimit = contextLength > CONTEXT_MAX
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (contextOverLimit) {
+      toast({
+        title: 'Context too long',
+        description: `Keep context under ${CONTEXT_MAX.toLocaleString()} characters.`,
+        variant: 'destructive',
+      })
+      return
+    }
     setIsLoading(true)
 
     const formData = new FormData()
@@ -71,6 +84,17 @@ export function AiBlogDraftForm() {
           disabled={isLoading}
           className="min-h-[200px] resize-y"
         />
+        <p
+          className={
+            contextOverLimit
+              ? 'text-xs text-destructive'
+              : contextNearLimit
+                ? 'text-xs text-amber-600'
+                : 'text-xs text-muted-foreground'
+          }
+        >
+          {contextLength.toLocaleString()} / {CONTEXT_MAX.toLocaleString()} characters
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -90,7 +114,7 @@ export function AiBlogDraftForm() {
       <Button
         type="submit"
         className="bg-brand-red text-white hover:bg-brand-red-dark"
-        disabled={isLoading}
+        disabled={isLoading || contextOverLimit}
       >
         {isLoading ? 'Generating…' : 'Generate AI draft'}
       </Button>

@@ -27,7 +27,7 @@ const sections = [
           <strong>Usage data:</strong> quiz sessions, scores, practice history
         </li>
         <li>
-          <strong>Device data:</strong> browser type, IP address (via Vercel)
+          <strong>Device data:</strong> browser type, IP address (server logs)
         </li>
         <li>
           <strong>Cookies:</strong> session cookies for authentication
@@ -101,8 +101,9 @@ const sections = [
     title: '7. Third Party Services',
     content: (
       <ul className="list-disc space-y-1 pl-5">
+        <li>Self-hosted VPS (application hosting)</li>
         <li>PostgreSQL (database)</li>
-        <li>Vercel (hosting)</li>
+        <li>Anthropic (optional AI blog draft generation)</li>
         <li>Google AdSense (advertising)</li>
         <li>Resend (transactional email)</li>
       </ul>

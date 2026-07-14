@@ -18,9 +18,17 @@ This guide covers deploying CitizenReady on a VPS with [Coolify](https://coolify
 
 ## Step 1: PostgreSQL
 
-Point `DATABASE_URL` at your Postgres instance. The database must include the tables the app expects:
+Point `DATABASE_URL` at your Postgres instance.
 
-`profiles`, `topics`, `questions`, `quiz_sessions`, `question_attempts`, `blog_posts`, `contact_messages`, `site_settings`, etc.
+**New database:** apply the schema from this repo:
+
+```bash
+psql "$DATABASE_URL" -f db/schema.sql
+```
+
+See `db/README.md` for backups, restore, and exporting a live schema.
+
+The app expects tables: `profiles`, `topics`, `questions`, `quiz_sessions`, `question_attempts`, `blog_posts`, `contact_messages`, `site_settings`.
 
 If Postgres runs on the same VPS as Coolify, use the internal hostname Coolify provides (not `localhost` from inside the app container unless Postgres is in the same container).
 
@@ -32,6 +40,8 @@ If Postgres runs on the same VPS as Coolify, use the internal hostname Coolify p
 4. Set the **build command** (if not auto-detected): `npm run build`
 5. Set the **start command**: `npm start`
 6. Expose port **3000** (or map Coolify’s proxy to the container port Next.js uses).
+7. **Health check** (optional): `GET /api/health` — returns `200` when Postgres is reachable.
+8. **Proxy timeout:** for AI blog drafts, set read/proxy timeout to **≥ 180 seconds** (generation can take up to 3 minutes).
 
 Redeploy after every push to `main` (or enable auto-deploy on push).
 
@@ -44,6 +54,7 @@ In your Coolify app → **Environment Variables**, set:
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string, e.g. `postgresql://user:pass@host:5432/citizenready` |
+| `DATABASE_SSL` | Optional. Set to `require` when Postgres needs TLS (or use `?sslmode=require` in `DATABASE_URL`) |
 | `JWT_SECRET` | Long random secret for session cookies (same value across redeploys) |
 | `NEXT_PUBLIC_SITE_URL` | Public site URL, e.g. `https://citizenready.ca` (no trailing slash) |
 
@@ -86,6 +97,16 @@ Create a user via signup, then promote in Postgres:
 UPDATE public.profiles SET role = 'admin' WHERE email = 'you@example.com';
 ```
 
+## Step 6: Backups
+
+Schedule regular Postgres dumps on the VPS. Example:
+
+```bash
+pg_dump "$DATABASE_URL" --format=custom --file="/backups/citizenready-$(date +%F).dump"
+```
+
+Copy backups off-server. Details in `db/README.md`.
+
 ## Production checklist
 
 - [ ] Postgres reachable from the Coolify app container
@@ -94,6 +115,9 @@ UPDATE public.profiles SET role = 'admin' WHERE email = 'you@example.com';
 - [ ] Reverse proxy / SSL configured in Coolify for your domain
 - [ ] Admin user has `role = 'admin'` in `profiles`
 - [ ] For AI drafts: `ANTHROPIC_API_KEY` set; `ANTHROPIC_MODEL` unset or `claude-sonnet-4-6`
+- [ ] Coolify proxy timeout ≥ 180s if using AI blog drafts
+- [ ] `GET /api/health` returns `200` after deploy
+- [ ] Postgres backups scheduled (`db/README.md`)
 
 ## Troubleshooting
 
@@ -105,7 +129,7 @@ UPDATE public.profiles SET role = 'admin' WHERE email = 'you@example.com';
 ### Database connection errors
 
 - Verify `DATABASE_URL` from inside the container (host, port, user, password, database name)
-- If Postgres requires SSL, you may need `?sslmode=require` on the URL (depends on your host)
+- If Postgres requires SSL, set `DATABASE_SSL=require` or add `?sslmode=require` to `DATABASE_URL`
 
 ### Build fails
 
