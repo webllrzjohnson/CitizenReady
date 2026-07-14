@@ -1,72 +1,120 @@
 # Deployment Guide
 
-This guide covers deploying CitizenReady with PostgreSQL and Vercel.
+This guide covers deploying CitizenReady on a VPS with [Coolify](https://coolify.io), PostgreSQL, and optional Anthropic (AI blog drafts).
 
 ## Prerequisites
 
-- Node.js 20.9+ installed (matches `engines` in `package.json` and Next.js 15 support)
-- A PostgreSQL database (local, Neon, Railway, etc.)
-- A Vercel account (free tier works)
-- Git installed
+- A VPS with Coolify installed
+- Node.js 20.9+ (matches `engines` in `package.json`)
+- PostgreSQL (on the same VPS, a managed host, or a Coolify database service)
+- Git access to this repository
 
-## Step 1: Install Dependencies
+## Architecture
+
+- **App:** Next.js 15 (App Router), built and run as a Node server (`npm run build` → `npm start`)
+- **Database:** PostgreSQL via `DATABASE_URL` (`lib/db.ts`)
+- **Auth:** JWT session cookies (`JWT_SECRET`) — no third-party auth provider
+- **AI blog drafts:** Server Action calls Anthropic when `ANTHROPIC_API_KEY` is set
+
+## Step 1: PostgreSQL
+
+Point `DATABASE_URL` at your Postgres instance. The database must include the tables the app expects:
+
+`profiles`, `topics`, `questions`, `quiz_sessions`, `question_attempts`, `blog_posts`, `contact_messages`, `site_settings`, etc.
+
+If Postgres runs on the same VPS as Coolify, use the internal hostname Coolify provides (not `localhost` from inside the app container unless Postgres is in the same container).
+
+## Step 2: Coolify application
+
+1. In Coolify, create a **new resource** → **Application** (or add this repo to an existing project).
+2. Connect your Git repository and set the branch (e.g. `main`).
+3. Build pack: **Nixpacks** or **Dockerfile** — default Node detection usually works.
+4. Set the **build command** (if not auto-detected): `npm run build`
+5. Set the **start command**: `npm start`
+6. Expose port **3000** (or map Coolify’s proxy to the container port Next.js uses).
+
+Redeploy after every push to `main` (or enable auto-deploy on push).
+
+## Step 3: Environment variables (Coolify)
+
+In your Coolify app → **Environment Variables**, set:
+
+### Required
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string, e.g. `postgresql://user:pass@host:5432/citizenready` |
+| `JWT_SECRET` | Long random secret for session cookies (same value across redeploys) |
+| `NEXT_PUBLIC_SITE_URL` | Public site URL, e.g. `https://citizenready.ca` (no trailing slash) |
+
+### Optional — AI blog draft (Admin → AI blog draft)
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Anthropic API key (`sk-ant-...`) |
+| `ANTHROPIC_MODEL` | Model id; default in code is `claude-sonnet-4-6`. Do **not** use retired ids such as `claude-sonnet-4-20250514`. |
+
+### Optional — other features
+
+| Variable | Description |
+|----------|-------------|
+| `RESEND_API_KEY` | Transactional email |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Payments |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | Analytics |
+| `SENTRY_DSN` | Error monitoring |
+
+Coolify injects these at runtime; you do not commit production secrets to the repo.
+
+## Step 4: Local development
 
 ```bash
 npm install
-```
-
-## Step 2: Configure PostgreSQL
-
-Point `DATABASE_URL` at your Postgres instance. The app talks to the database directly via the `postgres` package (`lib/db.ts`). Auth uses JWT cookies (`JWT_SECRET`) — there is no third-party auth provider.
-
-Ensure your schema includes the tables the app expects (`profiles`, `topics`, `questions`, `quiz_sessions`, `question_attempts`, `blog_posts`, `contact_messages`, `site_settings`, etc.).
-
-## Step 3: Configure Environment Variables
-
-Create `.env.local` in the project root:
-
-```bash
 cp .env.local.example .env.local
-```
-
-Edit `.env.local`:
-
-```env
-DATABASE_URL=postgresql://user:password@host:5432/citizenready
-JWT_SECRET=generate-a-long-random-secret
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-```
-
-## Step 4: Run Locally
-
-```bash
+# Edit .env.local with DATABASE_URL, JWT_SECRET, NEXT_PUBLIC_SITE_URL
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Optional: seed questions with `npm run seed` (requires `canadaquiz_questions.json`).
+Optional: seed questions with `npm run seed -- --yes` (requires `canadaquiz_questions.json` in the project root).
 
-## Step 5: Deploy to Vercel
+## Step 5: First admin user
 
-1. Push the repo to GitHub
-2. Import the project in Vercel
-3. Set environment variables:
-   - `DATABASE_URL`
-   - `JWT_SECRET`
-   - `NEXT_PUBLIC_SITE_URL` (your production URL)
-   - Optional: `ANTHROPIC_API_KEY`, `RESEND_API_KEY`, etc.
-4. Deploy
+Create a user via signup, then promote in Postgres:
 
-## Checklist
+```sql
+UPDATE public.profiles SET role = 'admin' WHERE email = 'you@example.com';
+```
 
-- [ ] Postgres reachable from Vercel
-- [ ] `DATABASE_URL` and `JWT_SECRET` set in production
-- [ ] `NEXT_PUBLIC_SITE_URL` matches the production hostname
-- [ ] Admin user exists with `role = 'admin'` in `profiles`
+## Production checklist
+
+- [ ] Postgres reachable from the Coolify app container
+- [ ] `DATABASE_URL`, `JWT_SECRET`, and `NEXT_PUBLIC_SITE_URL` set in Coolify
+- [ ] `NEXT_PUBLIC_SITE_URL` matches your public domain (HTTPS)
+- [ ] Reverse proxy / SSL configured in Coolify for your domain
+- [ ] Admin user has `role = 'admin'` in `profiles`
+- [ ] For AI drafts: `ANTHROPIC_API_KEY` set; `ANTHROPIC_MODEL` unset or `claude-sonnet-4-6`
 
 ## Troubleshooting
 
-- **Login fails**: confirm `JWT_SECRET` matches across deploys and `password_hash` is set on the profile
-- **DB connection errors**: check `DATABASE_URL`, SSL settings, and network allowlists for your host
-- **Build fails**: run `npm run build` locally and fix TypeScript/lint errors first
+### Login fails
+
+- Confirm `JWT_SECRET` is set and unchanged between deploys
+- Confirm the profile has `password_hash` set (users created after the Postgres migration)
+
+### Database connection errors
+
+- Verify `DATABASE_URL` from inside the container (host, port, user, password, database name)
+- If Postgres requires SSL, you may need `?sslmode=require` on the URL (depends on your host)
+
+### Build fails
+
+- Run `npm run build` locally and fix TypeScript/lint errors
+- Ensure Node version in Coolify is **≥ 20.9**
+
+### AI blog draft fails
+
+- **`ANTHROPIC_API_KEY is not configured.`** — add the key in Coolify env vars and redeploy
+- **Model / 404 errors** — remove an old `ANTHROPIC_MODEL` value or set `claude-sonnet-4-6`
+- **Unauthorized** — log in as a user with `role = 'admin'`
+- After changing env vars in Coolify, trigger a **new deploy** so the running container picks them up

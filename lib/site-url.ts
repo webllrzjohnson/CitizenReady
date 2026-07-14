@@ -1,6 +1,6 @@
 /**
  * Canonical site origin for sitemap, robots, and Open Graph.
- * Set NEXT_PUBLIC_SITE_URL in production (e.g. Vercel).
+ * Set NEXT_PUBLIC_SITE_URL in production (your public site URL).
  */
 export function getSiteUrl(): string {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim()

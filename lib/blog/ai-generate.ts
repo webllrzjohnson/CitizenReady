@@ -49,7 +49,7 @@ export async function generateBlogDraftFromClaude(input: {
   const key = String(process.env.ANTHROPIC_API_KEY ?? '').trim()
   if (!key) return { error: 'ANTHROPIC_API_KEY is not configured.' }
 
-  const model = String(process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-20250514').trim()
+  const model = String(process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6').trim()
 
   let res: Response
   try {
@@ -75,6 +75,15 @@ export async function generateBlogDraftFromClaude(input: {
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+    try {
+      const errBody = JSON.parse(text) as {
+        error?: { message?: string; type?: string }
+      }
+      const msg = errBody.error?.message?.trim()
+      if (msg) return { error: msg }
+    } catch {
+      // fall through to raw text
+    }
     return { error: text.trim().slice(0, 500) || `Anthropic returned ${res.status}` }
   }
 
