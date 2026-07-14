@@ -137,5 +137,7 @@ CREATE TABLE public.site_settings (
 INSERT INTO public.site_settings (key, value) VALUES
     ('ads_enabled', 'false'),
     ('adsense_client_id', ''),
-    ('ads_show_to_guests_only', 'true')
+    ('ads_show_to_guests_only', 'true'),
+    ('ai_blog_provider', 'anthropic'),
+    ('ai_blog_model', 'claude-sonnet-4-6')
 ON CONFLICT (key) DO NOTHING;

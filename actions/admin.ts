@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import sql from '@/lib/db'
 import { getSession } from '@/lib/auth/session'
+import { isAiProviderId, resolveBlogDraftModel } from '@/lib/blog/ai-providers'
+import { saveAiBlogSettings } from '@/lib/blog/ai-settings'
 
 async function requireAdmin() {
   const session = await getSession()
@@ -69,5 +71,48 @@ export async function updateSiteSettings(formData: FormData) {
   revalidatePath('/admin/settings')
   revalidatePath('/')
   revalidatePath('/blog')
+  return { success: true }
+}
+
+const UpdateAiBlogSettingsSchema = z.object({
+  provider: z.string().trim(),
+  model: z.string().trim().min(1).max(120),
+  custom_model: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((s) => (s === '' ? undefined : s)),
+})
+
+export async function updateAiBlogSettings(formData: FormData) {
+  const check = await requireAdmin()
+  if ('error' in check) return { error: check.error }
+
+  const parsed = UpdateAiBlogSettingsSchema.safeParse({
+    provider: formData.get('provider'),
+    model: formData.get('model'),
+    custom_model: formData.get('custom_model'),
+  })
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? 'Validation failed' }
+  }
+
+  if (!isAiProviderId(parsed.data.provider)) {
+    return { error: 'Unsupported AI provider' }
+  }
+
+  const resolvedModel = resolveBlogDraftModel(
+    parsed.data.provider,
+    parsed.data.model,
+    parsed.data.custom_model,
+  )
+
+  await saveAiBlogSettings({
+    provider: parsed.data.provider,
+    model: resolvedModel,
+  })
+
+  revalidatePath('/admin/blog/ai-draft')
   return { success: true }
 }

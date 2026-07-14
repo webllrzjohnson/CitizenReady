@@ -62,8 +62,12 @@ In your Coolify app → **Environment Variables**, set:
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | Anthropic API key (`sk-ant-...`) |
-| `ANTHROPIC_MODEL` | Model id; default in code is `claude-sonnet-4-6`. Do **not** use retired ids such as `claude-sonnet-4-20250514`. |
+| `ANTHROPIC_API_KEY` | Anthropic API key (`sk-ant-...`) — required when using Claude |
+| `OPENAI_API_KEY` | OpenAI API key (`sk-...`) — required when using OpenAI |
+| `ANTHROPIC_MODEL` | Optional env fallback if no admin default is saved |
+| `OPENAI_MODEL` | Optional env fallback if no admin default is saved |
+
+Default provider/model can be set in **Admin → AI blog draft** and are stored in `site_settings`. Do **not** use retired Anthropic ids such as `claude-sonnet-4-20250514`.
 
 ### Optional — other features
 

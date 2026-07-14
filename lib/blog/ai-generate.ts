@@ -1,5 +1,12 @@
 import { z } from 'zod'
 import { AI_BLOG_SYSTEM_PROMPT, buildAiBlogUserMessage } from '@/lib/blog/ai-prompt'
+import {
+  AI_PROVIDERS,
+  fetchBlogDraftLlmText,
+  isAiProviderId,
+  resolveBlogDraftModel,
+  type AiProviderId,
+} from '@/lib/blog/ai-providers'
 import { blocksToTiptap, slugifyAiSlug, type AiBlogBlock } from '@/lib/blog/blocks-to-tiptap'
 
 const AiModelBlockSchema = z.object({
@@ -41,63 +48,35 @@ function httpsOrNull(url: string | undefined | null): string | null {
   return u
 }
 
-export async function generateBlogDraftFromClaude(input: {
+export async function generateBlogDraft(input: {
   title: string
   context: string
   cover_image_url?: string
+  provider: AiProviderId
+  model: string
+  custom_model?: string
 }): Promise<{ data: GeneratedBlogDraft } | { error: string }> {
-  const key = String(process.env.ANTHROPIC_API_KEY ?? '').trim()
-  if (!key) return { error: 'ANTHROPIC_API_KEY is not configured.' }
-
-  const model = String(process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6').trim()
-
-  let res: Response
-  try {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 8192,
-        temperature: 0.35,
-        system: AI_BLOG_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildAiBlogUserMessage(input) }],
-      }),
-      signal: AbortSignal.timeout(180_000),
-    })
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Anthropic request failed' }
+  if (!isAiProviderId(input.provider)) {
+    return { error: 'Unsupported AI provider' }
   }
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    try {
-      const errBody = JSON.parse(text) as {
-        error?: { message?: string; type?: string }
-      }
-      const msg = errBody.error?.message?.trim()
-      if (msg) return { error: msg }
-    } catch {
-      // fall through to raw text
-    }
-    return { error: text.trim().slice(0, 500) || `Anthropic returned ${res.status}` }
-  }
+  const model = resolveBlogDraftModel(input.provider, input.model, input.custom_model)
+  const userMessage = buildAiBlogUserMessage({
+    title: input.title,
+    context: input.context,
+    cover_image_url: input.cover_image_url,
+  })
 
-  let payload: unknown
-  try {
-    payload = await res.json()
-  } catch {
-    return { error: 'Anthropic returned invalid JSON' }
-  }
+  const llm = await fetchBlogDraftLlmText({
+    provider: input.provider,
+    model,
+    system: AI_BLOG_SYSTEM_PROMPT,
+    user: userMessage,
+  })
+  if ('error' in llm) return { error: llm.error }
 
-  const content = (payload as { content?: Array<{ type?: string; text?: string }> })?.content
-  const textBlock = Array.isArray(content) ? content.find((c) => c.type === 'text') : null
-  const llmJsonText = stripJsonFence(textBlock?.text ?? '')
-  if (!llmJsonText) return { error: 'Claude response missing text content' }
+  const llmJsonText = stripJsonFence(llm.text)
+  if (!llmJsonText) return { error: 'Model response was empty' }
 
   let parsedRaw: unknown
   try {
@@ -140,4 +119,17 @@ export async function generateBlogDraftFromClaude(input: {
       content: tiptap,
     },
   }
+}
+
+/** @deprecated Use generateBlogDraft */
+export async function generateBlogDraftFromClaude(input: {
+  title: string
+  context: string
+  cover_image_url?: string
+}): Promise<{ data: GeneratedBlogDraft } | { error: string }> {
+  return generateBlogDraft({
+    ...input,
+    provider: 'anthropic',
+    model: AI_PROVIDERS.anthropic.defaultModel,
+  })
 }

@@ -5,7 +5,13 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import sql from '@/lib/db'
 import { getSession } from '@/lib/auth/session'
-import { generateBlogDraftFromClaude } from '@/lib/blog/ai-generate'
+import { generateBlogDraft } from '@/lib/blog/ai-generate'
+import {
+  isAiProviderId,
+  resolveBlogDraftModel,
+  type AiProviderId,
+} from '@/lib/blog/ai-providers'
+import { saveAiBlogSettings } from '@/lib/blog/ai-settings'
 import { BlogPostSchema } from '@/lib/validations'
 
 const AiBlogDraftSchema = z.object({
@@ -19,6 +25,18 @@ const AiBlogDraftSchema = z.object({
     .refine((s) => s === undefined || /^https:\/\//i.test(s), {
       message: 'Cover image must be an https URL',
     }),
+  provider: z.string().trim(),
+  model: z.string().trim().min(1, 'Model is required').max(120),
+  custom_model: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((s) => (s === '' ? undefined : s)),
+  save_as_default: z
+    .string()
+    .optional()
+    .transform((s) => s === 'true'),
 })
 
 async function requireAdmin() {
@@ -180,19 +198,40 @@ export async function generateAiBlogDraft(formData: FormData) {
     title: String(formData.get('title') ?? ''),
     context: String(formData.get('context') ?? ''),
     cover_image_url: String(formData.get('cover_image_url') ?? ''),
+    provider: String(formData.get('provider') ?? 'anthropic'),
+    model: String(formData.get('model') ?? ''),
+    custom_model: String(formData.get('custom_model') ?? ''),
+    save_as_default: String(formData.get('save_as_default') ?? 'false'),
   })
 
   if (!parsed.success) {
     return { error: parsed.error.flatten().formErrors[0] ?? parsed.error.errors[0]?.message ?? 'Validation failed' }
   }
 
-  const { title, context, cover_image_url } = parsed.data
-  const generated = await generateBlogDraftFromClaude({
+  const { title, context, cover_image_url, provider: providerRaw, model, custom_model, save_as_default } =
+    parsed.data
+
+  if (!isAiProviderId(providerRaw)) {
+    return { error: 'Unsupported AI provider' }
+  }
+  const provider = providerRaw as AiProviderId
+
+  const resolvedModel = resolveBlogDraftModel(provider, model, custom_model)
+
+  const generated = await generateBlogDraft({
     title,
     context,
     cover_image_url,
+    provider,
+    model,
+    custom_model,
   })
   if ('error' in generated) return { error: generated.error }
+
+  if (save_as_default) {
+    await saveAiBlogSettings({ provider, model: resolvedModel })
+    revalidatePath('/admin/blog/ai-draft')
+  }
 
   const draft = generated.data
 
