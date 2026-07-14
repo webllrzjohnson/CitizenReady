@@ -28,20 +28,21 @@ export function AiBlogDraftForm() {
     const result = await generateAiBlogDraft(formData)
     setIsLoading(false)
 
-    if (result.error) {
+    if ('error' in result || !result.data) {
       toast({
         title: 'Could not generate draft',
-        description: result.error,
+        description: 'error' in result ? result.error : 'Failed to save draft',
         variant: 'destructive',
       })
       return
     }
 
+    const { id } = result.data
     toast({
       title: 'Draft created',
       description: 'Review and edit the post, then publish when ready.',
     })
-    router.push(`/admin/blog/${result.data.id}/edit`)
+    router.push(`/admin/blog/${id}/edit`)
   }
 
   return (
