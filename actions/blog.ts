@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import sql from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { requireAdminSession } from '@/lib/auth/session'
 import { generateBlogDraft } from '@/lib/blog/ai-generate'
 import {
   isAiProviderId,
@@ -39,24 +39,13 @@ const AiBlogDraftSchema = z.object({
     .transform((s) => s === 'true'),
 })
 
-async function requireAdmin() {
-  const session = await getSession()
-  if (!session) return { error: 'Unauthorized' }
-  if (session.role !== 'admin') return { error: 'Unauthorized' }
-
-  const rows = await sql`SELECT role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
-  if (rows[0]?.role !== 'admin') return { error: 'Unauthorized' }
-
-  return { userId: session.id }
-}
-
 function normalizeCoverImage(url: string | undefined): string | null {
   if (!url || url.trim() === '') return null
   return url.trim()
 }
 
 export async function createPost(formData: FormData) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   const title = (formData.get('title') as string)?.trim() ?? ''
@@ -102,7 +91,7 @@ export async function createPost(formData: FormData) {
 }
 
 export async function updatePost(id: string, formData: FormData) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   const title = (formData.get('title') as string)?.trim() ?? ''
@@ -165,7 +154,7 @@ export async function updatePost(id: string, formData: FormData) {
 }
 
 export async function deletePost(id: string) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   await sql`DELETE FROM public.blog_posts WHERE id = ${id}::uuid`
@@ -175,7 +164,7 @@ export async function deletePost(id: string) {
 }
 
 export async function publishPost(id: string) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   await sql`UPDATE public.blog_posts SET status = 'published', published_at = now() WHERE id = ${id}::uuid`
@@ -185,7 +174,7 @@ export async function publishPost(id: string) {
 }
 
 export async function unpublishPost(id: string) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   await sql`UPDATE public.blog_posts SET status = 'draft' WHERE id = ${id}::uuid`
@@ -195,7 +184,7 @@ export async function unpublishPost(id: string) {
 }
 
 export async function generateAiBlogDraft(formData: FormData) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   const parsed = AiBlogDraftSchema.safeParse({

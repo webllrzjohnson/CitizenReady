@@ -1,4 +1,4 @@
-import { getSession } from '@/lib/auth/session'
+import { getFreshSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { AdminNav } from '@/components/admin/AdminNav'
@@ -7,7 +7,7 @@ import sql from '@/lib/db'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) redirect('/login')
   if (session.role !== 'admin') redirect('/dashboard')
 

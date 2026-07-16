@@ -1,5 +1,5 @@
 import sql from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { getFreshSession } from '@/lib/auth/session'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { RoleToggleButton } from './role-toggle-button'
@@ -8,7 +8,7 @@ import { PremiumToggleButton } from '@/components/admin/PremiumToggleButton'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminUsersPage() {
-  const session = await getSession()
+  const session = await getFreshSession()
 
   const users = await sql`
     SELECT id, email, full_name, role, is_premium, created_at

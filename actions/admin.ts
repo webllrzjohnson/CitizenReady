@@ -3,34 +3,23 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import sql from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { requireAdminSession } from '@/lib/auth/session'
 import { isAiProviderId, resolveBlogDraftModel } from '@/lib/blog/ai-providers'
 import { saveAiBlogSettings } from '@/lib/blog/ai-settings'
 
-async function requireAdmin() {
-  const session = await getSession()
-  if (!session) return { error: 'Unauthorized' }
-  if (session.role !== 'admin') return { error: 'Unauthorized' }
-
-  const rows = await sql`SELECT role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
-  if (rows[0]?.role !== 'admin') return { error: 'Unauthorized' }
-
-  return { userId: session.id }
-}
-
 export async function toggleUserRole(userId: string, currentRole: string) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
   if (userId === check.userId) return { error: 'Cannot change your own role' }
 
   const newRole = currentRole === 'user' ? 'admin' : 'user'
-  await sql`UPDATE public.profiles SET role = ${newRole} WHERE id = ${userId}::uuid`
+  await sql`UPDATE public.profiles SET role = ${newRole}, session_version = session_version + 1 WHERE id = ${userId}::uuid`
   revalidatePath('/admin/users')
   return { success: true }
 }
 
 export async function toggleUserPremium(userId: string, currentPremium: boolean) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   await sql`UPDATE public.profiles SET is_premium = ${!currentPremium} WHERE id = ${userId}::uuid`
@@ -46,7 +35,7 @@ const UpdateSiteSettingsSchema = z.object({
 })
 
 export async function updateSiteSettings(formData: FormData) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   const raw = {
@@ -90,7 +79,7 @@ const UpdateAiBlogSettingsSchema = z.object({
 })
 
 export async function updateAiBlogSettings(formData: FormData) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   const parsed = UpdateAiBlogSettingsSchema.safeParse({

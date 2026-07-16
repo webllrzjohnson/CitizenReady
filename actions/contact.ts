@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import sql from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { requireAdminSession } from '@/lib/auth/session'
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -32,11 +32,8 @@ export async function submitContactForm(formData: FormData) {
 }
 
 export async function markMessageRead(id: string) {
-  const session = await getSession()
-  if (!session || session.role !== 'admin') return { error: 'Unauthorized' }
-
-  const rows = await sql`SELECT role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
-  if (rows[0]?.role !== 'admin') return { error: 'Unauthorized' }
+  const check = await requireAdminSession()
+  if ('error' in check) return { error: check.error }
 
   await sql`UPDATE public.contact_messages SET is_read = true WHERE id = ${id}::uuid`
   revalidatePath('/admin/contact-messages')

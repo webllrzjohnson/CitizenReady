@@ -3,11 +3,11 @@
 import bcrypt from 'bcryptjs'
 import { redirect } from 'next/navigation'
 import sql from '@/lib/db'
-import { createSession, getSession, deleteSession } from '@/lib/auth/session'
+import { createSession, getFreshSession, deleteSession } from '@/lib/auth/session'
 import { LoginSchema, SignupSchema } from '@/lib/validations'
 
 export async function getCurrentUser() {
-  return getSession()
+  return getFreshSession()
 }
 
 export async function login(formData: { email: string; password: string }) {
@@ -19,7 +19,7 @@ export async function login(formData: { email: string; password: string }) {
   const { email, password } = result.data
 
   const rows = await sql`
-    SELECT id, email, full_name, role, password_hash
+    SELECT id, email, full_name, role, password_hash, session_version
     FROM public.profiles
     WHERE email = ${email}
     LIMIT 1
@@ -40,6 +40,7 @@ export async function login(formData: { email: string; password: string }) {
     email: user.email,
     role: user.role,
     full_name: user.full_name,
+    session_version: user.session_version,
   })
 
   return { success: true }

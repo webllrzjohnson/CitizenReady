@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import sql from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { getFreshSession } from '@/lib/auth/session'
 import { SubmitAnswerSchema } from '@/lib/validations'
 import type { Question } from '@/types'
 
 export async function startPracticeSession(topicId: string, topicSlug: string) {
-  const session = await getSession()
+  const session = await getFreshSession()
 
   const questions = await sql`
     SELECT * FROM public.questions
@@ -48,7 +48,7 @@ export async function startPracticeSession(topicId: string, topicSlug: string) {
 }
 
 export async function submitAnswer(formData: FormData) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) return { error: 'You must be logged in' }
 
   const sessionId = formData.get('session_id') as string
@@ -94,7 +94,7 @@ export async function submitAnswer(formData: FormData) {
 }
 
 export async function completeSession(sessionId: string) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) return { error: 'You must be logged in' }
 
   const sessionRows = await sql`SELECT user_id, total_q FROM public.quiz_sessions WHERE id = ${sessionId}::uuid LIMIT 1`

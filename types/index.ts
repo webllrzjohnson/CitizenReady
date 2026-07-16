@@ -5,6 +5,7 @@ export type Profile = {
   email: string
   full_name: string | null
   role: Role
+  session_version: number
   created_at: string
 }
 

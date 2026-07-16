@@ -14,14 +14,18 @@ CREATE TABLE public.profiles (
     password_hash TEXT NOT NULL,
     role          TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     is_premium    BOOLEAN NOT NULL DEFAULT FALSE,
+    session_version INTEGER NOT NULL DEFAULT 1,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_profiles_role ON public.profiles (role);
 CREATE INDEX idx_profiles_email ON public.profiles (email);
+CREATE INDEX idx_profiles_session_version ON public.profiles (id, session_version);
 
 COMMENT ON COLUMN public.profiles.is_premium IS
   'Paid / full access for member-only features. Only admins should change this.';
+COMMENT ON COLUMN public.profiles.session_version IS
+  'Increment to invalidate existing JWT cookies for this user after credential, identity, or role changes.';
 
 -- =====================================================
 -- topics

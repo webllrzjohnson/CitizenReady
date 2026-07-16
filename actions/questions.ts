@@ -2,22 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import sql from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { requireAdminSession } from '@/lib/auth/session'
 import { QuestionSchema } from '@/lib/validations'
 
-async function requireAdmin() {
-  const session = await getSession()
-  if (!session) return { error: 'Unauthorized' }
-  if (session.role !== 'admin') return { error: 'Unauthorized' }
-
-  const rows = await sql`SELECT role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
-  if (rows[0]?.role !== 'admin') return { error: 'Unauthorized' }
-
-  return { userId: session.id }
-}
-
 export async function createQuestion(formData: FormData) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   try {
@@ -50,7 +39,7 @@ export async function createQuestion(formData: FormData) {
 }
 
 export async function updateQuestion(id: string, formData: FormData) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   try {
@@ -89,7 +78,7 @@ export async function updateQuestion(id: string, formData: FormData) {
 }
 
 export async function deleteQuestion(id: string) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   await sql`UPDATE public.questions SET is_active = false WHERE id = ${id}::uuid`
@@ -98,7 +87,7 @@ export async function deleteQuestion(id: string) {
 }
 
 export async function toggleQuestion(id: string, is_active: boolean) {
-  const check = await requireAdmin()
+  const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
 
   await sql`UPDATE public.questions SET is_active = ${!is_active} WHERE id = ${id}::uuid`

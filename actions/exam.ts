@@ -2,13 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import sql from '@/lib/db'
-import { getSession } from '@/lib/auth/session'
+import { getFreshSession } from '@/lib/auth/session'
 import { EXAM_CONFIG } from '@/lib/constants'
 import { SubmitExamSchema } from '@/lib/validations'
 import type { Question } from '@/types'
 
 export async function startMockExam() {
-  const session = await getSession()
+  const session = await getFreshSession()
 
   let isPremium = false
   if (session) {
@@ -58,7 +58,7 @@ export async function startMockExam() {
 }
 
 export async function submitMockExam(sessionId: string, answers: Record<string, string[]>) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) return { success: false as const, error: 'You must be logged in' }
 
   const validation = SubmitExamSchema.safeParse({ session_id: sessionId, answers })

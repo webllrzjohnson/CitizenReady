@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
-import { getSession, deleteSession } from '@/lib/auth/session'
+import { createSession, getFreshSession, deleteSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 
 const UpdateProfileSchema = z.object({
@@ -28,13 +28,26 @@ const UpdatePasswordSchema = z.object({
 })
 
 export async function updateProfile(formData: FormData) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) return { error: 'Not authenticated' }
 
   const result = UpdateProfileSchema.safeParse({ full_name: formData.get('full_name') })
   if (!result.success) return { error: result.error.errors[0].message }
 
-  await sql`UPDATE public.profiles SET full_name = ${result.data.full_name} WHERE id = ${session.id}::uuid`
+  const rows = await sql`
+    UPDATE public.profiles
+    SET full_name = ${result.data.full_name}, session_version = session_version + 1
+    WHERE id = ${session.id}::uuid
+    RETURNING id, email, full_name, role, session_version
+  `
+  const profile = rows[0]
+  await createSession({
+    id: profile.id,
+    email: profile.email,
+    role: profile.role,
+    full_name: profile.full_name,
+    session_version: profile.session_version,
+  })
 
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard')
@@ -42,7 +55,7 @@ export async function updateProfile(formData: FormData) {
 }
 
 export async function updateEmail(formData: FormData) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) return { error: 'Not authenticated' }
 
   const result = UpdateEmailSchema.safeParse({
@@ -54,14 +67,27 @@ export async function updateEmail(formData: FormData) {
   const existing = await sql`SELECT id FROM public.profiles WHERE email = ${result.data.email} AND id != ${session.id}::uuid LIMIT 1`
   if (existing.length > 0) return { error: 'This email is already in use' }
 
-  await sql`UPDATE public.profiles SET email = ${result.data.email} WHERE id = ${session.id}::uuid`
+  const rows = await sql`
+    UPDATE public.profiles
+    SET email = ${result.data.email}, session_version = session_version + 1
+    WHERE id = ${session.id}::uuid
+    RETURNING id, email, full_name, role, session_version
+  `
+  const profile = rows[0]
+  await createSession({
+    id: profile.id,
+    email: profile.email,
+    role: profile.role,
+    full_name: profile.full_name,
+    session_version: profile.session_version,
+  })
 
   revalidatePath('/dashboard/settings')
   return { success: true, message: 'Email updated successfully.' }
 }
 
 export async function updatePassword(formData: FormData) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) return { error: 'Not authenticated' }
 
   const result = UpdatePasswordSchema.safeParse({
@@ -71,13 +97,18 @@ export async function updatePassword(formData: FormData) {
   if (!result.success) return { error: result.error.errors[0].message }
 
   const password_hash = await bcrypt.hash(result.data.newPassword, 12)
-  await sql`UPDATE public.profiles SET password_hash = ${password_hash} WHERE id = ${session.id}::uuid`
+  await sql`
+    UPDATE public.profiles
+    SET password_hash = ${password_hash}, session_version = session_version + 1
+    WHERE id = ${session.id}::uuid
+  `
+  await deleteSession()
 
-  return { success: true }
+  return { success: true, message: 'Password updated. Please log in again with your new password.' }
 }
 
 export async function deleteAccount(formData: FormData) {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) return { error: 'Not authenticated' }
 
   const confirmText = formData.get('confirmText')

@@ -1,4 +1,4 @@
-import { getSession } from '@/lib/auth/session'
+import { getFreshSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import sql from '@/lib/db'
 import { format } from 'date-fns'
@@ -12,7 +12,7 @@ import { updateProfile, updateEmail, updatePassword } from '@/actions/settings'
 export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
-  const session = await getSession()
+  const session = await getFreshSession()
   if (!session) redirect('/login')
 
   const profileRows = await sql`
