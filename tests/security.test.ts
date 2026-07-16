@@ -14,6 +14,7 @@ import {
   formatAuditMetadata,
   getAuditActionBadgeVariant,
 } from '../lib/security/audit-view'
+import { hasCurrentPassword } from '../lib/security/account-security'
 
 test('normalizes rate limit identities consistently', () => {
   assert.equal(normalizeRateLimitIdentity('  USER@Example.COM  '), 'user@example.com')
@@ -51,4 +52,12 @@ test('formats audit metadata as stable key-value text', () => {
   ])
   assert.deepEqual(formatAuditMetadata({ nested: { ok: true } }), ['nested: {"ok":true}'])
   assert.deepEqual(formatAuditMetadata({}), [])
+})
+
+test('detects whether sensitive account updates include a current password', () => {
+  assert.equal(hasCurrentPassword('hunter2'), true)
+  assert.equal(hasCurrentPassword('  hunter2  '), true)
+  assert.equal(hasCurrentPassword(''), false)
+  assert.equal(hasCurrentPassword('   '), false)
+  assert.equal(hasCurrentPassword(null), false)
 })

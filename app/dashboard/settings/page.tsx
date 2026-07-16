@@ -64,9 +64,18 @@ export default async function SettingsPage() {
           <Label htmlFor="confirmEmail">Confirm New Email</Label>
           <Input id="confirmEmail" name="confirmEmail" type="email" placeholder="new@example.com" autoComplete="email" />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="emailCurrentPassword">Current Password</Label>
+          <Input id="emailCurrentPassword" name="currentPassword" type="password" placeholder="••••••••" autoComplete="current-password" />
+          <p className="text-xs text-muted-foreground">Required to protect your account from unauthorized email changes.</p>
+        </div>
       </SettingsForm>
 
       <SettingsForm title="Password" description="Choose a strong password at least 8 characters long" action={updatePassword} submitLabel="Update Password">
+        <div className="space-y-2">
+          <Label htmlFor="currentPassword">Current Password</Label>
+          <Input id="currentPassword" name="currentPassword" type="password" placeholder="••••••••" autoComplete="current-password" />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="newPassword">New Password</Label>
           <Input id="newPassword" name="newPassword" type="password" placeholder="••••••••" autoComplete="new-password" />

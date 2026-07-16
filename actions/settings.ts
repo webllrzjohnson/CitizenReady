@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs'
 import sql from '@/lib/db'
 import { createSession, getFreshSession, deleteSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
+import { hasCurrentPassword } from '@/lib/security/account-security'
 
 const UpdateProfileSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -14,12 +15,14 @@ const UpdateProfileSchema = z.object({
 const UpdateEmailSchema = z.object({
   email: z.string().email('Enter a valid email address'),
   confirmEmail: z.string().email('Enter a valid email address'),
+  currentPassword: z.string().refine(hasCurrentPassword, 'Enter your current password'),
 }).refine((data) => data.email === data.confirmEmail, {
   message: 'Email addresses do not match',
   path: ['confirmEmail'],
 })
 
 const UpdatePasswordSchema = z.object({
+  currentPassword: z.string().refine(hasCurrentPassword, 'Enter your current password'),
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
@@ -29,8 +32,16 @@ const UpdatePasswordSchema = z.object({
 
 const DeleteAccountSchema = z.object({
   confirmText: z.literal('DELETE', { errorMap: () => ({ message: 'Type DELETE to confirm' }) }),
-  currentPassword: z.string().min(1, 'Enter your current password'),
+  currentPassword: z.string().refine(hasCurrentPassword, 'Enter your current password'),
 })
+
+async function verifyCurrentPassword(userId: string, currentPassword: string) {
+  const rows = await sql<{ password_hash: string }[]>`
+    SELECT password_hash FROM public.profiles WHERE id = ${userId}::uuid LIMIT 1
+  `
+  const profile = rows[0]
+  return Boolean(profile && await bcrypt.compare(currentPassword, profile.password_hash))
+}
 
 export async function updateProfile(formData: FormData) {
   const session = await getFreshSession()
@@ -66,8 +77,13 @@ export async function updateEmail(formData: FormData) {
   const result = UpdateEmailSchema.safeParse({
     email: formData.get('email'),
     confirmEmail: formData.get('confirmEmail'),
+    currentPassword: formData.get('currentPassword'),
   })
   if (!result.success) return { error: result.error.errors[0].message }
+
+  if (!(await verifyCurrentPassword(session.id, result.data.currentPassword))) {
+    return { error: 'Current password is incorrect' }
+  }
 
   const existing = await sql`SELECT id FROM public.profiles WHERE email = ${result.data.email} AND id != ${session.id}::uuid LIMIT 1`
   if (existing.length > 0) return { error: 'This email is already in use' }
@@ -96,10 +112,15 @@ export async function updatePassword(formData: FormData) {
   if (!session) return { error: 'Not authenticated' }
 
   const result = UpdatePasswordSchema.safeParse({
+    currentPassword: formData.get('currentPassword'),
     newPassword: formData.get('newPassword'),
     confirmPassword: formData.get('confirmPassword'),
   })
   if (!result.success) return { error: result.error.errors[0].message }
+
+  if (!(await verifyCurrentPassword(session.id, result.data.currentPassword))) {
+    return { error: 'Current password is incorrect' }
+  }
 
   const password_hash = await bcrypt.hash(result.data.newPassword, 12)
   await sql`
@@ -122,11 +143,7 @@ export async function deleteAccount(formData: FormData) {
   })
   if (!result.success) return { error: result.error.errors[0].message }
 
-  const rows = await sql<{ password_hash: string }[]>`
-    SELECT password_hash FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1
-  `
-  const profile = rows[0]
-  if (!profile || !(await bcrypt.compare(result.data.currentPassword, profile.password_hash))) {
+  if (!(await verifyCurrentPassword(session.id, result.data.currentPassword))) {
     return { error: 'Current password is incorrect' }
   }
 
