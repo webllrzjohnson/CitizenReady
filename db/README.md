@@ -1,6 +1,6 @@
 # Database
 
-CitizenReady uses PostgreSQL directly (`lib/db.ts`). Auth is JWT cookies — there is no Supabase `auth` schema.
+CitizenReady uses PostgreSQL directly (`lib/db.ts`). Auth is handled by first-party JWT cookies and the `profiles` table.
 
 ## Fresh install
 
@@ -13,6 +13,16 @@ Then seed questions (optional):
 ```bash
 npm run seed -- --yes
 ```
+
+## Existing database migrations
+
+For an existing Coolify/VPS database, apply migration files in order after deploying the code that introduced them:
+
+```bash
+npm run db:migrate
+```
+
+The runner applies numbered SQL files in `db/migrations/` using `DATABASE_URL`. The `002` migration removes duplicate answer rows for the same session/question before adding a uniqueness guard.
 
 ## Backup (recommended on VPS)
 

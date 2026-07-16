@@ -12,6 +12,30 @@ export function logMissingServerEnv(): void {
   }
 }
 
+export function getRequiredServerEnv(key: (typeof REQUIRED_SERVER_ENV)[number]): string {
+  const value = String(process.env[key] ?? '').trim()
+  if (!value) {
+    throw new Error(`[CitizenReady] Missing required environment variable: ${key}`)
+  }
+  return value
+}
+
+export function getDatabaseUrl(): string {
+  return getRequiredServerEnv('DATABASE_URL')
+}
+
+export function getJwtSecret(): string {
+  const secret = getRequiredServerEnv('JWT_SECRET')
+  if (secret.length < 32) {
+    throw new Error('[CitizenReady] JWT_SECRET must be at least 32 characters long')
+  }
+  return secret
+}
+
+export function getJwtSecretBytes(): Uint8Array {
+  return new TextEncoder().encode(getJwtSecret())
+}
+
 /** SSL for postgres.js — set DATABASE_SSL=require or use ?sslmode=require in DATABASE_URL. */
 export function getDatabaseSsl(): false | 'require' {
   const explicit = String(process.env.DATABASE_SSL ?? '').trim().toLowerCase()

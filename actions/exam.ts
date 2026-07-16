@@ -59,57 +59,81 @@ export async function startMockExam() {
 
 export async function submitMockExam(sessionId: string, answers: Record<string, string[]>) {
   const session = await getSession()
-  if (!session) return { error: 'You must be logged in' }
+  if (!session) return { success: false as const, error: 'You must be logged in' }
 
   const validation = SubmitExamSchema.safeParse({ session_id: sessionId, answers })
-  if (!validation.success) return { error: validation.error.errors[0]?.message || 'Invalid input' }
+  if (!validation.success) return { success: false as const, error: validation.error.errors[0]?.message || 'Invalid input' }
 
-  const sessionRows = await sql`
-    SELECT user_id, question_ids FROM public.quiz_sessions WHERE id = ${sessionId}::uuid LIMIT 1
-  `
-  if (sessionRows.length === 0) return { error: 'Invalid session' }
-  if (sessionRows[0].user_id !== session.id) return { error: 'Invalid session' }
-
-  const questionIds = typeof sessionRows[0].question_ids === 'string'
-    ? JSON.parse(sessionRows[0].question_ids)
-    : sessionRows[0].question_ids
-
-  const questionsData = await sql`
-    SELECT id, correct_answers, explanation FROM public.questions WHERE id = ANY(${sql.array(questionIds)}::uuid[])
-  `
-
-  const questionsMap = new Map(questionsData.map((q: any) => [q.id, {
-    correct_answers: typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : q.correct_answers,
-    explanation: q.explanation,
-  }]))
-
-  let score = 0
-  const attempts = questionIds.map((questionId: string) => {
-    const userAnswer = answers[questionId] || []
-    const questionData = questionsMap.get(questionId)
-    if (!questionData) return null
-    const correctAnswers = (questionData as any).correct_answers as string[]
-    const isCorrect = userAnswer.length === correctAnswers.length && userAnswer.every((a: string) => correctAnswers.includes(a))
-    if (isCorrect) score++
-    return { session_id: sessionId, question_id: questionId, user_answer: userAnswer, is_correct: isCorrect, time_spent_ms: 0 }
-  }).filter(Boolean)
-
-  for (const attempt of attempts) {
-    await sql`
-      INSERT INTO public.question_attempts (session_id, question_id, user_answer, is_correct, time_spent_ms)
-      VALUES (${(attempt as any).session_id}::uuid, ${(attempt as any).question_id}::uuid, ${JSON.stringify((attempt as any).user_answer)}, ${(attempt as any).is_correct}, ${(attempt as any).time_spent_ms})
+  const result = await sql.begin(async (tx) => {
+    const sessionRows = await tx`
+      SELECT user_id, question_ids, score, completed_at
+      FROM public.quiz_sessions
+      WHERE id = ${sessionId}::uuid
+      LIMIT 1
+      FOR UPDATE
     `
-  }
+    if (sessionRows.length === 0) return { success: false as const, error: 'Invalid session' }
+    if (sessionRows[0].user_id !== session.id) return { success: false as const, error: 'Invalid session' }
 
-  await sql`UPDATE public.quiz_sessions SET score = ${score}, completed_at = now() WHERE id = ${sessionId}::uuid`
+    const questionIds = typeof sessionRows[0].question_ids === 'string'
+      ? JSON.parse(sessionRows[0].question_ids)
+      : sessionRows[0].question_ids
+
+    if (sessionRows[0].completed_at) {
+      const attemptsData = await tx`
+        SELECT question_id, is_correct
+        FROM public.question_attempts
+        WHERE session_id = ${sessionId}::uuid
+      `
+      return {
+        success: true as const,
+        score: sessionRows[0].score ?? 0,
+        total: questionIds.length,
+        attempts: attemptsData.map((a: any) => ({ question_id: a.question_id, is_correct: a.is_correct })),
+      }
+    }
+
+    const questionsData = await tx`
+      SELECT id, correct_answers, explanation FROM public.questions WHERE id = ANY(${sql.array(questionIds)}::uuid[])
+    `
+
+    const questionsMap = new Map(questionsData.map((q: any) => [q.id, {
+      correct_answers: typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : q.correct_answers,
+      explanation: q.explanation,
+    }]))
+
+    let score = 0
+    const attempts = questionIds.map((questionId: string) => {
+      const userAnswer = answers[questionId] || []
+      const questionData = questionsMap.get(questionId)
+      if (!questionData) return null
+      const correctAnswers = (questionData as any).correct_answers as string[]
+      const isCorrect = userAnswer.length === correctAnswers.length && userAnswer.every((a: string) => correctAnswers.includes(a))
+      if (isCorrect) score++
+      return { session_id: sessionId, question_id: questionId, user_answer: userAnswer, is_correct: isCorrect, time_spent_ms: 0 }
+    }).filter(Boolean)
+
+    await tx`DELETE FROM public.question_attempts WHERE session_id = ${sessionId}::uuid`
+
+    for (const attempt of attempts) {
+      await tx`
+        INSERT INTO public.question_attempts (session_id, question_id, user_answer, is_correct, time_spent_ms)
+        VALUES (${(attempt as any).session_id}::uuid, ${(attempt as any).question_id}::uuid, ${JSON.stringify((attempt as any).user_answer)}, ${(attempt as any).is_correct}, ${(attempt as any).time_spent_ms})
+      `
+    }
+
+    await tx`UPDATE public.quiz_sessions SET score = ${score}, completed_at = now() WHERE id = ${sessionId}::uuid`
+
+    return {
+      success: true as const,
+      score,
+      total: questionIds.length,
+      attempts: attempts.map((a: any) => ({ question_id: a.question_id, is_correct: a.is_correct })),
+    }
+  })
 
   revalidatePath('/dashboard/progress')
   revalidatePath('/dashboard')
 
-  return {
-    success: true,
-    score,
-    total: questionIds.length,
-    attempts: attempts.map((a: any) => ({ question_id: a.question_id, is_correct: a.is_correct })),
-  }
+  return result
 }

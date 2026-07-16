@@ -30,6 +30,14 @@ See `db/README.md` for backups, restore, and exporting a live schema.
 
 The app expects tables: `profiles`, `topics`, `questions`, `quiz_sessions`, `question_attempts`, `blog_posts`, `contact_messages`, `site_settings`.
 
+**Existing database:** apply numbered SQL files in `db/migrations/` in order after deploy. Current migrations:
+
+```bash
+npm run db:migrate
+```
+
+The migration runner uses the app's `DATABASE_URL` and works inside the Coolify app container; no `psql` binary is required.
+
 If Postgres runs on the same VPS as Coolify, use the internal hostname Coolify provides (not `localhost` from inside the app container unless Postgres is in the same container).
 
 ## Step 2: Coolify application
@@ -121,6 +129,7 @@ Copy backups off-server. Details in `db/README.md`.
 - [ ] For AI drafts: `ANTHROPIC_API_KEY` set; `ANTHROPIC_MODEL` unset or `claude-sonnet-4-6`
 - [ ] Coolify proxy timeout ≥ 180s if using AI blog drafts
 - [ ] `GET /api/health` returns `200` after deploy
+- [ ] Existing databases have `npm run db:migrate` applied after deploy
 - [ ] Postgres backups scheduled (`db/README.md`)
 
 ## Troubleshooting

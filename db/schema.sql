@@ -1,5 +1,5 @@
 -- CitizenReady — PostgreSQL schema (VPS / Coolify)
--- Fresh-database reference matching the current app (JWT auth, no Supabase).
+-- Fresh-database reference matching the current app (direct Postgres + JWT auth).
 -- Apply: psql "$DATABASE_URL" -f db/schema.sql
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -89,6 +89,8 @@ CREATE TABLE public.question_attempts (
 );
 
 CREATE INDEX idx_question_attempts_session_id ON public.question_attempts (session_id);
+CREATE UNIQUE INDEX idx_question_attempts_session_question_unique
+    ON public.question_attempts (session_id, question_id);
 
 -- =====================================================
 -- blog_posts

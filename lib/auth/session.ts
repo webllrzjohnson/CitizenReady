@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
+import { getJwtSecretBytes } from '@/lib/env'
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
+const SECRET = getJwtSecretBytes()
 const COOKIE_NAME = 'cr_session'
 
 export type SessionPayload = {
@@ -12,7 +13,7 @@ export type SessionPayload = {
 }
 
 export async function createSession(payload: SessionPayload) {
-  const token = await new SignJWT(payload as any)
+  const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('7d')
     .setIssuedAt()

@@ -11,6 +11,10 @@ async function requireAdmin() {
   const session = await getSession()
   if (!session) return { error: 'Unauthorized' }
   if (session.role !== 'admin') return { error: 'Unauthorized' }
+
+  const rows = await sql`SELECT role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
+  if (rows[0]?.role !== 'admin') return { error: 'Unauthorized' }
+
   return { userId: session.id }
 }
 

@@ -1,9 +1,9 @@
 import postgres from 'postgres'
-import { getDatabaseSsl, logMissingServerEnv } from '@/lib/env'
+import { getDatabaseSsl, getDatabaseUrl, logMissingServerEnv } from '@/lib/env'
 
 logMissingServerEnv()
 
-const sql = postgres(process.env.DATABASE_URL!, {
+const sql = postgres(getDatabaseUrl(), {
   ssl: getDatabaseSsl(),
 })
 

@@ -3,7 +3,14 @@ import { siteUrl } from '@/lib/site-url'
 import { getPublishedSlugs } from '@/lib/blog/queries'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const slugs = await getPublishedSlugs()
+  let slugs: { slug: string }[] = []
+  try {
+    slugs = await getPublishedSlugs()
+  } catch {
+    // Build should not fail if the database is unreachable during image/build creation.
+    // Runtime sitemap requests will include blog entries once Postgres is reachable.
+    slugs = []
+  }
 
   const blogEntries = slugs.map(({ slug }) => ({
     url: siteUrl(`/blog/${slug}`),

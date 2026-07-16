@@ -1,8 +1,9 @@
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import type { SessionPayload } from './session'
+import { getJwtSecretBytes } from '@/lib/env'
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
+const SECRET = getJwtSecretBytes()
 const COOKIE_NAME = 'cr_session'
 
 export async function getSessionFromRequest(request: NextRequest): Promise<SessionPayload | null> {
