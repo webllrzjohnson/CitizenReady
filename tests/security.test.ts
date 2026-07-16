@@ -9,6 +9,11 @@ import {
   buildAdminAuditMetadata,
   redactAuditValue,
 } from '../lib/security/audit-core'
+import {
+  formatAuditActionLabel,
+  formatAuditMetadata,
+  getAuditActionBadgeVariant,
+} from '../lib/security/audit-view'
 
 test('normalizes rate limit identities consistently', () => {
   assert.equal(normalizeRateLimitIdentity('  USER@Example.COM  '), 'user@example.com')
@@ -30,4 +35,20 @@ test('redacts sensitive audit metadata values', () => {
     buildAdminAuditMetadata({ email: 'USER@example.com', note: 'ok', token: 'secret-token-value' }),
     { email: 'u***@example.com', note: 'ok', token: '[REDACTED]' },
   )
+})
+
+test('formats audit log actions for admin display', () => {
+  assert.equal(formatAuditActionLabel('user.role_updated'), 'User Role Updated')
+  assert.equal(formatAuditActionLabel('site.ai_blog_settings_updated'), 'Site AI Blog Settings Updated')
+  assert.equal(getAuditActionBadgeVariant('user.premium_updated'), 'default')
+  assert.equal(getAuditActionBadgeVariant('site.settings_updated'), 'secondary')
+})
+
+test('formats audit metadata as stable key-value text', () => {
+  assert.deepEqual(formatAuditMetadata({ grant: '30d', newRole: 'admin' }), [
+    'grant: 30d',
+    'newRole: admin',
+  ])
+  assert.deepEqual(formatAuditMetadata({ nested: { ok: true } }), ['nested: {"ok":true}'])
+  assert.deepEqual(formatAuditMetadata({}), [])
 })

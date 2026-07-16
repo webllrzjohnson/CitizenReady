@@ -11,6 +11,7 @@ const staticNavItems = [
   { label: 'Blog Posts', href: '/admin/blog' },
   { label: 'AI blog draft', href: '/admin/blog/ai-draft' },
   { label: 'Users', href: '/admin/users' },
+  { label: 'Audit Logs', href: '/admin/audit-logs' },
   { label: 'Ad Settings', href: '/admin/settings' },
 ]
 
