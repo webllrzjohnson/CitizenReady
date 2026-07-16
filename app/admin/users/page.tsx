@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { RoleToggleButton } from './role-toggle-button'
 import { PremiumToggleButton } from '@/components/admin/PremiumToggleButton'
+import { formatPremiumExpiry, getPremiumStatus } from '@/lib/premium'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export default async function AdminUsersPage() {
   const session = await getFreshSession()
 
   const users = await sql`
-    SELECT id, email, full_name, role, is_premium, created_at
+    SELECT id, email, full_name, role, is_premium, premium_expires_at, created_at
     FROM public.profiles
     ORDER BY created_at DESC
   `
@@ -27,6 +28,7 @@ export default async function AdminUsersPage() {
   const usersWithSessions = users.map((user: any) => ({
     ...user,
     is_premium: user.is_premium === true,
+    premium_status: getPremiumStatus(user),
     session_count: sessionCountMap[user.id] || 0,
   }))
 
@@ -53,12 +55,28 @@ export default async function AdminUsersPage() {
           {usersWithSessions.map((user: any) => {
             const isCurrentUser = user.id === session?.id
             const joinedDate = new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            const expiryLabel = formatPremiumExpiry(user.premium_expires_at)
             return (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell><Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>{user.role === 'admin' ? 'Admin' : 'User'}</Badge></TableCell>
-                <TableCell><Badge variant={user.is_premium ? 'default' : 'secondary'}>{user.is_premium ? 'Plus' : '—'}</Badge></TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <Badge variant={user.premium_status === 'free' ? 'secondary' : user.premium_status === 'expired' ? 'outline' : 'default'}>
+                      {user.premium_status === 'admin'
+                        ? 'Admin Plus'
+                        : user.premium_status === 'lifetime'
+                          ? 'Lifetime'
+                          : user.premium_status === 'active'
+                            ? 'Plus'
+                            : user.premium_status === 'expired'
+                              ? 'Expired'
+                              : 'Free'}
+                    </Badge>
+                    {expiryLabel && <p className="text-xs text-muted-foreground">Until {expiryLabel}</p>}
+                  </div>
+                </TableCell>
                 <TableCell>{joinedDate}</TableCell>
                 <TableCell className="text-right">{user.session_count}</TableCell>
                 <TableCell className="text-right">

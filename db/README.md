@@ -22,7 +22,7 @@ For an existing Coolify/VPS database, apply migration files in order after deplo
 npm run db:migrate
 ```
 
-The runner applies numbered SQL files in `db/migrations/` using `DATABASE_URL`. The `002` migration removes duplicate answer rows for the same session/question before adding a uniqueness guard. The `003` migration adds `profiles.session_version`; existing users may need to log in again after deploy because older JWT cookies do not include this field.
+The runner applies numbered SQL files in `db/migrations/` using `DATABASE_URL`. The `002` migration removes duplicate answer rows for the same session/question before adding a uniqueness guard. The `003` migration adds `profiles.session_version`; existing users may need to log in again after deploy because older JWT cookies do not include this field. The `004` migration adds `profiles.premium_expires_at` for manual Plus access grants.
 
 ## Backup (recommended on VPS)
 

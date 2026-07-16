@@ -5,6 +5,8 @@ export type Profile = {
   email: string
   full_name: string | null
   role: Role
+  is_premium?: boolean
+  premium_expires_at?: string | null
   session_version: number
   created_at: string
 }

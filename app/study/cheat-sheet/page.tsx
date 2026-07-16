@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import sql from '@/lib/db'
 import { siteUrl } from '@/lib/site-url'
 import { CheatSheetContent } from '@/components/study/CheatSheetContent'
+import { hasPremiumAccess } from '@/lib/premium'
 
 export const metadata: Metadata = {
   title: '150 Most Likely Citizenship Test Questions — Cheat Sheet',
@@ -22,9 +23,9 @@ export default async function CheatSheetPage() {
 
   let premiumAccess = false
   if (session) {
-    const rows = await sql`SELECT is_premium, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
+    const rows = await sql`SELECT is_premium, premium_expires_at, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
     const profile = rows[0]
-    premiumAccess = profile?.role === 'admin' || profile?.is_premium === true
+    premiumAccess = hasPremiumAccess(profile)
   }
 
   const viewer = session

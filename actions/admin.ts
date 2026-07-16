@@ -7,6 +7,15 @@ import { requireAdminSession } from '@/lib/auth/session'
 import { isAiProviderId, resolveBlogDraftModel } from '@/lib/blog/ai-providers'
 import { saveAiBlogSettings } from '@/lib/blog/ai-settings'
 
+export type PremiumGrant = '30d' | '90d' | '1y' | 'lifetime' | 'remove'
+
+function premiumExpirySql(grant: PremiumGrant): string | null {
+  if (grant === '30d') return '30 days'
+  if (grant === '90d') return '90 days'
+  if (grant === '1y') return '1 year'
+  return null
+}
+
 export async function toggleUserRole(userId: string, currentRole: string) {
   const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
@@ -18,13 +27,35 @@ export async function toggleUserRole(userId: string, currentRole: string) {
   return { success: true }
 }
 
-export async function toggleUserPremium(userId: string, currentPremium: boolean) {
+export async function setUserPremiumAccess(userId: string, grant: PremiumGrant) {
   const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
+  if (!['30d', '90d', '1y', 'lifetime', 'remove'].includes(grant)) return { error: 'Invalid Plus access option' }
 
-  await sql`UPDATE public.profiles SET is_premium = ${!currentPremium} WHERE id = ${userId}::uuid`
+  if (grant === 'remove') {
+    await sql`
+      UPDATE public.profiles
+      SET is_premium = false, premium_expires_at = null
+      WHERE id = ${userId}::uuid
+    `
+  } else if (grant === 'lifetime') {
+    await sql`
+      UPDATE public.profiles
+      SET is_premium = true, premium_expires_at = null
+      WHERE id = ${userId}::uuid
+    `
+  } else {
+    const interval = premiumExpirySql(grant)
+    await sql`
+      UPDATE public.profiles
+      SET is_premium = true, premium_expires_at = now() + (${interval})::interval
+      WHERE id = ${userId}::uuid
+    `
+  }
   revalidatePath('/admin/users')
   revalidatePath('/study/complete-questions')
+  revalidatePath('/study/cheat-sheet')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 

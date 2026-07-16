@@ -40,6 +40,8 @@ The migration runner uses the app's `DATABASE_URL` and works inside the Coolify 
 
 After the `003_profile_session_version` migration, existing users may need to log in again because older JWT cookies do not include the new session-version claim.
 
+The `004_premium_expiry` migration enables manual Plus grants with expiry dates while online checkout is not connected yet.
+
 If Postgres runs on the same VPS as Coolify, use the internal hostname Coolify provides (not `localhost` from inside the app container unless Postgres is in the same container).
 
 ## Step 2: Coolify application

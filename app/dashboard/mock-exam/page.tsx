@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth/session'
 import sql from '@/lib/db'
 import { EXAM_CONFIG, mockExamPassingCorrectCount } from '@/lib/constants'
 import { StudyPageHero } from '@/components/study/StudyPageHero'
+import { hasPremiumAccess } from '@/lib/premium'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,9 +19,9 @@ export default async function MockExamPage() {
 
   let isPremium = false
   if (session) {
-    const rows = await sql`SELECT is_premium, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
+    const rows = await sql`SELECT is_premium, premium_expires_at, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
     const profile = rows[0]
-    isPremium = profile?.role === 'admin' || profile?.is_premium === true
+    isPremium = hasPremiumAccess(profile)
   }
 
   const qCount = isPremium ? EXAM_CONFIG.TOTAL_QUESTIONS : EXAM_CONFIG.FREE_TOTAL_QUESTIONS

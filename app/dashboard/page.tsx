@@ -8,6 +8,7 @@ import { STUDY_SHEETS } from '@/lib/study/study-sheets-meta'
 import { getTopicIcon } from '@/lib/topics/topic-icons'
 import { cn } from '@/lib/utils'
 import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
+import { hasPremiumAccess } from '@/lib/premium'
 
 export const dynamic = 'force-dynamic'
 
@@ -111,11 +112,11 @@ export default async function DashboardPage() {
     )
   }
 
-  const profileRows = await sql<{ full_name: string | null; is_premium: boolean; role: string }[]>`
-    SELECT full_name, is_premium, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1
+  const profileRows = await sql<{ full_name: string | null; is_premium: boolean; premium_expires_at: string | null; role: string }[]>`
+    SELECT full_name, is_premium, premium_expires_at, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1
   `
   const profile = profileRows[0] ?? null
-  const isPremium = profile?.role === 'admin' || profile?.is_premium === true
+  const isPremium = hasPremiumAccess(profile)
 
   const sessionCountRows = await sql<{ count: string }[]>`
     SELECT COUNT(*) as count FROM public.quiz_sessions

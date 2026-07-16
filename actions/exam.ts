@@ -5,6 +5,7 @@ import sql from '@/lib/db'
 import { getFreshSession } from '@/lib/auth/session'
 import { EXAM_CONFIG } from '@/lib/constants'
 import { SubmitExamSchema } from '@/lib/validations'
+import { hasPremiumAccess } from '@/lib/premium'
 import type { Question } from '@/types'
 
 export async function startMockExam() {
@@ -12,9 +13,9 @@ export async function startMockExam() {
 
   let isPremium = false
   if (session) {
-    const rows = await sql`SELECT is_premium, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
+    const rows = await sql`SELECT is_premium, premium_expires_at, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
     const profile = rows[0]
-    isPremium = profile?.role === 'admin' || profile?.is_premium === true
+    isPremium = hasPremiumAccess(profile)
   }
 
   const questions = await sql`

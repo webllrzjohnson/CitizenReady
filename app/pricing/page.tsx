@@ -124,7 +124,7 @@ const PLANS = [
     price: '$5.99',
     original: '$11.98',
     discount: '50% off',
-    cta: 'Start Studying Now',
+    cta: 'Contact for Early Access',
     highlight: false,
   },
   {
@@ -134,7 +134,7 @@ const PLANS = [
     price: '$14.99',
     original: '$29.98',
     discount: '50% off',
-    cta: 'Get Instant Access',
+    cta: 'Contact for Early Access',
     highlight: true,
     popularLabel: 'Most Popular',
   },
@@ -145,7 +145,7 @@ const PLANS = [
     price: '$19.99',
     original: '$39.98',
     discount: '50% off',
-    cta: 'Get Full-Year Access',
+    cta: 'Contact for Early Access',
     highlight: false,
     bestValue: 'Best Value',
   },
@@ -180,16 +180,15 @@ export default function PricingPage() {
         <div className="container relative mx-auto max-w-3xl px-4 py-16 text-center md:py-24">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/80">
             <Shield className="h-3.5 w-3.5 text-brand-red" />
-            CitizenReady Plus — Official 2026 Content
+            CitizenReady Plus — Early Access
           </div>
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
             Pass Your Canadian Citizenship Test —{' '}
             <span className="text-brand-red">Arrive Confident on Test Day</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-            Join 800+ permanent residents who prepared smarter with 900+ exam-style
-            questions, timed mocks, and personalised feedback — all built around the
-            official Discover Canada guide.
+            Online checkout is coming soon. Create a free account now, then contact us
+            for early Plus access to 900+ exam-style questions, timed mocks, and study tools.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button
@@ -368,15 +367,15 @@ export default function PricingPage() {
         <div className="mb-2 flex justify-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">
             <Zap className="h-3.5 w-3.5" aria-hidden />
-            Limited-time offer — 50% off all plans
+            Online checkout coming soon — manual early access available
           </span>
         </div>
         <h2 className="mb-2 text-center text-2xl font-extrabold text-gray-900">
-          One Price, Full Access, No Surprises
+          Plus Access Options
         </h2>
         <p className="mb-10 text-center text-sm text-gray-500">
-          Every plan unlocks all 900+ questions and every study tool. Pick the window that
-          fits your timeline.
+          Every Plus option unlocks all 900+ questions and every study tool. Until online
+          checkout is ready, contact us and an admin can grant access manually.
         </p>
 
         <div className="grid gap-6 sm:grid-cols-3">
@@ -506,7 +505,7 @@ export default function PricingPage() {
                   ].join(' ')}
                   asChild
                 >
-                  <Link href="/signup">{plan.cta}</Link>
+                  <Link href="/contact">{plan.cta}</Link>
                 </Button>
               </div>
             </div>
@@ -518,9 +517,9 @@ export default function PricingPage() {
           <div className="flex items-start gap-3 rounded-2xl border border-[#E0E0E0] bg-[#F7F7F7] p-4">
             <Award className="mt-0.5 h-5 w-5 shrink-0 text-brand-navy" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-gray-900">Instant Access</p>
+              <p className="text-sm font-semibold text-gray-900">Manual Early Access</p>
               <p className="mt-0.5 text-xs text-gray-500">
-                Start studying the moment you sign up — no waiting, no downloads.
+                Contact us after creating your account and we can grant Plus access manually.
               </p>
             </div>
           </div>
@@ -536,9 +535,9 @@ export default function PricingPage() {
           <div className="flex items-start gap-3 rounded-2xl border border-[#E0E0E0] bg-[#F7F7F7] p-4">
             <Shield className="mt-0.5 h-5 w-5 shrink-0 text-brand-navy" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-gray-900">Secure Checkout</p>
+              <p className="text-sm font-semibold text-gray-900">Checkout Coming Soon</p>
               <p className="mt-0.5 text-xs text-gray-500">
-                Payments are encrypted and processed safely. Cancel anytime.
+                Stripe or PayPal can be connected later without changing your Plus access.
               </p>
             </div>
           </div>
@@ -580,18 +579,18 @@ export default function PricingPage() {
           <TrendingUp className="mx-auto mb-4 h-8 w-8 text-white" aria-hidden />
           <h2 className="text-2xl font-extrabold text-white">Ready to Pass on Your First Try?</h2>
           <p className="mt-3 text-sm leading-relaxed text-white/90">
-            Join 800+ permanent residents who trusted CitizenReady Plus to get them
-            across the finish line. Your Canadian citizenship journey starts here.
+            Create a free account today and contact us when you want early Plus access.
+            Online checkout will be added once payment accounts are ready.
           </p>
           <Button
             size="lg"
             className="mt-7 bg-white px-10 font-bold text-[#E8192C] hover:bg-[#FFF0F0]"
             asChild
           >
-            <a href="#pricing">Unlock All 900+ Questions</a>
+            <Link href="/contact">Request Early Plus Access</Link>
           </Button>
           <p className="mt-3 text-xs text-white/80">
-            Cancel anytime · Secure checkout · Instant access
+            No payment account required yet · Manual admin approval · Checkout coming soon
           </p>
         </div>
       </section>

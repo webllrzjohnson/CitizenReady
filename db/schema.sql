@@ -14,6 +14,7 @@ CREATE TABLE public.profiles (
     password_hash TEXT NOT NULL,
     role          TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     is_premium    BOOLEAN NOT NULL DEFAULT FALSE,
+    premium_expires_at TIMESTAMPTZ,
     session_version INTEGER NOT NULL DEFAULT 1,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -24,6 +25,8 @@ CREATE INDEX idx_profiles_session_version ON public.profiles (id, session_versio
 
 COMMENT ON COLUMN public.profiles.is_premium IS
   'Paid / full access for member-only features. Only admins should change this.';
+COMMENT ON COLUMN public.profiles.premium_expires_at IS
+  'Null means lifetime/manual Plus access when is_premium is true. Future timestamp means active until that time.';
 COMMENT ON COLUMN public.profiles.session_version IS
   'Increment to invalidate existing JWT cookies for this user after credential, identity, or role changes.';
 

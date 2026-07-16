@@ -16,7 +16,9 @@ export type Database = {
           full_name: string | null
           id: string
           is_premium: boolean
+          premium_expires_at: string | null
           role: string
+          session_version: number
         }
         Insert: {
           created_at?: string
@@ -24,7 +26,9 @@ export type Database = {
           full_name?: string | null
           id: string
           is_premium?: boolean
+          premium_expires_at?: string | null
           role?: string
+          session_version?: number
         }
         Update: {
           created_at?: string
@@ -32,7 +36,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_premium?: boolean
+          premium_expires_at?: string | null
           role?: string
+          session_version?: number
         }
         Relationships: []
       }

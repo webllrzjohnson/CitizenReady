@@ -4,6 +4,7 @@ import sql from '@/lib/db'
 import { siteUrl } from '@/lib/site-url'
 import { getQuestionBankEntries } from '@/lib/data/complete-questions'
 import { CompleteQuestionsCatalog } from '@/components/study/CompleteQuestionsCatalog'
+import { hasPremiumAccess } from '@/lib/premium'
 
 export const metadata: Metadata = {
   title: 'Complete question bank',
@@ -23,9 +24,9 @@ export default async function CompleteQuestionsPage() {
 
   let premiumAccess = false
   if (session) {
-    const rows = await sql`SELECT is_premium, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
+    const rows = await sql`SELECT is_premium, premium_expires_at, role FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1`
     const profile = rows[0]
-    premiumAccess = profile?.role === 'admin' || profile?.is_premium === true
+    premiumAccess = hasPremiumAccess(profile)
   }
 
   const { topics, previewQuestions, totalQuestions, unlockedQuestionCount, lockedTopicCount } =
