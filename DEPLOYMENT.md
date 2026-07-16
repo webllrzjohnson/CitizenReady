@@ -42,6 +42,8 @@ After the `003_profile_session_version` migration, existing users may need to lo
 
 The `004_premium_expiry` migration enables manual Plus grants with expiry dates while online checkout is not connected yet.
 
+The `005_security_abuse_protection` migration adds the `rate_limits` and `admin_audit_logs` tables used by login/signup/contact throttling and admin mutation audit logs.
+
 If Postgres runs on the same VPS as Coolify, use the internal hostname Coolify provides (not `localhost` from inside the app container unless Postgres is in the same container).
 
 ## Step 2: Coolify application

@@ -6,6 +6,7 @@ import sql from '@/lib/db'
 import { requireAdminSession } from '@/lib/auth/session'
 import { isAiProviderId, resolveBlogDraftModel } from '@/lib/blog/ai-providers'
 import { saveAiBlogSettings } from '@/lib/blog/ai-settings'
+import { writeAdminAuditLog } from '@/lib/security/audit'
 
 export type PremiumGrant = '30d' | '90d' | '1y' | 'lifetime' | 'remove'
 
@@ -23,6 +24,12 @@ export async function toggleUserRole(userId: string, currentRole: string) {
 
   const newRole = currentRole === 'user' ? 'admin' : 'user'
   await sql`UPDATE public.profiles SET role = ${newRole}, session_version = session_version + 1 WHERE id = ${userId}::uuid`
+  await writeAdminAuditLog({
+    actorId: check.userId,
+    action: 'user.role_updated',
+    targetUserId: userId,
+    metadata: { previousRole: currentRole, newRole },
+  })
   revalidatePath('/admin/users')
   return { success: true }
 }
@@ -52,6 +59,12 @@ export async function setUserPremiumAccess(userId: string, grant: PremiumGrant) 
       WHERE id = ${userId}::uuid
     `
   }
+  await writeAdminAuditLog({
+    actorId: check.userId,
+    action: 'user.premium_updated',
+    targetUserId: userId,
+    metadata: { grant },
+  })
   revalidatePath('/admin/users')
   revalidatePath('/study/complete-questions')
   revalidatePath('/study/cheat-sheet')
@@ -91,6 +104,16 @@ export async function updateSiteSettings(formData: FormData) {
       ON CONFLICT (key) DO UPDATE SET value = ${entry.value}, updated_at = now()
     `
   }
+
+  await writeAdminAuditLog({
+    actorId: check.userId,
+    action: 'site.settings_updated',
+    metadata: {
+      ads_enabled: result.data.ads_enabled,
+      ads_show_to_guests_only: result.data.ads_show_to_guests_only,
+      adsense_client_id: result.data.adsense_client_id,
+    },
+  })
 
   revalidatePath('/admin/settings')
   revalidatePath('/')
@@ -135,6 +158,12 @@ export async function updateAiBlogSettings(formData: FormData) {
   await saveAiBlogSettings({
     provider: parsed.data.provider,
     model: resolvedModel,
+  })
+
+  await writeAdminAuditLog({
+    actorId: check.userId,
+    action: 'site.ai_blog_settings_updated',
+    metadata: { provider: parsed.data.provider, model: resolvedModel },
   })
 
   revalidatePath('/admin/blog/ai-draft')

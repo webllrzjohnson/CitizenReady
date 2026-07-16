@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import sql from '@/lib/db'
 import { createSession, getFreshSession, deleteSession } from '@/lib/auth/session'
 import { LoginSchema, SignupSchema } from '@/lib/validations'
+import { checkRateLimit, getClientFingerprint } from '@/lib/security/rate-limit'
 
 export async function getCurrentUser() {
   return getFreshSession()
@@ -17,6 +18,14 @@ export async function login(formData: { email: string; password: string }) {
   }
 
   const { email, password } = result.data
+
+  const loginLimit = await checkRateLimit({
+    scope: 'auth:login',
+    identity: `${email}:${await getClientFingerprint()}`,
+    maxAttempts: 5,
+    windowSeconds: 15 * 60,
+  })
+  if (!loginLimit.success) return { success: false, error: loginLimit.error }
 
   const rows = await sql`
     SELECT id, email, full_name, role, password_hash, session_version
@@ -57,6 +66,14 @@ export async function signup(formData: { email: string; password: string; full_n
   }
 
   const { email, password, full_name } = result.data
+
+  const signupLimit = await checkRateLimit({
+    scope: 'auth:signup',
+    identity: `${email}:${await getClientFingerprint()}`,
+    maxAttempts: 3,
+    windowSeconds: 60 * 60,
+  })
+  if (!signupLimit.success) return { success: false, error: signupLimit.error }
 
   // Check if email already exists
   const existing = await sql`

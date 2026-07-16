@@ -27,6 +27,11 @@ const UpdatePasswordSchema = z.object({
   path: ['confirmPassword'],
 })
 
+const DeleteAccountSchema = z.object({
+  confirmText: z.literal('DELETE', { errorMap: () => ({ message: 'Type DELETE to confirm' }) }),
+  currentPassword: z.string().min(1, 'Enter your current password'),
+})
+
 export async function updateProfile(formData: FormData) {
   const session = await getFreshSession()
   if (!session) return { error: 'Not authenticated' }
@@ -111,8 +116,19 @@ export async function deleteAccount(formData: FormData) {
   const session = await getFreshSession()
   if (!session) return { error: 'Not authenticated' }
 
-  const confirmText = formData.get('confirmText')
-  if (confirmText !== 'DELETE') return { error: 'Type DELETE to confirm' }
+  const result = DeleteAccountSchema.safeParse({
+    confirmText: formData.get('confirmText'),
+    currentPassword: formData.get('currentPassword'),
+  })
+  if (!result.success) return { error: result.error.errors[0].message }
+
+  const rows = await sql<{ password_hash: string }[]>`
+    SELECT password_hash FROM public.profiles WHERE id = ${session.id}::uuid LIMIT 1
+  `
+  const profile = rows[0]
+  if (!profile || !(await bcrypt.compare(result.data.currentPassword, profile.password_hash))) {
+    return { error: 'Current password is incorrect' }
+  }
 
   await sql`DELETE FROM public.profiles WHERE id = ${session.id}::uuid`
   await deleteSession()

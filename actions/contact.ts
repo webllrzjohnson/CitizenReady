@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import sql from '@/lib/db'
 import { requireAdminSession } from '@/lib/auth/session'
+import { checkRateLimit, getClientFingerprint } from '@/lib/security/rate-limit'
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -25,6 +26,14 @@ export async function submitContactForm(formData: FormData) {
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validation error' }
 
   const { name, email, subject, message } = parsed.data
+
+  const contactLimit = await checkRateLimit({
+    scope: 'contact:submit',
+    identity: `${email}:${await getClientFingerprint()}`,
+    maxAttempts: 3,
+    windowSeconds: 60 * 60,
+  })
+  if (!contactLimit.success) return { error: contactLimit.error }
 
   await sql`INSERT INTO public.contact_messages (name, email, subject, message) VALUES (${name}, ${email}, ${subject}, ${message})`
 

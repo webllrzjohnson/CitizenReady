@@ -42,6 +42,54 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          key: string
+          attempts: number
+          reset_at: string
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          attempts?: number
+          reset_at: string
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          attempts?: number
+          reset_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_audit_logs: {
+        Row: {
+          id: string
+          actor_id: string | null
+          action: string
+          target_user_id: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id?: string | null
+          action: string
+          target_user_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string | null
+          action?: string
+          target_user_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       question_attempts: {
         Row: {
           created_at: string

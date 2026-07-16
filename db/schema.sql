@@ -135,6 +135,31 @@ CREATE TABLE public.contact_messages (
 CREATE INDEX idx_contact_messages_is_read ON public.contact_messages (is_read);
 
 -- =====================================================
+-- security / abuse prevention
+-- =====================================================
+CREATE TABLE public.rate_limits (
+    key        TEXT PRIMARY KEY,
+    attempts   INTEGER NOT NULL DEFAULT 1,
+    reset_at   TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_rate_limits_reset_at ON public.rate_limits (reset_at);
+
+CREATE TABLE public.admin_audit_logs (
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    actor_id       UUID REFERENCES public.profiles (id) ON DELETE SET NULL,
+    action         TEXT NOT NULL,
+    target_user_id UUID REFERENCES public.profiles (id) ON DELETE SET NULL,
+    metadata       JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_admin_audit_logs_actor_created ON public.admin_audit_logs (actor_id, created_at DESC);
+CREATE INDEX idx_admin_audit_logs_target_created ON public.admin_audit_logs (target_user_id, created_at DESC);
+CREATE INDEX idx_admin_audit_logs_action_created ON public.admin_audit_logs (action, created_at DESC);
+
+-- =====================================================
 -- site_settings
 -- =====================================================
 CREATE TABLE public.site_settings (

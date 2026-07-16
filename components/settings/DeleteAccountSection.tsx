@@ -27,6 +27,7 @@ import { deleteAccount } from '@/actions/settings'
 
 export function DeleteAccountSection() {
   const [confirmText, setConfirmText] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -36,6 +37,7 @@ export function DeleteAccountSection() {
     setOpen(next)
     if (!next) {
       setConfirmText('')
+      setCurrentPassword('')
       setError(null)
     }
   }
@@ -44,6 +46,7 @@ export function DeleteAccountSection() {
     setError(null)
     const formData = new FormData()
     formData.set('confirmText', confirmText)
+    formData.set('currentPassword', currentPassword)
     startTransition(async () => {
       const result = await deleteAccount(formData)
       if (result?.error) {
@@ -86,7 +89,7 @@ export function DeleteAccountSection() {
               <AlertDialogDescription>
                 This action cannot be undone. Type{' '}
                 <strong className="font-semibold text-foreground">DELETE</strong>{' '}
-                to confirm.
+                and enter your current password to confirm.
               </AlertDialogDescription>
             </AlertDialogHeader>
 
@@ -99,6 +102,15 @@ export function DeleteAccountSection() {
                 placeholder="Type DELETE to confirm"
                 autoComplete="off"
               />
+              <Label htmlFor="delete-current-password">Current password</Label>
+              <Input
+                id="delete-current-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter your current password"
+                autoComplete="current-password"
+              />
               {error && (
                 <p className="text-sm text-red-600">{error}</p>
               )}
@@ -108,7 +120,7 @@ export function DeleteAccountSection() {
               <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
               <Button
                 variant="destructive"
-                disabled={confirmText !== 'DELETE' || isPending}
+                disabled={confirmText !== 'DELETE' || currentPassword.length === 0 || isPending}
                 onClick={handleDelete}
               >
                 {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
