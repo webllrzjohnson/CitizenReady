@@ -16,6 +16,11 @@ import {
 } from '../lib/security/audit-view'
 import { hasCurrentPassword } from '../lib/security/account-security'
 import {
+  getPremiumStatusCta,
+  getPremiumStatusDescription,
+  getPremiumStatusLabel,
+} from '../lib/premium'
+import {
   formatPlusRequestPlanLabel,
   getPlusRequestStatusBadgeVariant,
   normalizePlusRequestPlan,
@@ -72,6 +77,18 @@ test('detects whether sensitive account updates include a current password', () 
   assert.equal(hasCurrentPassword(''), false)
   assert.equal(hasCurrentPassword('   '), false)
   assert.equal(hasCurrentPassword(null), false)
+})
+
+test('formats user-facing Plus status copy and CTAs', () => {
+  assert.equal(getPremiumStatusLabel('free'), 'Free')
+  assert.equal(getPremiumStatusLabel('active'), 'Active Plus')
+  assert.equal(getPremiumStatusLabel('expired'), 'Expired Plus')
+  assert.equal(getPremiumStatusLabel('lifetime'), 'Lifetime Plus')
+  assert.equal(getPremiumStatusLabel('admin'), 'Admin Plus')
+  assert.match(getPremiumStatusDescription('active', 'Jan 1, 2027'), /Jan 1, 2027/)
+  assert.equal(getPremiumStatusCta('free').href, '/plus-request')
+  assert.equal(getPremiumStatusCta('expired').label, 'Request Renewal')
+  assert.equal(getPremiumStatusCta('active').href, '/dashboard/study')
 })
 
 test('normalizes and labels Plus request plans', () => {

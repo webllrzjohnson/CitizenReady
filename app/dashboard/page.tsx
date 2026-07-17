@@ -9,6 +9,7 @@ import { getTopicIcon } from '@/lib/topics/topic-icons'
 import { cn } from '@/lib/utils'
 import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
 import { hasPremiumAccess } from '@/lib/premium'
+import { PlusStatusCard } from '@/components/dashboard/PlusStatusCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -162,6 +163,8 @@ export default async function DashboardPage() {
       </div>
 
       {!isPremium && <UpgradeBanner />}
+
+      <PlusStatusCard profile={profile} />
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">

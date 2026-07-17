@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { SettingsForm } from '@/components/settings/SettingsForm'
 import { DeleteAccountSection } from '@/components/settings/DeleteAccountSection'
+import { PlusStatusCard } from '@/components/dashboard/PlusStatusCard'
 import { updateProfile, updateEmail, updatePassword } from '@/actions/settings'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,8 @@ export default async function SettingsPage() {
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Settings</h1>
         <p className="mt-1 text-gray-500">{session.email}</p>
       </div>
+
+      <PlusStatusCard profile={profile} compact />
 
       <SettingsForm title="Profile" description="Update your display name" action={updateProfile} submitLabel="Save Changes">
         <div className="space-y-2">
