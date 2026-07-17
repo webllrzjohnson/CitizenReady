@@ -83,11 +83,26 @@ In your Coolify app → **Environment Variables**, set:
 
 Default provider/model can be set in **Admin → AI blog draft** and are stored in `site_settings`. Do **not** use retired Anthropic ids such as `claude-sonnet-4-20250514`.
 
+### Optional — admin email notifications
+
+Set these when you want an email after a contact message or Plus access request is submitted.
+
+| Variable | Description |
+|----------|-------------|
+| `SMTP_HOST` | SMTP server host, e.g. `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP server port, usually `465` for SSL or `587` for STARTTLS |
+| `SMTP_SECURE` | Optional. `true` for SSL; defaults to `true` on port `465` |
+| `SMTP_USER` | SMTP username / email account |
+| `SMTP_PASS` | SMTP password or Gmail app password |
+| `SMTP_FROM` | From header, e.g. `CitizenReady <your-email@gmail.com>` |
+| `ADMIN_NOTIFICATION_EMAIL` | Admin inbox that receives notifications |
+
+If these are unset, submissions still work and notifications are skipped.
+
 ### Optional — other features
 
 | Variable | Description |
 |----------|-------------|
-| `RESEND_API_KEY` | Transactional email |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Payments |
 | `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | Analytics |
 | `SENTRY_DSN` | Error monitoring |
@@ -132,6 +147,7 @@ Copy backups off-server. Details in `db/README.md`.
 - [ ] `NEXT_PUBLIC_SITE_URL` matches your public domain (HTTPS)
 - [ ] Reverse proxy / SSL configured in Coolify for your domain
 - [ ] Admin user has `role = 'admin'` in `profiles`
+- [ ] Optional notifications: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `ADMIN_NOTIFICATION_EMAIL` set if email alerts are desired
 - [ ] For AI drafts: `ANTHROPIC_API_KEY` set; `ANTHROPIC_MODEL` unset or `claude-sonnet-4-6`
 - [ ] Coolify proxy timeout ≥ 180s if using AI blog drafts
 - [ ] `GET /api/health` returns `200` after deploy

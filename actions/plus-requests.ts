@@ -7,6 +7,11 @@ import { requireAdminSession } from '@/lib/auth/session'
 import { checkRateLimit, getClientFingerprint } from '@/lib/security/rate-limit'
 import { writeAdminAuditLog } from '@/lib/security/audit'
 import {
+  buildPlusRequestNotificationEmail,
+  sendAdminNotification,
+} from '@/lib/email'
+import {
+  formatPlusRequestPlanLabel,
   PLUS_REQUEST_PLANS,
   PLUS_REQUEST_STATUSES,
   normalizePlusRequestPlan,
@@ -63,6 +68,13 @@ export async function submitPlusRequest(formData: FormData) {
     INSERT INTO public.plus_access_requests (name, email, account_email, requested_plan, message)
     VALUES (${name}, ${email}, ${accountEmail || null}, ${requestedPlan}, ${message || null})
   `
+  await sendAdminNotification(buildPlusRequestNotificationEmail({
+    name,
+    email,
+    accountEmail,
+    requestedPlanLabel: formatPlusRequestPlanLabel(requestedPlan),
+    message,
+  }))
 
   return { success: true, message: 'Thanks! Your Plus access request was sent.', name }
 }

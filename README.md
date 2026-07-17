@@ -97,17 +97,40 @@ Access rules:
 
 Admin workflow:
 
-1. Go to `/admin/users`.
-2. Find the user.
-3. Use the Plus controls to grant:
+1. Users can submit manual Plus leads at `/plus-request`.
+2. Admins review them at `/admin/plus-requests`.
+3. If the request matches an existing account email, grant Plus directly from that row.
+4. Otherwise ask the user to create a free account first.
+5. You can still go to `/admin/users`, find the user, and use the Plus controls to grant:
    - 30 days
    - 90 days
    - 1 year
    - Lifetime
-4. Use **Remove** to revoke Plus.
-5. Confirm the user badge changes to Free, Plus until date, Lifetime, Expired, or Admin Plus.
+6. Use **Remove** to revoke Plus.
+7. Confirm the user badge changes to Free, Plus until date, Lifetime, Expired, or Admin Plus.
 
 This is designed as the bridge until online checkout is ready. Future Stripe/PayPal webhooks should update the same fields instead of introducing a separate entitlement system.
+
+## Admin email notifications
+
+Optional SMTP notifications can alert the admin when users submit:
+
+- contact messages
+- manual Plus access requests
+
+Configure these environment variables in Coolify to enable notifications:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM="CitizenReady <your-email@gmail.com>"
+ADMIN_NOTIFICATION_EMAIL=admin@example.com
+```
+
+If these values are missing, submissions still succeed and email sending is skipped. If SMTP fails, the app logs the email error but does not block the user submission.
 
 ## Abuse protection and audit logging
 

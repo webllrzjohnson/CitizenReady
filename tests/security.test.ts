@@ -22,6 +22,11 @@ import {
   plusRequestPlanToPremiumGrant,
 } from '../lib/plus-requests'
 import { formatAdminDashboardCount } from '../lib/admin-dashboard'
+import {
+  buildContactNotificationEmail,
+  buildPlusRequestNotificationEmail,
+  getEmailNotificationConfig,
+} from '../lib/email'
 
 test('normalizes rate limit identities consistently', () => {
   assert.equal(normalizeRateLimitIdentity('  USER@Example.COM  '), 'user@example.com')
@@ -92,4 +97,50 @@ test('formats admin dashboard counts for compact cards', () => {
   assert.equal(formatAdminDashboardCount(999), '999')
   assert.equal(formatAdminDashboardCount(1200), '1.2k')
   assert.equal(formatAdminDashboardCount(12000), '12k')
+})
+
+test('detects optional admin email notification configuration', () => {
+  assert.equal(getEmailNotificationConfig({}), null)
+  assert.deepEqual(
+    getEmailNotificationConfig({
+      SMTP_HOST: 'smtp.example.com',
+      SMTP_PORT: '587',
+      SMTP_USER: 'mailer@example.com',
+      SMTP_PASS: 'app-password',
+      SMTP_FROM: 'CitizenReady <mailer@example.com>',
+      ADMIN_NOTIFICATION_EMAIL: 'admin@example.com',
+    }),
+    {
+      host: 'smtp.example.com',
+      port: 587,
+      secure: false,
+      user: 'mailer@example.com',
+      pass: 'app-password',
+      from: 'CitizenReady <mailer@example.com>',
+      to: 'admin@example.com',
+    },
+  )
+})
+
+test('builds admin notification emails for contact and Plus requests', () => {
+  const contact = buildContactNotificationEmail({
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    subject: 'Technical Issue',
+    message: 'I need help with the mock exam timer.',
+  })
+  assert.match(contact.subject, /New contact message/)
+  assert.match(contact.text, /Jane Smith/)
+  assert.match(contact.text, /admin\/contact-messages/)
+
+  const plus = buildPlusRequestNotificationEmail({
+    name: 'Sam Lee',
+    email: 'sam@example.com',
+    accountEmail: 'account@example.com',
+    requestedPlanLabel: '30-Day Plan',
+    message: 'My test is next month.',
+  })
+  assert.match(plus.subject, /New Plus access request/)
+  assert.match(plus.text, /30-Day Plan/)
+  assert.match(plus.text, /admin\/plus-requests/)
 })

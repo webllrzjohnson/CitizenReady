@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import sql from '@/lib/db'
 import { requireAdminSession } from '@/lib/auth/session'
 import { checkRateLimit, getClientFingerprint } from '@/lib/security/rate-limit'
+import { buildContactNotificationEmail, sendAdminNotification } from '@/lib/email'
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -36,6 +37,7 @@ export async function submitContactForm(formData: FormData) {
   if (!contactLimit.success) return { error: contactLimit.error }
 
   await sql`INSERT INTO public.contact_messages (name, email, subject, message) VALUES (${name}, ${email}, ${subject}, ${message})`
+  await sendAdminNotification(buildContactNotificationEmail({ name, email, subject, message }))
 
   return { success: true, message: 'Thank you! We will get back to you within 24-48 hours.', name }
 }
