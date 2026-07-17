@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
 import { BookOpen, HelpCircle, Target, Trophy, Lock, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { buildWeakTopicRecommendations, formatIncorrectReviewSummary } from '@/lib/progress-insights'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +65,7 @@ export default async function ProgressPage() {
     sql`SELECT COUNT(*) as count FROM public.quiz_sessions WHERE user_id = ${session.id}::uuid AND type = 'mock_exam' AND score >= 15 AND completed_at IS NOT NULL`,
     sql`SELECT COUNT(*) as count FROM public.quiz_sessions WHERE user_id = ${session.id}::uuid AND type = 'mock_exam' AND completed_at IS NOT NULL`,
     sql`SELECT score, total_q, completed_at FROM public.quiz_sessions WHERE user_id = ${session.id}::uuid AND type = 'mock_exam' AND completed_at IS NOT NULL ORDER BY completed_at DESC LIMIT 10`,
-    sql`SELECT id, name FROM public.topics ORDER BY sort_order`,
+    sql`SELECT id, name, slug FROM public.topics ORDER BY sort_order`,
     sql`SELECT topic_id, score, total_q, completed_at FROM public.quiz_sessions WHERE user_id = ${session.id}::uuid AND type = 'practice' AND completed_at IS NOT NULL AND topic_id IS NOT NULL`,
   ])
 
@@ -75,20 +76,33 @@ export default async function ProgressPage() {
 
   let totalQuestions = 0
   let correctAnswers = 0
+  let recentIncorrect: any[] = []
   if (sessionIds.length > 0) {
-    const [tqRows, caRows] = await Promise.all([
+    const [tqRows, caRows, incorrectRows] = await Promise.all([
       sql`SELECT COUNT(*) as count FROM public.question_attempts WHERE session_id = ANY(${sql.array(sessionIds)}::uuid[])`,
       sql`SELECT COUNT(*) as count FROM public.question_attempts WHERE is_correct = true AND session_id = ANY(${sql.array(sessionIds)}::uuid[])`,
+      sql`
+        SELECT qa.id, qa.user_answer, qa.created_at,
+               q.question_text, q.correct_answers, q.options, q.explanation,
+               t.name AS topic_name, t.slug AS topic_slug
+        FROM public.question_attempts qa
+        JOIN public.questions q ON q.id = qa.question_id
+        JOIN public.topics t ON t.id = q.topic_id
+        WHERE qa.is_correct = false AND qa.session_id = ANY(${sql.array(sessionIds)}::uuid[])
+        ORDER BY qa.created_at DESC
+        LIMIT 5
+      `,
     ])
     totalQuestions = parseInt(tqRows[0]?.count ?? '0')
     correctAnswers = parseInt(caRows[0]?.count ?? '0')
+    recentIncorrect = incorrectRows
   }
 
   const overallAccuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
 
-  const topicProgressMap: Record<string, { topic_id: string; topic_name: string; best_score: number | null; sessions_count: number; last_attempted: string | null }> = {}
+  const topicProgressMap: Record<string, { topic_id: string; topic_name: string; topic_slug: string; best_score: number | null; sessions_count: number; last_attempted: string | null }> = {}
   allTopics.forEach((topic: any) => {
-    topicProgressMap[topic.id] = { topic_id: topic.id, topic_name: topic.name, best_score: null, sessions_count: 0, last_attempted: null }
+    topicProgressMap[topic.id] = { topic_id: topic.id, topic_name: topic.name, topic_slug: topic.slug, best_score: null, sessions_count: 0, last_attempted: null }
   })
   practiceSessions.forEach((s: any) => {
     if (!s.topic_id) return
@@ -105,6 +119,7 @@ export default async function ProgressPage() {
     if (b.best_score === null) return -1
     return b.best_score - a.best_score
   })
+  const weakTopicRecommendations = buildWeakTopicRecommendations(topicProgressArray, 3)
 
   const accuracyColor = overallAccuracy >= 80 ? 'text-green-600' : overallAccuracy >= 60 ? 'text-amber-600' : 'text-brand-red'
 
@@ -152,6 +167,82 @@ export default async function ProgressPage() {
       </div>
 
       <ScoreChart scores={mockExamScores as any[] || []} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-lg font-semibold text-gray-900">Recommended focus</p>
+              <p className="mt-0.5 text-sm text-gray-500">Weak topics to review next</p>
+            </div>
+            <Badge variant="secondary">Smart review</Badge>
+          </div>
+          {weakTopicRecommendations.length > 0 ? (
+            <div className="space-y-3">
+              {weakTopicRecommendations.map((topic) => (
+                <Link
+                  key={topic.topic_id}
+                  href={`/dashboard/practice/${topic.topic_slug}`}
+                  className="block rounded-xl border border-gray-100 p-4 transition-colors hover:border-brand-red/40 hover:bg-red-50/30"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-gray-900">{topic.topic_name}</p>
+                      <p className="mt-1 text-sm text-gray-500">{topic.reason}</p>
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold text-brand-red">
+                      {topic.best_score === null ? 'Start' : `${topic.best_score}/10`}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-green-100 bg-green-50 p-4 text-sm text-green-800">
+              Nice work — no weak topics stand out yet. Keep practicing to build more history.
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-lg font-semibold text-gray-900">Review missed questions</p>
+              <p className="mt-0.5 text-sm text-gray-500">Your latest incorrect answers</p>
+            </div>
+            <Badge variant="outline">Last 5</Badge>
+          </div>
+          {recentIncorrect.length > 0 ? (
+            <div className="space-y-3">
+              {recentIncorrect.map((attempt) => {
+                const options = typeof attempt.options === 'string' ? JSON.parse(attempt.options) : attempt.options
+                const correctAnswers = typeof attempt.correct_answers === 'string' ? JSON.parse(attempt.correct_answers) : attempt.correct_answers
+                return (
+                  <div key={attempt.id} className="rounded-xl border border-gray-100 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="destructive">Incorrect</Badge>
+                      <Link href={`/dashboard/practice/${attempt.topic_slug}`} className="text-xs font-semibold text-brand-navy hover:underline">
+                        {attempt.topic_name}
+                      </Link>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-sm font-medium text-gray-900">{attempt.question_text}</p>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {formatIncorrectReviewSummary({ correct_answers: correctAnswers ?? [], options: options ?? [] })}
+                    </p>
+                    {attempt.explanation && (
+                      <p className="mt-2 line-clamp-2 text-xs text-blue-700">{attempt.explanation}</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-green-100 bg-green-50 p-4 text-sm text-green-800">
+              No missed questions yet. Complete practice or mock exams to build a review queue.
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-100 px-6 py-4">
