@@ -287,7 +287,7 @@ export default async function HomePage() {
                   <span className="rounded bg-brand-red/20 px-1.5 py-0.5 text-xs font-semibold text-brand-red">50% off</span>
                 </div>
                 <Button className={['mt-6 w-full font-semibold', plan.popular ? 'bg-brand-red hover:bg-brand-red-dark text-white' : 'bg-brand-navy text-white hover:bg-brand-navy/90'].join(' ')} asChild>
-                  <Link href="/contact">Contact for Access</Link>
+                  <Link href="/plus-request">Request Access</Link>
                 </Button>
               </div>
             ))}

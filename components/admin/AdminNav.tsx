@@ -17,13 +17,21 @@ const staticNavItems = [
 
 interface AdminNavProps {
   unreadContactCount?: number
+  newPlusRequestCount?: number
 }
 
-export function AdminNav({ unreadContactCount = 0 }: AdminNavProps) {
+export function AdminNav({ unreadContactCount = 0, newPlusRequestCount = 0 }: AdminNavProps) {
   const pathname = usePathname()
 
   const navItems = [
     ...staticNavItems,
+    {
+      label:
+        newPlusRequestCount > 0
+          ? `Plus Requests (${newPlusRequestCount})`
+          : 'Plus Requests',
+      href: '/admin/plus-requests',
+    },
     {
       label:
         unreadContactCount > 0
@@ -53,6 +61,10 @@ export function AdminNav({ unreadContactCount = 0 }: AdminNavProps) {
               isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
               item.href === '/admin/contact-messages' &&
                 unreadContactCount > 0 &&
+                !isActive &&
+                'text-amber-700 font-semibold',
+              item.href === '/admin/plus-requests' &&
+                newPlusRequestCount > 0 &&
                 !isActive &&
                 'text-amber-700 font-semibold'
             )}

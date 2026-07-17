@@ -15,6 +15,11 @@ import {
   getAuditActionBadgeVariant,
 } from '../lib/security/audit-view'
 import { hasCurrentPassword } from '../lib/security/account-security'
+import {
+  formatPlusRequestPlanLabel,
+  getPlusRequestStatusBadgeVariant,
+  normalizePlusRequestPlan,
+} from '../lib/plus-requests'
 
 test('normalizes rate limit identities consistently', () => {
   assert.equal(normalizeRateLimitIdentity('  USER@Example.COM  '), 'user@example.com')
@@ -60,4 +65,18 @@ test('detects whether sensitive account updates include a current password', () 
   assert.equal(hasCurrentPassword(''), false)
   assert.equal(hasCurrentPassword('   '), false)
   assert.equal(hasCurrentPassword(null), false)
+})
+
+test('normalizes and labels Plus request plans', () => {
+  assert.equal(normalizePlusRequestPlan('30day'), '30day')
+  assert.equal(normalizePlusRequestPlan('unknown'), '30day')
+  assert.equal(formatPlusRequestPlanLabel('7day'), '7-Day Sprint')
+  assert.equal(formatPlusRequestPlanLabel('lifetime'), 'Lifetime / Special Access')
+})
+
+test('maps Plus request statuses to badge variants', () => {
+  assert.equal(getPlusRequestStatusBadgeVariant('new'), 'default')
+  assert.equal(getPlusRequestStatusBadgeVariant('approved'), 'secondary')
+  assert.equal(getPlusRequestStatusBadgeVariant('completed'), 'outline')
+  assert.equal(getPlusRequestStatusBadgeVariant('rejected'), 'destructive')
 })

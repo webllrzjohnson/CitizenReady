@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Mail, Clock, HelpCircle } from 'lucide-react'
+import { Mail, Clock, HelpCircle, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,28 @@ export default function ContactPage() {
 
           {/* RIGHT — Info cards */}
           <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex gap-3">
+                  <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-brand-red" />
+                  <div>
+                    <h3 className="mb-1 font-semibold text-brand-navy">Need Plus Access?</h3>
+                    <p className="mb-3 text-sm text-gray-600">
+                      Use the dedicated early-access request form so we can match your request to your account.
+                    </p>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="border-brand-red text-brand-red hover:bg-brand-red hover:text-white"
+                    >
+                      <Link href="/plus-request">Request Plus</Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Email card */}
             <Card>
               <CardContent className="pt-6">

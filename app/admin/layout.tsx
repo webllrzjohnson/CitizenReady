@@ -11,10 +11,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!session) redirect('/login')
   if (session.role !== 'admin') redirect('/dashboard')
 
-  const unreadRows = await sql`
-    SELECT COUNT(*) as count FROM public.contact_messages WHERE is_read = false
-  `
+  const [unreadRows, plusRequestRows] = await Promise.all([
+    sql`SELECT COUNT(*) as count FROM public.contact_messages WHERE is_read = false`,
+    sql`SELECT COUNT(*) as count FROM public.plus_access_requests WHERE status = 'new'`,
+  ])
   const unreadCount = parseInt(unreadRows[0]?.count ?? '0')
+  const newPlusRequestCount = parseInt(plusRequestRows[0]?.count ?? '0')
 
   return (
     <div className="flex min-h-screen">
@@ -22,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="mb-8">
           <Link href="/admin" className="text-xl font-bold">CitizenReady Admin</Link>
         </div>
-        <AdminNav unreadContactCount={unreadCount} />
+        <AdminNav unreadContactCount={unreadCount} newPlusRequestCount={newPlusRequestCount} />
       </aside>
       <div className="flex-1 p-8">{children}</div>
     </div>

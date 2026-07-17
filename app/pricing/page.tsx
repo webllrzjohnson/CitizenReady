@@ -517,7 +517,7 @@ export default function PricingPage() {
                   ].join(' ')}
                   asChild
                 >
-                  <Link href="/contact">{plan.cta}</Link>
+                  <Link href="/plus-request">{plan.cta}</Link>
                 </Button>
               </div>
             </div>
@@ -599,7 +599,7 @@ export default function PricingPage() {
             className="mt-7 bg-white px-10 font-bold text-[#E8192C] hover:bg-[#FFF0F0]"
             asChild
           >
-            <Link href="/contact">Request Early Plus Access</Link>
+            <Link href="/plus-request">Request Early Plus Access</Link>
           </Button>
           <p className="mt-3 text-xs text-white/80">
             No payment account required yet · Manual admin approval · Checkout coming soon
