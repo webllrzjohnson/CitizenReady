@@ -1,5 +1,4 @@
-'use client'
-
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   Shield,
@@ -24,6 +23,7 @@ import {
 } from 'lucide-react'
 import { SITE_FAQS } from '@/lib/site-faqs'
 import { Button } from '@/components/ui/button'
+import { siteUrl } from '@/lib/site-url'
 import {
   Accordion,
   AccordionContent,
@@ -31,13 +31,25 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 
+export const metadata: Metadata = {
+  title: 'CitizenReady Plus — Early Access Study Tools',
+  description: 'Compare CitizenReady Plus options for Canadian citizenship test practice. Online checkout is coming soon; manual early access is available after account signup.',
+  alternates: { canonical: siteUrl('/pricing') },
+  openGraph: {
+    title: 'CitizenReady Plus Early Access',
+    description: 'Manual early access to the full Canadian citizenship test question bank, timed mock exams, challenge review, and study tools.',
+    url: siteUrl('/pricing'),
+    type: 'website',
+  },
+}
+
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const STATS = [
   { value: '900+', label: 'Exam-like questions' },
-  { value: '95%', label: 'Student pass rate' },
-  { value: '800+', label: 'Canadians prepared' },
-  { value: '4.9 ★', label: 'Avg rating' },
+  { value: '20', label: 'Questions per mock exam' },
+  { value: '30 min', label: 'Timed exam practice' },
+  { value: '75%', label: 'Practice pass threshold' },
 ]
 
 const TESTIMONIALS = [
@@ -228,10 +240,10 @@ export default function PricingPage() {
       <section className="bg-white py-16">
         <div className="container mx-auto max-w-5xl px-4">
         <h2 className="mb-2 text-center text-2xl font-extrabold text-gray-900">
-          Real Stories from New Canadians
+          Study Scenarios from Future Canadians
         </h2>
         <p className="mb-10 text-center text-sm text-gray-500">
-          Hundreds of permanent residents have passed using CitizenReady Plus.
+          Common ways applicants use CitizenReady Plus to prepare with more structure.
         </p>
         <div className="grid gap-6 sm:grid-cols-3">
           {TESTIMONIALS.map((t) => (
@@ -526,9 +538,9 @@ export default function PricingPage() {
           <div className="flex items-start gap-3 rounded-2xl border border-[#E0E0E0] bg-[#F7F7F7] p-4">
             <Users className="mt-0.5 h-5 w-5 shrink-0 text-brand-navy" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-gray-900">800+ Canadians</p>
+              <p className="text-sm font-semibold text-gray-900">Independent Prep</p>
               <p className="mt-0.5 text-xs text-gray-500">
-                Trusted by permanent residents preparing for their citizenship test.
+                Built for citizenship applicants who want structured practice alongside Discover Canada.
               </p>
             </div>
           </div>
@@ -577,7 +589,7 @@ export default function PricingPage() {
       <section className="bg-[#E8192C] py-16 text-center text-white">
         <div className="container mx-auto max-w-xl px-4">
           <TrendingUp className="mx-auto mb-4 h-8 w-8 text-white" aria-hidden />
-          <h2 className="text-2xl font-extrabold text-white">Ready to Pass on Your First Try?</h2>
+          <h2 className="text-2xl font-extrabold text-white">Ready to Prepare with More Structure?</h2>
           <p className="mt-3 text-sm leading-relaxed text-white/90">
             Create a free account today and contact us when you want early Plus access.
             Online checkout will be added once payment accounts are ready.

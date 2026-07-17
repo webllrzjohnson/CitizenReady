@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = {
   title: 'Free Canadian Citizenship Exam Practice',
-  description: 'Practice for your Canadian citizenship test with 1,000+ questions, timed mock exams, and topic-by-topic study guides. Free forever.',
+  description: 'Practice for the Canadian citizenship test with exam-style questions, timed mock exams, Discover Canada topic guides, and clear independent-study disclaimers.',
 }
 
 const LANDING_CHAPTERS = [
@@ -85,7 +85,8 @@ export default async function HomePage() {
                 Pass Your Canadian Citizenship Test
               </h1>
               <p className="max-w-xl text-lg text-gray-300 md:text-xl">
-                Practice with 1,001 questions, take timed mock exams, track your progress. Free forever.
+                Practice with exam-style questions, take timed mock exams, and track your progress
+                with an independent study tool built around Discover Canada.
               </p>
               <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
                 <Button size="lg" className="h-12 rounded-full bg-brand-red px-8 text-base text-white hover:bg-brand-red-dark" asChild>
@@ -102,7 +103,7 @@ export default async function HomePage() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-3 pt-2">
-                {['1,001 Questions', '11 Topics', 'Free Forever'].map((label) => (
+                {['Discover Canada topics', 'Timed mock exams', 'Independent from IRCC'].map((label) => (
                   <span key={label} className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white ring-1 ring-white/10">
                     {label}
                   </span>
@@ -133,6 +134,10 @@ export default async function HomePage() {
             <span className="flex items-center gap-1.5">
               <Zap className="h-3.5 w-3.5 text-amber-500" />
               Updated for 2026 test format
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              Independent study tool — not affiliated with IRCC
             </span>
           </div>
         </div>
@@ -247,11 +252,13 @@ export default async function HomePage() {
           <div className="mb-3 flex justify-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">
               <Zap className="h-3.5 w-3.5" aria-hidden />
-              Limited time — 50% off all plans
+              Early Plus access — online checkout coming soon
             </span>
           </div>
           <h2 className="mb-2 text-center text-3xl font-extrabold text-brand-navy md:text-4xl">Go Further with CitizenReady Plus</h2>
-          <p className="mb-10 text-center text-base text-gray-500">One payment. Full access. Everything you need to walk into test day confident.</p>
+          <p className="mb-10 text-center text-base text-gray-500">
+            Create a free account, then contact us for manual early access while online checkout is being prepared.
+          </p>
 
           <div className="grid gap-6 sm:grid-cols-3">
             {(
@@ -280,14 +287,14 @@ export default async function HomePage() {
                   <span className="rounded bg-brand-red/20 px-1.5 py-0.5 text-xs font-semibold text-brand-red">50% off</span>
                 </div>
                 <Button className={['mt-6 w-full font-semibold', plan.popular ? 'bg-brand-red hover:bg-brand-red-dark text-white' : 'bg-brand-navy text-white hover:bg-brand-navy/90'].join(' ')} asChild>
-                  <Link href="/pricing">Get Access</Link>
+                  <Link href="/contact">Contact for Access</Link>
                 </Button>
               </div>
             ))}
           </div>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-500">
-            {['900+ exam-like questions', 'Unlimited mock exams', 'Challenge bank', 'Cheat sheet PDF', 'Instant access'].map((f) => (
+            {['900+ exam-like questions', 'Unlimited mock exams', 'Challenge bank', 'Cheat sheet PDF', 'Manual early access'].map((f) => (
               <span key={f} className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-green-500" aria-hidden />
                 {f}

@@ -2,151 +2,164 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'CitizenReady privacy policy and data practices.',
+  description: 'How CitizenReady collects, uses, protects, and deletes account, quiz, contact, security, and advertising data.',
 }
+
+const LAST_UPDATED = 'July 2026'
 
 const sections = [
   {
-    title: '1. Introduction',
+    title: '1. Overview',
     content: (
       <p>
-        CitizenReady (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) is committed to
-        protecting your privacy. This policy explains what data we collect, how we use it, and your
-        rights.
+        CitizenReady (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) is an independent Canadian citizenship
+        test preparation platform. This Privacy Policy explains what information we collect, why we
+        collect it, how we protect it, and the choices you have. CitizenReady is not affiliated with
+        or endorsed by Immigration, Refugees and Citizenship Canada (IRCC) or the Government of Canada.
       </p>
     ),
   },
   {
     title: '2. Information We Collect',
     content: (
-      <ul className="list-disc space-y-1 pl-5">
-        <li>
-          <strong>Account information:</strong> name, email when you register
-        </li>
-        <li>
-          <strong>Usage data:</strong> quiz sessions, scores, practice history
-        </li>
-        <li>
-          <strong>Device data:</strong> browser type, IP address (server logs)
-        </li>
-        <li>
-          <strong>Cookies:</strong> session cookies for authentication
-        </li>
+      <ul className="list-disc space-y-2 pl-5">
+        <li><strong>Account information:</strong> email address, optional display name, account role, and password hash.</li>
+        <li><strong>Study activity:</strong> practice answers, quiz sessions, mock exam results, scores, timing, and progress by topic.</li>
+        <li><strong>Plus access information:</strong> whether Plus is active and, when applicable, the expiry date for manual early access.</li>
+        <li><strong>Contact messages:</strong> name, email, subject, and message text submitted through the contact form.</li>
+        <li><strong>Security data:</strong> session version, rate-limit counters, login/signup/contact abuse-protection signals, and admin audit logs.</li>
+        <li><strong>Technical data:</strong> browser/device details, IP-derived request information, and server logs used to operate and protect the service.</li>
+        <li><strong>Cookies:</strong> essential authentication cookies and, when enabled, advertising cookies managed by third-party ad providers.</li>
       </ul>
     ),
   },
   {
-    title: '3. How We Use Your Information',
+    title: '3. How We Use Information',
     content: (
-      <ul className="list-disc space-y-1 pl-5">
-        <li>To provide the exam preparation service</li>
-        <li>To save and display your progress</li>
-        <li>To improve our question bank and features</li>
-        <li>To send account-related emails (confirmations, resets)</li>
-        <li>We never sell your personal data to third parties</li>
+      <ul className="list-disc space-y-2 pl-5">
+        <li>To provide practice questions, mock exams, saved progress, and study tools.</li>
+        <li>To authenticate accounts and protect sessions from stale or unauthorized use.</li>
+        <li>To grant, expire, or remove manual Plus access.</li>
+        <li>To respond to contact messages and account-support requests.</li>
+        <li>To prevent abuse such as repeated login attempts, spam signups, or contact-form spam.</li>
+        <li>To keep an internal audit record of sensitive admin actions such as role changes and Plus grants.</li>
+        <li>To improve site reliability, security, and content quality.</li>
       </ul>
     ),
   },
   {
-    title: '4. Google AdSense & Advertising',
+    title: '4. Cookies and Authentication',
+    content: (
+      <p>
+        CitizenReady uses an essential cookie named <code>cr_session</code> to keep you signed in.
+        This cookie is required for account features. You can disable cookies in your browser, but
+        login, saved progress, and admin functions may not work correctly.
+      </p>
+    ),
+  },
+  {
+    title: '5. Advertising and Analytics',
     content: (
       <>
         <p className="mb-3">
-          We use Google AdSense to display advertisements. Google may use cookies to serve ads
-          based on your prior visits to this and other websites.
+          CitizenReady may display advertisements through Google AdSense or similar advertising
+          providers. Google and its partners may use cookies or similar technologies to serve,
+          measure, and personalize ads depending on your settings and applicable law.
         </p>
         <p>
-          You can opt out at:{' '}
-          <a
-            href="https://www.google.com/settings/ads"
-            className="text-brand-red hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          You can learn more or adjust Google ad settings at{' '}
+          <a href="https://www.google.com/settings/ads" className="text-brand-red hover:underline" target="_blank" rel="noopener noreferrer">
             google.com/settings/ads
-          </a>
-          . For more information:{' '}
-          <a
-            href="https://policies.google.com/privacy"
-            className="text-brand-red hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          </a>{' '}
+          and read Google&apos;s privacy policy at{' '}
+          <a href="https://policies.google.com/privacy" className="text-brand-red hover:underline" target="_blank" rel="noopener noreferrer">
             policies.google.com/privacy
-          </a>
-          .
+          </a>.
         </p>
       </>
     ),
   },
   {
-    title: '5. Data Storage & Security',
+    title: '6. Data Sharing',
     content: (
       <p>
-        Your data is stored securely in a PostgreSQL database, with access protected by encryption
-        and industry-standard security practices.
+        We do not sell your personal information. We share information only when needed to operate
+        the service, comply with law, protect the platform, or use trusted service providers such as
+        hosting, database, email, advertising, and optional AI draft-generation providers.
       </p>
     ),
   },
   {
-    title: '6. Data Retention',
+    title: '7. Service Providers',
     content: (
-      <p>
-        We retain your account data as long as your account is active. You can delete your account
-        at any time from Settings, which permanently removes all your data.
-      </p>
-    ),
-  },
-  {
-    title: '7. Third Party Services',
-    content: (
-      <ul className="list-disc space-y-1 pl-5">
-        <li>Self-hosted VPS (application hosting)</li>
-        <li>PostgreSQL (database)</li>
-        <li>Anthropic (optional AI blog draft generation)</li>
-        <li>Google AdSense (advertising)</li>
-        <li>Resend (transactional email)</li>
+      <ul className="list-disc space-y-2 pl-5">
+        <li>VPS/Coolify hosting for the web application.</li>
+        <li>PostgreSQL database storage.</li>
+        <li>Transactional email services when account emails are enabled.</li>
+        <li>Google AdSense when advertising is enabled.</li>
+        <li>Optional AI providers used only for admin blog-draft workflows, not for citizenship-test decisions.</li>
       </ul>
     ),
   },
   {
-    title: '8. Your Rights',
+    title: '8. Security',
     content: (
-      <ul className="list-disc space-y-1 pl-5">
-        <li>Access your personal data</li>
-        <li>Correct inaccurate data</li>
-        <li>Delete your account and all associated data</li>
-        <li>Withdraw consent at any time</li>
+      <p>
+        We use hashed passwords, signed JWT session cookies, database-backed session invalidation,
+        abuse-protection rate limits, password confirmation for sensitive account changes, and admin
+        audit logs for sensitive operations. No online service can guarantee perfect security, so you
+        should use a strong password and keep your account credentials private.
+      </p>
+    ),
+  },
+  {
+    title: '9. Data Retention and Deletion',
+    content: (
+      <p>
+        We keep account and study data while your account is active. You can delete your account from
+        Dashboard Settings. Deletion requires typing <strong>DELETE</strong> and entering your current
+        password. Some limited security, backup, or legal records may remain for a reasonable period
+        where required to protect the service or comply with obligations.
+      </p>
+    ),
+  },
+  {
+    title: '10. Your Choices',
+    content: (
+      <ul className="list-disc space-y-2 pl-5">
+        <li>Update your profile, email, and password from Dashboard Settings.</li>
+        <li>Delete your account from Dashboard Settings.</li>
+        <li>Control cookies through your browser settings.</li>
+        <li>Contact us to ask privacy questions or request help with your data.</li>
       </ul>
     ),
   },
   {
-    title: '9. Cookies',
+    title: '11. Children',
     content: (
       <p>
-        We use essential cookies for authentication only. Advertising cookies are managed by Google
-        AdSense. You can control cookies through your browser settings.
+        CitizenReady is intended for Canadian citizenship applicants and is not directed to children
+        under 13. If you believe a child has provided personal information, contact us so we can review
+        and remove it where appropriate.
       </p>
     ),
   },
   {
-    title: '10. Contact',
+    title: '12. Changes to This Policy',
     content: (
       <p>
-        For privacy-related questions, email us at{' '}
-        <a href="mailto:privacy@citizenready.ca" className="text-brand-red hover:underline">
-          privacy@citizenready.ca
-        </a>
-        .
+        We may update this Privacy Policy as CitizenReady changes. The &ldquo;Last updated&rdquo; date
+        above will reflect the latest version. Continued use of the service means you accept the
+        updated policy.
       </p>
     ),
   },
   {
-    title: '11. Changes to This Policy',
+    title: '13. Contact',
     content: (
       <p>
-        We may update this policy periodically. Continued use of the service constitutes acceptance
-        of the updated policy.
+        For privacy questions, contact us through the{' '}
+        <a href="/contact" className="text-brand-red hover:underline">contact page</a>.
       </p>
     ),
   },
@@ -158,7 +171,7 @@ export default function PrivacyPage() {
       <section className="bg-[#1B2A4A] py-14 text-white shadow-nav">
         <div className="container mx-auto px-4 text-center">
           <h1 className="mb-3 text-3xl font-bold md:text-4xl">Privacy Policy</h1>
-          <p className="text-white/70">Last updated: April 2026</p>
+          <p className="text-white/70">Last updated: {LAST_UPDATED}</p>
         </div>
       </section>
 
