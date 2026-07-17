@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   buildWeakTopicRecommendations,
   formatIncorrectReviewSummary,
+  selectUniqueIncorrectQuestionIds,
 } from '../lib/progress-insights'
 
 test('prioritizes weak topic recommendations by low best score and recent practice gaps', () => {
@@ -33,4 +34,16 @@ test('formats incorrect review summaries with correct-answer labels', () => {
     'Correct answers: One; Three',
   )
   assert.equal(formatIncorrectReviewSummary({ correct_answers: ['True'], options: [] }), 'Correct answer: True')
+})
+
+test('selects recent unique incorrect question ids for review sessions', () => {
+  const ids = selectUniqueIncorrectQuestionIds([
+    { question_id: 'q1' },
+    { question_id: 'q2' },
+    { question_id: 'q1' },
+    { question_id: null },
+    { question_id: 'q3' },
+  ], 2)
+
+  assert.deepEqual(ids, ['q1', 'q2'])
 })

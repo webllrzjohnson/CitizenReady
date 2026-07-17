@@ -59,3 +59,20 @@ export function formatIncorrectReviewSummary(input: {
   const prefix = labels.length === 1 ? 'Correct answer' : 'Correct answers'
   return `${prefix}: ${labels.join('; ')}`
 }
+
+export function selectUniqueIncorrectQuestionIds(
+  rows: Array<{ question_id: string | null | undefined }>,
+  limit = 10,
+): string[] {
+  const seen = new Set<string>()
+  const ids: string[] = []
+
+  for (const row of rows) {
+    if (!row.question_id || seen.has(row.question_id)) continue
+    seen.add(row.question_id)
+    ids.push(row.question_id)
+    if (ids.length >= limit) break
+  }
+
+  return ids
+}

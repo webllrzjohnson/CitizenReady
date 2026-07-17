@@ -5,6 +5,22 @@ import sql from '@/lib/db'
 import { getFreshSession } from '@/lib/auth/session'
 import { SubmitAnswerSchema } from '@/lib/validations'
 import type { Question } from '@/types'
+import { selectUniqueIncorrectQuestionIds } from '@/lib/progress-insights'
+
+function toTypedQuestions(rows: any[]): Question[] {
+  return rows.map((q: any) => ({
+    id: q.id,
+    topic_id: q.topic_id,
+    type: q.type,
+    question_text: q.question_text,
+    options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+    correct_answers: typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : q.correct_answers,
+    explanation: q.explanation,
+    difficulty: q.difficulty,
+    is_active: q.is_active,
+    created_at: q.created_at,
+  }))
+}
 
 export async function startPracticeSession(topicId: string, topicSlug: string) {
   const session = await getFreshSession()
@@ -21,18 +37,7 @@ export async function startPracticeSession(topicId: string, topicSlug: string) {
   const selected = shuffled.slice(0, Math.min(10, shuffled.length))
   const questionIds = selected.map((q: any) => q.id)
 
-  const typedQuestions: Question[] = selected.map((q: any) => ({
-    id: q.id,
-    topic_id: q.topic_id,
-    type: q.type,
-    question_text: q.question_text,
-    options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
-    correct_answers: typeof q.correct_answers === 'string' ? JSON.parse(q.correct_answers) : q.correct_answers,
-    explanation: q.explanation,
-    difficulty: q.difficulty,
-    is_active: q.is_active,
-    created_at: q.created_at,
-  }))
+  const typedQuestions = toTypedQuestions(selected)
 
   if (!session) {
     return { success: true, sessionId: null, questions: typedQuestions, isGuest: true }
@@ -45,6 +50,39 @@ export async function startPracticeSession(topicId: string, topicSlug: string) {
   `
 
   return { success: true, sessionId: sessionRows[0].id, questions: typedQuestions, isGuest: false }
+}
+
+export async function startIncorrectReviewSession() {
+  const session = await getFreshSession()
+  if (!session) return { error: 'Log in to review missed questions' }
+
+  const incorrectRows = await sql<{ question_id: string }[]>`
+    SELECT qa.question_id
+    FROM public.question_attempts qa
+    JOIN public.quiz_sessions qs ON qs.id = qa.session_id
+    WHERE qs.user_id = ${session.id}::uuid AND qa.is_correct = false
+    ORDER BY qa.created_at DESC
+    LIMIT 100
+  `
+  const questionIds = selectUniqueIncorrectQuestionIds(incorrectRows, 10)
+  if (questionIds.length === 0) return { error: 'No missed questions to review yet' }
+
+  const questions = await sql`
+    SELECT * FROM public.questions
+    WHERE id = ANY(${sql.array(questionIds)}::uuid[]) AND is_active = true
+  `
+  const questionMap = new Map(questions.map((q: any) => [q.id, q]))
+  const selected = questionIds.map((id) => questionMap.get(id)).filter(Boolean)
+  if (selected.length === 0) return { error: 'No active missed questions are available to review' }
+
+  const selectedIds = selected.map((q: any) => q.id)
+  const sessionRows = await sql`
+    INSERT INTO public.quiz_sessions (user_id, type, topic_id, total_q, question_ids)
+    VALUES (${session.id}::uuid, 'practice', null, ${selected.length}, ${JSON.stringify(selectedIds)})
+    RETURNING id
+  `
+
+  return { success: true, sessionId: sessionRows[0].id, questions: toTypedQuestions(selected), isGuest: false }
 }
 
 export async function submitAnswer(formData: FormData) {

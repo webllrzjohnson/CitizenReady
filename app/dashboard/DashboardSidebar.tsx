@@ -22,6 +22,7 @@ import {
   Scale,
   BookCopy,
   ListChecks,
+  RefreshCcw,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -29,6 +30,7 @@ function isSidebarNavActive(pathname: string, href: string): boolean {
   if (pathname === href) return true
   if (href === '/dashboard') return false
   if (href === '/dashboard/study') return false
+  if (href === '/dashboard/practice') return false
   return pathname.startsWith(`${href}/`)
 }
 
@@ -44,6 +46,7 @@ const navItems = [
   { href: '/dashboard/study/key-people', label: 'Important people', icon: Users },
   { href: '/dashboard/study/rights-and-responsibilities', label: 'Rights & duties', icon: Scale },
   { href: '/dashboard/practice', label: 'Practice', icon: BookOpen },
+  { href: '/dashboard/practice/review', label: 'Review missed', icon: RefreshCcw },
   { href: '/dashboard/mock-exam', label: 'Mock Exam', icon: FileText },
   { href: '/dashboard/progress', label: 'Progress', icon: TrendingUp },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },

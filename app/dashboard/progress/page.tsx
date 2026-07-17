@@ -212,6 +212,9 @@ export default async function ProgressPage() {
             </div>
             <Badge variant="outline">Last 5</Badge>
           </div>
+          <Button asChild className="mb-4 w-full bg-brand-red text-white hover:bg-brand-red-dark">
+            <Link href="/dashboard/practice/review">Start review session</Link>
+          </Button>
           {recentIncorrect.length > 0 ? (
             <div className="space-y-3">
               {recentIncorrect.map((attempt) => {

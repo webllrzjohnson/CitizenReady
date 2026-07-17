@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { startPracticeSession, submitAnswer, completeSession } from '@/actions/quiz'
+import { startIncorrectReviewSession, startPracticeSession, submitAnswer, completeSession } from '@/actions/quiz'
 import type { Question } from '@/types'
 import { cn } from '@/lib/utils'
 import QuestionCard from '@/components/quiz/QuestionCard'
@@ -20,9 +20,10 @@ interface FeedbackResult {
 }
 
 interface TopicPracticeContentProps {
-  topicSlugParam: Promise<{ topicSlug: string }>
+  topicSlugParam?: Promise<{ topicSlug: string }>
   adsEnabled: boolean
   clientId: string
+  mode?: 'topic' | 'review'
 }
 
 function answersMatch(userAnswer: string[], correctAnswers: string[]) {
@@ -32,7 +33,7 @@ function answersMatch(userAnswer: string[], correctAnswers: string[]) {
   )
 }
 
-export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId }: TopicPracticeContentProps) {
+export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId, mode = 'topic' }: TopicPracticeContentProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [topicSlug, setTopicSlug] = useState<string>('')
@@ -51,8 +52,12 @@ export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId }: T
   const [startTime, setStartTime] = useState<number>(Date.now())
 
   useEffect(() => {
-    topicSlugParam.then((p) => setTopicSlug(p.topicSlug))
-  }, [topicSlugParam])
+    if (mode === 'review') {
+      setTopicSlug('review')
+      return
+    }
+    topicSlugParam?.then((p) => setTopicSlug(p.topicSlug))
+  }, [mode, topicSlugParam])
 
   useEffect(() => {
     if (!topicSlug) return
@@ -62,13 +67,14 @@ export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId }: T
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/topics/by-slug/${topicSlug}`)
-        if (!response.ok) {
-          throw new Error('Topic not found')
-        }
-        const topic = await response.json()
-
-        const result = await startPracticeSession(topic.id, topicSlug)
+        const result = mode === 'review'
+          ? await startIncorrectReviewSession()
+          : await (async () => {
+              const response = await fetch(`/api/topics/by-slug/${topicSlug}`)
+              if (!response.ok) throw new Error('Topic not found')
+              const topic = await response.json()
+              return startPracticeSession(topic.id, topicSlug)
+            })()
 
         if (result.error) {
           setError(result.error)
@@ -89,7 +95,7 @@ export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId }: T
     }
 
     initSession()
-  }, [topicSlug, searchParams])
+  }, [mode, topicSlug, searchParams])
 
   const currentQuestion = questions[currentIndex]
   const progress = questions.length > 0 ? ((currentIndex + 1) / questions.length) * 100 : 0
@@ -185,12 +191,12 @@ export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId }: T
   }
 
   function handlePracticeAgain() {
-    router.push(`/dashboard/practice/${topicSlug}`)
+    router.push(mode === 'review' ? '/dashboard/practice/review' : `/dashboard/practice/${topicSlug}`)
     router.refresh()
   }
 
   function handleBackToTopics() {
-    router.push('/dashboard/practice')
+    router.push(mode === 'review' ? '/dashboard/progress' : '/dashboard/practice')
   }
 
   if (loading) {
@@ -252,10 +258,10 @@ export function TopicPracticeContent({ topicSlugParam, adsEnabled, clientId }: T
 
           <div className="mt-6 flex gap-3">
             <Button onClick={handlePracticeAgain} className="flex-1 bg-brand-red hover:bg-brand-red-dark">
-              Practice Again
+              {mode === 'review' ? 'Review Again' : 'Practice Again'}
             </Button>
             <Button onClick={handleBackToTopics} variant="outline" className="flex-1 border-brand-navy/25">
-              Back to Topics
+              {mode === 'review' ? 'Back to Progress' : 'Back to Topics'}
             </Button>
           </div>
         </div>
