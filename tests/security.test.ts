@@ -21,6 +21,7 @@ import {
   normalizePlusRequestPlan,
   plusRequestPlanToPremiumGrant,
 } from '../lib/plus-requests'
+import { formatAdminDashboardCount } from '../lib/admin-dashboard'
 
 test('normalizes rate limit identities consistently', () => {
   assert.equal(normalizeRateLimitIdentity('  USER@Example.COM  '), 'user@example.com')
@@ -84,4 +85,11 @@ test('maps Plus request statuses to badge variants', () => {
   assert.equal(getPlusRequestStatusBadgeVariant('approved'), 'secondary')
   assert.equal(getPlusRequestStatusBadgeVariant('completed'), 'outline')
   assert.equal(getPlusRequestStatusBadgeVariant('rejected'), 'destructive')
+})
+
+test('formats admin dashboard counts for compact cards', () => {
+  assert.equal(formatAdminDashboardCount(0), '0')
+  assert.equal(formatAdminDashboardCount(999), '999')
+  assert.equal(formatAdminDashboardCount(1200), '1.2k')
+  assert.equal(formatAdminDashboardCount(12000), '12k')
 })
