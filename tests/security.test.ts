@@ -19,6 +19,7 @@ import {
   formatPlusRequestPlanLabel,
   getPlusRequestStatusBadgeVariant,
   normalizePlusRequestPlan,
+  plusRequestPlanToPremiumGrant,
 } from '../lib/plus-requests'
 
 test('normalizes rate limit identities consistently', () => {
@@ -72,6 +73,10 @@ test('normalizes and labels Plus request plans', () => {
   assert.equal(normalizePlusRequestPlan('unknown'), '30day')
   assert.equal(formatPlusRequestPlanLabel('7day'), '7-Day Sprint')
   assert.equal(formatPlusRequestPlanLabel('lifetime'), 'Lifetime / Special Access')
+  assert.equal(plusRequestPlanToPremiumGrant('7day'), '7d')
+  assert.equal(plusRequestPlanToPremiumGrant('30day'), '30d')
+  assert.equal(plusRequestPlanToPremiumGrant('1year'), '1y')
+  assert.equal(plusRequestPlanToPremiumGrant('lifetime'), 'lifetime')
 })
 
 test('maps Plus request statuses to badge variants', () => {

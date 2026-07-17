@@ -6,7 +6,13 @@ import sql from '@/lib/db'
 import { requireAdminSession } from '@/lib/auth/session'
 import { checkRateLimit, getClientFingerprint } from '@/lib/security/rate-limit'
 import { writeAdminAuditLog } from '@/lib/security/audit'
-import { PLUS_REQUEST_PLANS, PLUS_REQUEST_STATUSES, normalizePlusRequestPlan } from '@/lib/plus-requests'
+import {
+  PLUS_REQUEST_PLANS,
+  PLUS_REQUEST_STATUSES,
+  normalizePlusRequestPlan,
+  plusRequestPlanToPremiumGrant,
+  type PlusRequestPremiumGrant,
+} from '@/lib/plus-requests'
 
 const plusRequestSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -20,6 +26,18 @@ const updateStatusSchema = z.object({
   id: z.string().uuid('Invalid request id'),
   status: z.enum(PLUS_REQUEST_STATUSES),
 })
+
+const grantPlusRequestSchema = z.object({
+  id: z.string().uuid('Invalid request id'),
+  grant: z.enum(['7d', '30d', '1y', 'lifetime']),
+})
+
+function premiumExpirySql(grant: PlusRequestPremiumGrant): string | null {
+  if (grant === '7d') return '7 days'
+  if (grant === '30d') return '30 days'
+  if (grant === '1y') return '1 year'
+  return null
+}
 
 export async function submitPlusRequest(formData: FormData) {
   const parsed = plusRequestSchema.safeParse({
@@ -82,5 +100,80 @@ export async function updatePlusRequestStatus(formData: FormData) {
 
   revalidatePath('/admin/plus-requests')
   revalidatePath('/admin/audit-logs')
+  return { success: true }
+}
+
+export async function grantPlusForRequest(formData: FormData) {
+  const admin = await requireAdminSession()
+  if ('error' in admin) return { error: admin.error }
+
+  const parsed = grantPlusRequestSchema.safeParse({
+    id: formData.get('id'),
+    grant: formData.get('grant'),
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validation error' }
+
+  const rows = await sql`
+    SELECT
+      r.id,
+      r.email,
+      r.account_email,
+      r.requested_plan,
+      r.status,
+      p.id AS user_id,
+      p.email AS user_email
+    FROM public.plus_access_requests r
+    LEFT JOIN public.profiles p
+      ON lower(p.email) = lower(COALESCE(NULLIF(r.account_email, ''), r.email))
+    WHERE r.id = ${parsed.data.id}::uuid
+    LIMIT 1
+  `
+  const request = rows[0]
+  if (!request) return { error: 'Request not found' }
+  if (!request.user_id) return { error: 'No matching user account found' }
+
+  const grant = parsed.data.grant
+  const interval = premiumExpirySql(grant)
+  if (grant === 'lifetime') {
+    await sql`
+      UPDATE public.profiles
+      SET is_premium = true, premium_expires_at = null
+      WHERE id = ${request.user_id}::uuid
+    `
+  } else {
+    await sql`
+      UPDATE public.profiles
+      SET is_premium = true, premium_expires_at = now() + (${interval})::interval
+      WHERE id = ${request.user_id}::uuid
+    `
+  }
+
+  await sql`
+    UPDATE public.plus_access_requests
+    SET status = 'completed', updated_at = now()
+    WHERE id = ${request.id}::uuid
+  `
+
+  await writeAdminAuditLog({
+    actorId: admin.userId,
+    action: 'plus_request.access_granted',
+    targetUserId: request.user_id,
+    metadata: {
+      requestId: request.id,
+      email: request.email,
+      accountEmail: request.account_email,
+      matchedUserEmail: request.user_email,
+      requestedPlan: request.requested_plan,
+      defaultGrant: plusRequestPlanToPremiumGrant(request.requested_plan),
+      grant,
+    },
+  })
+
+  revalidatePath('/admin/plus-requests')
+  revalidatePath('/admin/users')
+  revalidatePath('/admin/audit-logs')
+  revalidatePath('/study/complete-questions')
+  revalidatePath('/study/cheat-sheet')
+  revalidatePath('/dashboard')
   return { success: true }
 }

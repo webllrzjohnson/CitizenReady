@@ -9,8 +9,22 @@ export const metadata: Metadata = { title: 'Plus Requests' }
 
 export default async function AdminPlusRequestsPage() {
   const rows = await sql`
-    SELECT id, name, email, account_email, requested_plan, message, status, created_at
-    FROM public.plus_access_requests
+    SELECT
+      r.id,
+      r.name,
+      r.email,
+      r.account_email,
+      r.requested_plan,
+      r.message,
+      r.status,
+      r.created_at,
+      p.id AS matched_user_id,
+      p.email AS matched_user_email,
+      p.is_premium AS matched_user_is_premium,
+      p.premium_expires_at AS matched_user_premium_expires_at
+    FROM public.plus_access_requests r
+    LEFT JOIN public.profiles p
+      ON lower(p.email) = lower(COALESCE(NULLIF(r.account_email, ''), r.email))
     ORDER BY
       CASE status
         WHEN 'new' THEN 0
@@ -33,7 +47,7 @@ export default async function AdminPlusRequestsPage() {
         )}
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Review manual Plus access requests submitted from the public early-access form. Use status buttons to track approval and completion; granting Plus is still handled from Admin → Users.
+        Review manual Plus access requests submitted from the public early-access form. Matched accounts can be granted Plus directly from this page.
       </p>
       <PlusRequestsTable requests={rows as any[]} />
     </div>

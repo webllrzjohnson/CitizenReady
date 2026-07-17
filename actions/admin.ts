@@ -8,9 +8,10 @@ import { isAiProviderId, resolveBlogDraftModel } from '@/lib/blog/ai-providers'
 import { saveAiBlogSettings } from '@/lib/blog/ai-settings'
 import { writeAdminAuditLog } from '@/lib/security/audit'
 
-export type PremiumGrant = '30d' | '90d' | '1y' | 'lifetime' | 'remove'
+export type PremiumGrant = '7d' | '30d' | '90d' | '1y' | 'lifetime' | 'remove'
 
 function premiumExpirySql(grant: PremiumGrant): string | null {
+  if (grant === '7d') return '7 days'
   if (grant === '30d') return '30 days'
   if (grant === '90d') return '90 days'
   if (grant === '1y') return '1 year'
@@ -37,7 +38,7 @@ export async function toggleUserRole(userId: string, currentRole: string) {
 export async function setUserPremiumAccess(userId: string, grant: PremiumGrant) {
   const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }
-  if (!['30d', '90d', '1y', 'lifetime', 'remove'].includes(grant)) return { error: 'Invalid Plus access option' }
+  if (!['7d', '30d', '90d', '1y', 'lifetime', 'remove'].includes(grant)) return { error: 'Invalid Plus access option' }
 
   if (grant === 'remove') {
     await sql`
