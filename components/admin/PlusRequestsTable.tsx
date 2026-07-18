@@ -1,4 +1,4 @@
-import { grantPlusForRequest, updatePlusRequestStatus } from '@/actions/plus-requests'
+import { grantPlusForRequest, resendPlusRequestEmail, updatePlusRequestStatus } from '@/actions/plus-requests'
 import {
   formatPlusRequestPlanLabel,
   getPlusRequestStatusBadgeVariant,
@@ -72,6 +72,20 @@ function GrantButton({
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="grant" value={grant} />
       <Button type="submit" size="sm" variant={primary ? 'default' : 'outline'}>{label}</Button>
+    </form>
+  )
+}
+
+function ResendEmailButton({ id }: { id: string }) {
+  async function action(formData: FormData) {
+    'use server'
+    await resendPlusRequestEmail(formData)
+  }
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="id" value={id} />
+      <Button type="submit" size="sm" variant="secondary">Resend email</Button>
     </form>
   )
 }
@@ -165,6 +179,7 @@ export function PlusRequestsTable({ requests }: { requests: PlusRequest[] }) {
                     {request.status !== 'approved' && <StatusButton id={request.id} status="approved" label="Approve" />}
                     {request.status !== 'completed' && <StatusButton id={request.id} status="completed" label="Complete" />}
                     {request.status !== 'rejected' && <StatusButton id={request.id} status="rejected" label="Reject" />}
+                    <ResendEmailButton id={request.id} />
                   </div>
                 </td>
               </tr>

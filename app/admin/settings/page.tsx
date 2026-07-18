@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import sql from '@/lib/db'
 import { AdSettingsForm } from '@/components/admin/AdSettingsForm'
+import { EmailTestForm } from '@/components/admin/EmailTestForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,11 +12,12 @@ export default async function AdminAdSettingsPage() {
   const map = new Map(rows.map((r: any) => [r.key, r.value]))
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl space-y-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Ad Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage Google AdSense integration for CitizenReady.</p>
+        <h1 className="text-2xl font-bold">Site Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Manage Google AdSense and operational notification checks.</p>
       </div>
+      <EmailTestForm />
       <AdSettingsForm
         initialAdsEnabled={map.get('ads_enabled') === 'true'}
         initialClientId={map.get('adsense_client_id') ?? ''}

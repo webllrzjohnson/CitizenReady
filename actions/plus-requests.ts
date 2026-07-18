@@ -40,6 +40,10 @@ const grantPlusRequestSchema = z.object({
   grant: z.enum(['7d', '30d', '1y', 'lifetime']),
 })
 
+const resendPlusRequestEmailSchema = z.object({
+  id: z.string().uuid('Invalid request id'),
+})
+
 function premiumExpirySql(grant: PlusRequestPremiumGrant): string | null {
   if (grant === '7d') return '7 days'
   if (grant === '30d') return '30 days'
@@ -205,5 +209,62 @@ export async function grantPlusForRequest(formData: FormData) {
   revalidatePath('/study/complete-questions')
   revalidatePath('/study/cheat-sheet')
   revalidatePath('/dashboard')
+  return { success: true }
+}
+
+export async function resendPlusRequestEmail(formData: FormData) {
+  const admin = await requireAdminSession()
+  if ('error' in admin) return { error: admin.error }
+
+  const parsed = resendPlusRequestEmailSchema.safeParse({
+    id: formData.get('id'),
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validation error' }
+
+  const rows = await sql`
+    SELECT
+      r.id,
+      r.name,
+      r.email,
+      r.account_email,
+      r.requested_plan,
+      r.status,
+      p.email AS user_email
+    FROM public.plus_access_requests r
+    LEFT JOIN public.profiles p
+      ON lower(p.email) = lower(COALESCE(NULLIF(r.account_email, ''), r.email))
+    WHERE r.id = ${parsed.data.id}::uuid
+    LIMIT 1
+  `
+  const request = rows[0]
+  if (!request) return { error: 'Request not found' }
+
+  const email = request.status === 'completed'
+    ? buildPlusAccessGrantedEmail({
+        name: request.name,
+        grantLabel: formatPlusRequestPlanLabel(request.requested_plan),
+        accountEmail: request.user_email ?? request.account_email,
+      })
+    : buildPlusRequestStatusEmail({
+        name: request.name,
+        status: request.status,
+        requestedPlanLabel: formatPlusRequestPlanLabel(request.requested_plan),
+      })
+
+  const result = await sendUserNotification([request.email, request.account_email, request.user_email], email)
+  await writeAdminAuditLog({
+    actorId: admin.userId,
+    action: 'plus_request.email_resent',
+    metadata: {
+      requestId: request.id,
+      status: request.status,
+      sent: result.sent,
+      skipped: result.skipped ?? false,
+    },
+  })
+
+  revalidatePath('/admin/plus-requests')
+  revalidatePath('/admin/audit-logs')
+  if (!result.sent) return { error: result.error ?? 'Email could not be sent. Check SMTP configuration and app logs.' }
   return { success: true }
 }

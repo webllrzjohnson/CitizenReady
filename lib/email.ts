@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import { siteUrl } from '@/lib/site-url'
+import type { PlusRequestStatus } from '@/lib/plus-requests'
 
 type EnvLike = Record<string, string | undefined>
 
@@ -16,6 +17,12 @@ export type EmailNotificationConfig = {
 export type NotificationEmail = {
   subject: string
   text: string
+}
+
+export type SendEmailResult = {
+  sent: boolean
+  skipped?: boolean
+  error?: string
 }
 
 type SmtpConfig = Omit<EmailNotificationConfig, 'to'>
@@ -111,12 +118,39 @@ export function buildPlusRequestNotificationEmail(input: {
   }
 }
 
+export function buildAdminTestEmail(): NotificationEmail {
+  return {
+    subject: 'CitizenReady: SMTP test email',
+    text: [
+      'CitizenReady email notifications are working.',
+      '',
+      'This test confirms the app can send through the configured SMTP account.',
+      '',
+      `Admin settings: ${siteUrl('/admin/settings')}`,
+    ].join('\n'),
+  }
+}
+
 export function buildPlusRequestStatusEmail(input: {
   name: string
-  status: 'approved' | 'rejected' | 'completed'
+  status: PlusRequestStatus
   requestedPlanLabel: string
 }): NotificationEmail {
   const greeting = `Hi ${safeLine(input.name)},`
+  if (input.status === 'new') {
+    return {
+      subject: 'CitizenReady: Plus request received',
+      text: [
+        greeting,
+        '',
+        `We received your CitizenReady Plus request for ${safeLine(input.requestedPlanLabel)}.`,
+        'We will review it and follow up soon.',
+        '',
+        `Dashboard: ${siteUrl('/dashboard')}`,
+      ].join('\n'),
+    }
+  }
+
   if (input.status === 'approved') {
     return {
       subject: 'CitizenReady: Your Plus request approved',
@@ -172,16 +206,16 @@ export function buildPlusAccessGrantedEmail(input: {
   }
 }
 
-async function sendNotificationTo(to: string | string[], email: NotificationEmail, logLabel: string): Promise<void> {
+async function sendNotificationTo(to: string | string[], email: NotificationEmail, logLabel: string): Promise<SendEmailResult> {
   const config = getSmtpConfig()
   const recipients = Array.isArray(to) ? uniqueEmailRecipients(to) : uniqueEmailRecipients([to])
   if (!config) {
     console.warn(`[CitizenReady] Skipped ${logLabel} email: SMTP is not configured`)
-    return
+    return { sent: false, skipped: true, error: 'SMTP is not configured' }
   }
   if (recipients.length === 0) {
     console.warn(`[CitizenReady] Skipped ${logLabel} email: no recipient`)
-    return
+    return { sent: false, skipped: true, error: 'No recipient' }
   }
 
   try {
@@ -201,17 +235,23 @@ async function sendNotificationTo(to: string | string[], email: NotificationEmai
       subject: email.subject,
       text: email.text,
     })
+    return { sent: true }
   } catch (error) {
-    console.error(`[CitizenReady] Failed to send ${logLabel} email:`, error instanceof Error ? error.message : error)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[CitizenReady] Failed to send ${logLabel} email:`, message)
+    return { sent: false, error: message }
   }
 }
 
-export async function sendAdminNotification(email: NotificationEmail): Promise<void> {
+export async function sendAdminNotification(email: NotificationEmail): Promise<SendEmailResult> {
   const config = getEmailNotificationConfig()
-  if (!config) return
-  await sendNotificationTo(config.to, email, 'admin notification')
+  if (!config) {
+    console.warn('[CitizenReady] Skipped admin notification email: SMTP/admin recipient is not configured')
+    return { sent: false, skipped: true, error: 'SMTP/admin recipient is not configured' }
+  }
+  return sendNotificationTo(config.to, email, 'admin notification')
 }
 
-export async function sendUserNotification(to: string | string[], email: NotificationEmail): Promise<void> {
-  await sendNotificationTo(to, email, 'user notification')
+export async function sendUserNotification(to: string | string[], email: NotificationEmail): Promise<SendEmailResult> {
+  return sendNotificationTo(to, email, 'user notification')
 }

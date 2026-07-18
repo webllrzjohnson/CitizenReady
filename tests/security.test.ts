@@ -29,6 +29,7 @@ import {
 import { formatAdminDashboardCount } from '../lib/admin-dashboard'
 import {
   buildContactNotificationEmail,
+  buildAdminTestEmail,
   buildPlusAccessGrantedEmail,
   buildPlusRequestNotificationEmail,
   buildPlusRequestStatusEmail,
@@ -163,6 +164,10 @@ test('builds admin notification emails for contact and Plus requests', () => {
   assert.match(plus.subject, /New Plus access request/)
   assert.match(plus.text, /30-Day Plan/)
   assert.match(plus.text, /admin\/plus-requests/)
+
+  const testEmail = buildAdminTestEmail()
+  assert.match(testEmail.subject, /SMTP test/)
+  assert.match(testEmail.text, /email notifications are working/i)
 })
 
 test('builds user notification emails for Plus request decisions', () => {
@@ -182,6 +187,13 @@ test('builds user notification emails for Plus request decisions', () => {
   })
   assert.match(rejected.subject, /Plus request update/)
   assert.match(rejected.text, /not able to approve/i)
+
+  const received = buildPlusRequestStatusEmail({
+    name: 'Sam Lee',
+    status: 'new',
+    requestedPlanLabel: '30-Day Plan',
+  })
+  assert.match(received.subject, /Plus request received/)
 
   const granted = buildPlusAccessGrantedEmail({
     name: 'Sam Lee',

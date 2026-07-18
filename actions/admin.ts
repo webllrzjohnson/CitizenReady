@@ -7,6 +7,7 @@ import { requireAdminSession } from '@/lib/auth/session'
 import { isAiProviderId, resolveBlogDraftModel } from '@/lib/blog/ai-providers'
 import { saveAiBlogSettings } from '@/lib/blog/ai-settings'
 import { writeAdminAuditLog } from '@/lib/security/audit'
+import { buildAdminTestEmail, sendAdminNotification } from '@/lib/email'
 
 export type PremiumGrant = '7d' | '30d' | '90d' | '1y' | 'lifetime' | 'remove'
 
@@ -168,5 +169,20 @@ export async function updateAiBlogSettings(formData: FormData) {
   })
 
   revalidatePath('/admin/blog/ai-draft')
+  return { success: true }
+}
+
+export async function sendAdminEmailTest() {
+  const check = await requireAdminSession()
+  if ('error' in check) return { error: check.error }
+
+  const result = await sendAdminNotification(buildAdminTestEmail())
+  await writeAdminAuditLog({
+    actorId: check.userId,
+    action: 'site.email_test_sent',
+    metadata: { sent: result.sent, skipped: result.skipped ?? false },
+  })
+
+  if (!result.sent) return { error: result.error ?? 'Email test could not be sent. Check SMTP configuration and app logs.' }
   return { success: true }
 }
