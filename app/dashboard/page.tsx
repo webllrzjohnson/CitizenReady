@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
 import { hasPremiumAccess } from '@/lib/premium'
 import { PlusStatusCard } from '@/components/dashboard/PlusStatusCard'
+import { TodayStudyPlanCard } from '@/components/dashboard/TodayStudyPlanCard'
+import { buildTodayStudyPlan, buildWeakTopicRecommendations } from '@/lib/progress-insights'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,17 +135,50 @@ export default async function DashboardPage() {
     ? Math.round(sessions.reduce((sum, s) => sum + (s.score / s.total_q) * 100, 0) / sessions.length)
     : 0
 
-  const bestScores = await sql<{ topic_id: string; score: number; total_q: number }[]>`
-    SELECT topic_id, score, total_q FROM public.quiz_sessions
+  const bestScores = await sql<{ topic_id: string; score: number; total_q: number; completed_at: string | null }[]>`
+    SELECT topic_id, score, total_q, completed_at FROM public.quiz_sessions
     WHERE user_id = ${session.id}::uuid AND type = 'practice' AND completed_at IS NOT NULL
   `
   const scoreMap: Record<string, { score: number; total: number }> = {}
+  const topicProgressMap: Record<string, { topic_id: string; topic_name: string; topic_slug: string; best_score: number | null; sessions_count: number; last_attempted: string | null }> = {}
+  topics.forEach((topic) => {
+    topicProgressMap[topic.id] = { topic_id: topic.id, topic_name: topic.name, topic_slug: topic.slug, best_score: null, sessions_count: 0, last_attempted: null }
+  })
   bestScores.forEach((s) => {
     if (s.topic_id && s.score !== null) {
       if (!scoreMap[s.topic_id] || s.score > scoreMap[s.topic_id].score) {
         scoreMap[s.topic_id] = { score: s.score, total: s.total_q }
       }
+      const progress = topicProgressMap[s.topic_id]
+      if (progress) {
+        progress.sessions_count++
+        if (progress.best_score === null || s.score > progress.best_score) progress.best_score = s.score
+        if (!progress.last_attempted || (s.completed_at && s.completed_at > progress.last_attempted)) progress.last_attempted = s.completed_at
+      }
     }
+  })
+
+  const missedQuestionRows = await sql<{ count: string }[]>`
+    SELECT COUNT(*) as count
+    FROM public.question_attempts qa
+    JOIN public.quiz_sessions qs ON qs.id = qa.session_id
+    WHERE qs.user_id = ${session.id}::uuid AND qa.is_correct = false
+  `
+  const mockExamCountRows = await sql<{ count: string }[]>`
+    SELECT COUNT(*) as count FROM public.quiz_sessions
+    WHERE user_id = ${session.id}::uuid AND type = 'mock_exam' AND completed_at IS NOT NULL
+  `
+  const latestMockRows = await sql<{ score: number | null }[]>`
+    SELECT score FROM public.quiz_sessions
+    WHERE user_id = ${session.id}::uuid AND type = 'mock_exam' AND completed_at IS NOT NULL
+    ORDER BY completed_at DESC
+    LIMIT 1
+  `
+  const todayStudyPlan = buildTodayStudyPlan({
+    missedQuestionCount: parseInt(missedQuestionRows[0]?.count ?? '0'),
+    weakTopics: buildWeakTopicRecommendations(Object.values(topicProgressMap), 1),
+    mockExamCount: parseInt(mockExamCountRows[0]?.count ?? '0'),
+    latestMockScore: latestMockRows[0]?.score ?? null,
   })
 
   const quickLinks = [
@@ -165,6 +200,8 @@ export default async function DashboardPage() {
       {!isPremium && <UpgradeBanner />}
 
       <PlusStatusCard profile={profile} />
+
+      <TodayStudyPlanCard items={todayStudyPlan} />
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  buildTodayStudyPlan,
   buildWeakTopicRecommendations,
   formatIncorrectReviewSummary,
   selectUniqueIncorrectQuestionIds,
@@ -46,4 +47,24 @@ test('selects recent unique incorrect question ids for review sessions', () => {
   ], 2)
 
   assert.deepEqual(ids, ['q1', 'q2'])
+})
+
+test('builds a prioritized daily study plan from missed answers, weak topics, and mock exams', () => {
+  const plan = buildTodayStudyPlan({
+    missedQuestionCount: 4,
+    weakTopics: [
+      { topic_id: 'history', topic_name: 'History', topic_slug: 'history', best_score: 4, sessions_count: 2, last_attempted: null, reason: 'Best score below 60%', priority: 92 },
+    ],
+    mockExamCount: 0,
+    latestMockScore: null,
+  })
+
+  assert.deepEqual(plan.map((item) => item.href), [
+    '/dashboard/practice/review',
+    '/dashboard/practice/history',
+    '/dashboard/mock-exam',
+  ])
+  assert.equal(plan[0].title, 'Review missed questions')
+  assert.equal(plan[1].title, 'Practice History')
+  assert.equal(plan[2].reason, 'No saved mock exam yet')
 })

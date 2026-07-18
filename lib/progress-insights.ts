@@ -12,6 +12,13 @@ export type WeakTopicRecommendation = TopicProgressInsight & {
   priority: number
 }
 
+export type TodayStudyPlanItem = {
+  title: string
+  reason: string
+  estimate: string
+  href: string
+}
+
 type AnswerOption = { key: string; text: string }
 
 export function buildWeakTopicRecommendations(
@@ -75,4 +82,52 @@ export function selectUniqueIncorrectQuestionIds(
   }
 
   return ids
+}
+
+export function buildTodayStudyPlan(input: {
+  missedQuestionCount: number
+  weakTopics: WeakTopicRecommendation[]
+  mockExamCount: number
+  latestMockScore: number | null
+}): TodayStudyPlanItem[] {
+  const items: TodayStudyPlanItem[] = []
+
+  if (input.missedQuestionCount > 0) {
+    items.push({
+      title: 'Review missed questions',
+      reason: `${input.missedQuestionCount} recent missed ${input.missedQuestionCount === 1 ? 'question' : 'questions'} ready`,
+      estimate: '10 min',
+      href: '/dashboard/practice/review',
+    })
+  }
+
+  const weakest = input.weakTopics[0]
+  if (weakest?.topic_slug) {
+    items.push({
+      title: `Practice ${weakest.topic_name}`,
+      reason: weakest.reason,
+      estimate: '10 min',
+      href: `/dashboard/practice/${weakest.topic_slug}`,
+    })
+  }
+
+  if (input.mockExamCount === 0 || input.latestMockScore === null || input.latestMockScore < 15) {
+    items.push({
+      title: 'Take a mock exam',
+      reason: input.mockExamCount === 0 ? 'No saved mock exam yet' : 'Latest mock exam is below passing score',
+      estimate: '30 min',
+      href: '/dashboard/mock-exam',
+    })
+  }
+
+  if (items.length === 0) {
+    items.push({
+      title: 'Keep your streak going',
+      reason: 'Your recent progress looks strong — complete one study session today',
+      estimate: '10 min',
+      href: '/dashboard/practice',
+    })
+  }
+
+  return items.slice(0, 3)
 }

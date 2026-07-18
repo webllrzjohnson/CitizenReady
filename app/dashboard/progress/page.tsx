@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
 import { BookOpen, HelpCircle, Target, Trophy, Lock, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { buildWeakTopicRecommendations, formatIncorrectReviewSummary } from '@/lib/progress-insights'
+import { buildTodayStudyPlan, buildWeakTopicRecommendations, formatIncorrectReviewSummary } from '@/lib/progress-insights'
+import { TodayStudyPlanCard } from '@/components/dashboard/TodayStudyPlanCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -120,6 +121,12 @@ export default async function ProgressPage() {
     return b.best_score - a.best_score
   })
   const weakTopicRecommendations = buildWeakTopicRecommendations(topicProgressArray, 3)
+  const todayStudyPlan = buildTodayStudyPlan({
+    missedQuestionCount: recentIncorrect.length,
+    weakTopics: weakTopicRecommendations,
+    mockExamCount: mockExamsTotal,
+    latestMockScore: mockExamScores[0]?.score ?? null,
+  })
 
   const accuracyColor = overallAccuracy >= 80 ? 'text-green-600' : overallAccuracy >= 60 ? 'text-amber-600' : 'text-brand-red'
 
@@ -167,6 +174,8 @@ export default async function ProgressPage() {
       </div>
 
       <ScoreChart scores={mockExamScores as any[] || []} />
+
+      <TodayStudyPlanCard items={todayStudyPlan} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
