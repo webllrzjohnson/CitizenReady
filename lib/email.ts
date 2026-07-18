@@ -165,6 +165,48 @@ export function buildPlusRequestStatusEmail(input: {
     }
   }
 
+  if (input.status === 'waiting_payment') {
+    return {
+      subject: 'CitizenReady: Plus request waiting for payment',
+      text: [
+        greeting,
+        '',
+        `Your CitizenReady Plus request for ${safeLine(input.requestedPlanLabel)} is ready for the manual payment step.`,
+        'Reply to this email if you need payment instructions resent or want to confirm the amount.',
+        '',
+        `Pricing: ${siteUrl('/pricing')}`,
+      ].join('\n'),
+    }
+  }
+
+  if (input.status === 'waiting_account') {
+    return {
+      subject: 'CitizenReady: Create your free account to activate Plus',
+      text: [
+        greeting,
+        '',
+        `We received your request for ${safeLine(input.requestedPlanLabel)}, but we still need a matching CitizenReady account before Plus can be activated.`,
+        'Please create a free CitizenReady account, then reply to this email with the account email you used.',
+        '',
+        `Create account: ${siteUrl('/signup')}`,
+      ].join('\n'),
+    }
+  }
+
+  if (input.status === 'follow_up') {
+    return {
+      subject: 'CitizenReady: Plus request follow-up',
+      text: [
+        greeting,
+        '',
+        `We need one more detail before finishing your CitizenReady Plus request for ${safeLine(input.requestedPlanLabel)}.`,
+        'Please reply to this email and we will help complete the manual access step.',
+        '',
+        `CitizenReady: ${siteUrl('/')}`,
+      ].join('\n'),
+    }
+  }
+
   if (input.status === 'rejected') {
     return {
       subject: 'CitizenReady: Plus request update',

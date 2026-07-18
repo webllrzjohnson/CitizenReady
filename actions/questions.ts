@@ -5,6 +5,21 @@ import sql from '@/lib/db'
 import { requireAdminSession } from '@/lib/auth/session'
 import { QuestionSchema } from '@/lib/validations'
 
+export async function updateQuestionIssueReportStatus(id: string, status: 'open' | 'reviewing' | 'resolved') {
+  const check = await requireAdminSession()
+  if ('error' in check) return { error: check.error }
+  if (!['open', 'reviewing', 'resolved'].includes(status)) return { error: 'Invalid report status' }
+
+  await sql`
+    UPDATE public.question_issue_reports
+    SET status = ${status}, updated_at = now()
+    WHERE id = ${id}::uuid
+  `
+  revalidatePath('/admin')
+  revalidatePath('/admin/question-reports')
+  return { success: true }
+}
+
 export async function createQuestion(formData: FormData) {
   const check = await requireAdminSession()
   if ('error' in check) return { error: check.error }

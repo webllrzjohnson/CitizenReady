@@ -28,7 +28,7 @@ psql "$DATABASE_URL" -f db/schema.sql
 
 See `db/README.md` for backups, restore, and exporting a live schema.
 
-The app expects tables: `profiles`, `topics`, `questions`, `quiz_sessions`, `question_attempts`, `blog_posts`, `contact_messages`, `site_settings`.
+The app expects tables: `profiles`, `topics`, `questions`, `quiz_sessions`, `question_attempts`, `blog_posts`, `contact_messages`, `plus_access_requests`, `question_issue_reports`, `admin_audit_logs`, `rate_limits`, and `site_settings`.
 
 **Existing database:** apply numbered SQL files in `db/migrations/` in order after deploy. Current migrations:
 
@@ -43,6 +43,10 @@ After the `003_profile_session_version` migration, existing users may need to lo
 The `004_premium_expiry` migration enables manual Plus grants with expiry dates while online checkout is not connected yet.
 
 The `005_security_abuse_protection` migration adds the `rate_limits` and `admin_audit_logs` tables used by login/signup/contact throttling and admin mutation audit logs.
+
+The `007_plus_request_admin_notes` migration adds internal admin notes for Plus requests.
+
+The `008_plus_workflow_and_question_reports` migration adds richer Plus workflow statuses plus learner question issue reports.
 
 If Postgres runs on the same VPS as Coolify, use the internal hostname Coolify provides (not `localhost` from inside the app container unless Postgres is in the same container).
 
@@ -152,7 +156,31 @@ Copy backups off-server. Details in `db/README.md`.
 - [ ] Coolify proxy timeout ≥ 180s if using AI blog drafts
 - [ ] `GET /api/health` returns `200` after deploy
 - [ ] Existing databases have `npm run db:migrate` applied after deploy
+- [ ] Admin → Plus Requests can save notes and use `waiting_payment`, `waiting_account`, and `follow_up` statuses
+- [ ] Admin → Question Reports loads and open reports can be marked reviewing/resolved
+- [ ] Dashboard shows Today’s Study Plan and the retention/continue card for logged-in learners
 - [ ] Postgres backups scheduled (`db/README.md`)
+
+## Repeatable deployment runbook
+
+Use this after every production push:
+
+1. Wait for the Coolify deployment to finish successfully.
+2. Run inside the app container:
+   ```bash
+   npm run db:migrate
+   ```
+3. Check health from inside the app container or VPS:
+   ```bash
+   curl -i http://localhost:3000/api/health
+   ```
+4. Smoke-test the changed flows:
+   - `/admin/plus-requests`
+   - `/admin/question-reports`
+   - `/admin/settings` → Send test email
+   - `/dashboard`
+   - `/plus-request`
+5. Check Coolify logs for database, SMTP, or server-action errors.
 
 ## Troubleshooting
 

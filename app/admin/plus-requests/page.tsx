@@ -29,10 +29,13 @@ export default async function AdminPlusRequestsPage() {
     ORDER BY
       CASE status
         WHEN 'new' THEN 0
-        WHEN 'approved' THEN 1
-        WHEN 'completed' THEN 2
-        WHEN 'rejected' THEN 3
-        ELSE 4
+        WHEN 'waiting_payment' THEN 1
+        WHEN 'waiting_account' THEN 2
+        WHEN 'follow_up' THEN 3
+        WHEN 'approved' THEN 4
+        WHEN 'completed' THEN 5
+        WHEN 'rejected' THEN 6
+        ELSE 7
       END,
       created_at DESC
   `

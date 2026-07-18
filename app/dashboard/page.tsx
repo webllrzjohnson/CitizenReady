@@ -11,7 +11,9 @@ import { UpgradeBanner } from '@/components/marketing/UpgradeBanner'
 import { hasPremiumAccess } from '@/lib/premium'
 import { PlusStatusCard } from '@/components/dashboard/PlusStatusCard'
 import { TodayStudyPlanCard } from '@/components/dashboard/TodayStudyPlanCard'
+import { LearnerRetentionCard } from '@/components/dashboard/LearnerRetentionCard'
 import { buildTodayStudyPlan, buildWeakTopicRecommendations } from '@/lib/progress-insights'
+import { buildLearnerRetentionSummary } from '@/lib/learner-retention'
 
 export const dynamic = 'force-dynamic'
 
@@ -174,6 +176,15 @@ export default async function DashboardPage() {
     ORDER BY completed_at DESC
     LIMIT 1
   `
+  const retentionRows = await sql<{ completed_at: string; type: string; topic_slug: string | null }[]>`
+    SELECT qs.completed_at, qs.type, t.slug AS topic_slug
+    FROM public.quiz_sessions qs
+    LEFT JOIN public.topics t ON t.id = qs.topic_id
+    WHERE qs.user_id = ${session.id}::uuid AND qs.completed_at IS NOT NULL
+    ORDER BY qs.completed_at DESC
+    LIMIT 30
+  `
+  const retentionSummary = buildLearnerRetentionSummary({ completedSessions: retentionRows })
   const todayStudyPlan = buildTodayStudyPlan({
     missedQuestionCount: parseInt(missedQuestionRows[0]?.count ?? '0'),
     weakTopics: buildWeakTopicRecommendations(Object.values(topicProgressMap), 1),
@@ -200,6 +211,8 @@ export default async function DashboardPage() {
       {!isPremium && <UpgradeBanner />}
 
       <PlusStatusCard profile={profile} />
+
+      <LearnerRetentionCard summary={retentionSummary} />
 
       <TodayStudyPlanCard items={todayStudyPlan} />
 

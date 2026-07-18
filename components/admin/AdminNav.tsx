@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 const staticNavItems = [
   { label: 'Dashboard', href: '/admin' },
   { label: 'Questions', href: '/admin/questions' },
+  { label: 'Question Reports', href: '/admin/question-reports' },
   { label: 'Topics', href: '/admin/topics' },
   { label: 'Blog Posts', href: '/admin/blog' },
   { label: 'AI blog draft', href: '/admin/blog/ai-draft' },

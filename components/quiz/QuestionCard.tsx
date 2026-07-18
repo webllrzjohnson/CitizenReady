@@ -1,7 +1,11 @@
 'use client'
 
+import { useState, useTransition } from 'react'
 import type { Question } from '@/types'
+import { submitQuestionIssueReport } from '@/actions/quiz'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { QuizOptionRow, type QuizOptionVisual } from '@/components/quiz/QuizOptionRow'
 
 export type QuestionCardProps = {
@@ -41,8 +45,25 @@ export default function QuestionCard({
   afterTitle,
 }: QuestionCardProps) {
   const correctAnswers = question.correct_answers ?? []
+  const [showReport, setShowReport] = useState(false)
+  const [reportMessage, setReportMessage] = useState<string | null>(null)
+  const [isReporting, startReportTransition] = useTransition()
 
   const headingId = `question-heading-${question.id}`
+
+  function handleReportSubmit(formData: FormData) {
+    setReportMessage(null)
+    formData.set('questionId', question.id)
+    startReportTransition(async () => {
+      const result = await submitQuestionIssueReport(formData)
+      if (result.error) {
+        setReportMessage(result.error)
+      } else {
+        setReportMessage('Thanks — this question was sent to admin review.')
+        setShowReport(false)
+      }
+    })
+  }
 
   return (
     <div className="rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-card md:p-8">
@@ -95,6 +116,30 @@ export default function QuestionCard({
             />
           )
         })}
+      </div>
+
+      <div className="mt-6 border-t border-gray-100 pt-4">
+        <Button type="button" variant="ghost" size="sm" onClick={() => setShowReport((value) => !value)}>
+          Report issue with this question
+        </Button>
+        {showReport && (
+          <form action={handleReportSubmit} className="mt-3 space-y-2">
+            <Textarea
+              name="reason"
+              rows={3}
+              maxLength={1000}
+              placeholder="Tell us what seems wrong, confusing, outdated, or misspelled."
+              aria-label="Question issue details"
+              disabled={isReporting}
+            />
+            <Button type="submit" size="sm" disabled={isReporting}>
+              {isReporting ? 'Sending…' : 'Send report'}
+            </Button>
+          </form>
+        )}
+        {reportMessage && (
+          <p className="mt-2 text-sm text-muted-foreground" role="status">{reportMessage}</p>
+        )}
       </div>
     </div>
   )

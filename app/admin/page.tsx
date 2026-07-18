@@ -70,6 +70,11 @@ export default async function AdminPage() {
     activeQuestionsRows,
     publishedBlogRows,
     completedSessionsRows,
+    mockExamRows,
+    plusConversionRows,
+    activeSevenDayRows,
+    openQuestionReportRows,
+    mostMissedTopicRows,
     recentAuditLogs,
   ] = await Promise.all([
     sql`SELECT COUNT(*) as count FROM public.plus_access_requests WHERE status = 'new'`,
@@ -84,6 +89,24 @@ export default async function AdminPage() {
     sql`SELECT COUNT(*) as count FROM public.questions WHERE is_active = true`,
     sql`SELECT COUNT(*) as count FROM public.blog_posts WHERE status = 'published'`,
     sql`SELECT COUNT(*) as count FROM public.quiz_sessions WHERE completed_at IS NOT NULL`,
+    sql`SELECT COUNT(*) as count FROM public.quiz_sessions WHERE type = 'mock_exam' AND completed_at IS NOT NULL`,
+    sql`SELECT COUNT(*) as count FROM public.plus_access_requests`,
+    sql`
+      SELECT COUNT(DISTINCT user_id) as count
+      FROM public.quiz_sessions
+      WHERE completed_at >= now() - interval '7 days'
+    `,
+    sql`SELECT COUNT(*) as count FROM public.question_issue_reports WHERE status <> 'resolved'`,
+    sql`
+      SELECT t.name, COUNT(*) as missed_count
+      FROM public.question_attempts qa
+      JOIN public.questions q ON q.id = qa.question_id
+      JOIN public.topics t ON t.id = q.topic_id
+      WHERE qa.is_correct = false
+      GROUP BY t.name
+      ORDER BY COUNT(*) DESC
+      LIMIT 5
+    `,
     sql`
       SELECT
         l.id,
@@ -109,6 +132,11 @@ export default async function AdminPage() {
   const activeQuestions = countFrom(activeQuestionsRows)
   const publishedBlogPosts = countFrom(publishedBlogRows)
   const completedSessions = countFrom(completedSessionsRows)
+  const completedMockExams = countFrom(mockExamRows)
+  const plusRequests = countFrom(plusConversionRows)
+  const activeSevenDayUsers = countFrom(activeSevenDayRows)
+  const openQuestionReports = countFrom(openQuestionReportRows)
+  const signupToPlusRate = totalUsers > 0 ? Math.round((plusRequests / totalUsers) * 100) : 0
 
   return (
     <div className="space-y-8">
@@ -152,9 +180,41 @@ export default async function AdminPage() {
         <StatCard
           title="Completed Sessions"
           value={completedSessions}
-          description="Completed practice or mock exam sessions."
+          description={`${formatAdminDashboardCount(completedMockExams)} completed mock exams`}
           href="/admin/users"
           cta="View users"
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          title="Active Users — 7 Days"
+          value={activeSevenDayUsers}
+          description="Unique learners with recent completed activity."
+          href="/admin/users"
+          cta="View users"
+        />
+        <StatCard
+          title="Signup → Plus Request"
+          value={signupToPlusRate}
+          description={`${formatAdminDashboardCount(plusRequests)} total Plus requests from ${formatAdminDashboardCount(totalUsers)} users`}
+          href="/admin/plus-requests"
+          cta="Review funnel"
+        />
+        <StatCard
+          title="Question Reports"
+          value={openQuestionReports}
+          description="Open or reviewing learner reports about question quality."
+          href="/admin/question-reports"
+          cta="Review reports"
+          urgent
+        />
+        <StatCard
+          title="Published SEO Posts"
+          value={publishedBlogPosts}
+          description="Public content available for organic search."
+          href="/admin/blog"
+          cta="Manage content"
         />
       </div>
 
@@ -182,6 +242,20 @@ export default async function AdminPage() {
               <div className="text-right">
                 <div className="text-2xl font-bold">{formatAdminDashboardCount(publishedBlogPosts)}</div>
                 <Button asChild variant="link" size="sm" className="px-0"><Link href="/admin/blog">Manage</Link></Button>
+              </div>
+            </div>
+            <div className="rounded-lg border p-4">
+              <p className="font-medium">Most Missed Topics</p>
+              <p className="text-sm text-muted-foreground">Use this to prioritize question fixes and new study content.</p>
+              <div className="mt-3 space-y-2">
+                {mostMissedTopicRows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No missed-answer data yet.</p>
+                ) : mostMissedTopicRows.map((topic: any) => (
+                  <div key={topic.name} className="flex items-center justify-between text-sm">
+                    <span>{topic.name}</span>
+                    <Badge variant="outline">{formatAdminDashboardCount(parseInt(topic.missed_count ?? '0'))} missed</Badge>
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>

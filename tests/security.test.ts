@@ -28,6 +28,7 @@ import {
   plusRequestPlanToPremiumGrant,
 } from '../lib/plus-requests'
 import { formatAdminDashboardCount } from '../lib/admin-dashboard'
+import { buildLearnerRetentionSummary } from '../lib/learner-retention'
 import {
   buildContactNotificationEmail,
   buildAdminTestEmail,
@@ -117,8 +118,24 @@ test('normalizes Plus request admin notes for storage', () => {
 test('maps Plus request statuses to badge variants', () => {
   assert.equal(getPlusRequestStatusBadgeVariant('new'), 'default')
   assert.equal(getPlusRequestStatusBadgeVariant('approved'), 'secondary')
+  assert.equal(getPlusRequestStatusBadgeVariant('waiting_payment'), 'secondary')
+  assert.equal(getPlusRequestStatusBadgeVariant('waiting_account'), 'outline')
+  assert.equal(getPlusRequestStatusBadgeVariant('follow_up'), 'secondary')
   assert.equal(getPlusRequestStatusBadgeVariant('completed'), 'outline')
   assert.equal(getPlusRequestStatusBadgeVariant('rejected'), 'destructive')
+})
+
+test('builds learner retention summary from recent activity', () => {
+  const summary = buildLearnerRetentionSummary({
+    completedSessions: [
+      { completed_at: '2026-07-18T12:00:00.000Z', type: 'practice', topic_slug: 'history' },
+      { completed_at: '2026-07-17T12:00:00.000Z', type: 'mock_exam', topic_slug: null },
+    ],
+    now: new Date('2026-07-18T20:00:00.000Z'),
+  })
+  assert.equal(summary.studyStreakDays, 2)
+  assert.equal(summary.continueHref, '/dashboard/practice/history')
+  assert.match(summary.lastActivityLabel, /Today/)
 })
 
 test('formats admin dashboard counts for compact cards', () => {
@@ -202,6 +219,20 @@ test('builds user notification emails for Plus request decisions', () => {
     requestedPlanLabel: '30-Day Plan',
   })
   assert.match(received.subject, /Plus request received/)
+
+  const waitingPayment = buildPlusRequestStatusEmail({
+    name: 'Sam Lee',
+    status: 'waiting_payment',
+    requestedPlanLabel: '30-Day Plan',
+  })
+  assert.match(waitingPayment.subject, /payment/i)
+
+  const waitingAccount = buildPlusRequestStatusEmail({
+    name: 'Sam Lee',
+    status: 'waiting_account',
+    requestedPlanLabel: '30-Day Plan',
+  })
+  assert.match(waitingAccount.text, /create a free CitizenReady account/i)
 
   const granted = buildPlusAccessGrantedEmail({
     name: 'Sam Lee',

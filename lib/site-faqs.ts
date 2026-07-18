@@ -40,4 +40,12 @@ export const SITE_FAQS = [
     q: 'Where can I verify official test details and fees?',
     a: 'Always check IRCC directly for the latest citizenship test format, eligibility rules, fees, scheduling, and application information. CitizenReady is for preparation only and does not replace official instructions.',
   },
+  {
+    q: 'What should I do if a practice question seems wrong or confusing?',
+    a: 'Use the report link shown under each practice question. Admin can review open question reports, edit the question, and mark the report resolved after the content is checked.',
+  },
+  {
+    q: 'How should I study if I only have 15 minutes today?',
+    a: 'Open your dashboard and follow Today’s Study Plan. It prioritizes missed-question review, weak-topic practice, and mock exams based on your recent progress.',
+  },
 ] as const

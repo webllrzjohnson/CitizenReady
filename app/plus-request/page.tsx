@@ -18,6 +18,13 @@ const benefits = [
   'Admin can grant Plus directly to your CitizenReady account',
 ]
 
+const manualPaymentSteps = [
+  'Create or confirm your free CitizenReady account email.',
+  'Submit this Plus request with your preferred plan.',
+  'Wait for the admin email with manual payment/follow-up instructions.',
+  'After payment/account confirmation, admin grants Plus and you receive an activation email.',
+]
+
 export default function PlusRequestPage() {
   return (
     <div className="min-h-screen bg-[#F7F7F7]">
@@ -79,6 +86,15 @@ export default function PlusRequestPage() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <h2 className="font-semibold text-brand-navy">Manual payment checklist</h2>
+                <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-gray-600">
+                  {manualPaymentSteps.map((step) => <li key={step}>{step}</li>)}
+                </ol>
               </CardContent>
             </Card>
 

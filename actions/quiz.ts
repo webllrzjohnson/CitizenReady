@@ -1,11 +1,17 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import sql from '@/lib/db'
 import { getFreshSession } from '@/lib/auth/session'
 import { SubmitAnswerSchema } from '@/lib/validations'
 import type { Question } from '@/types'
 import { selectUniqueIncorrectQuestionIds } from '@/lib/progress-insights'
+
+const QuestionIssueSchema = z.object({
+  questionId: z.string().uuid('Invalid question id'),
+  reason: z.string().trim().min(5, 'Please describe the issue in at least 5 characters').max(1000, 'Issue report must be 1000 characters or less'),
+})
 
 function toTypedQuestions(rows: any[]): Question[] {
   return rows.map((q: any) => ({
@@ -147,4 +153,27 @@ export async function completeSession(sessionId: string) {
   revalidatePath('/dashboard')
 
   return { success: true, score, total: sessionRows[0].total_q }
+}
+
+export async function submitQuestionIssueReport(formData: FormData) {
+  const session = await getFreshSession()
+  if (!session) return { error: 'Please log in to report a question issue' }
+
+  const parsed = QuestionIssueSchema.safeParse({
+    questionId: formData.get('questionId'),
+    reason: formData.get('reason'),
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validation error' }
+
+  const questionRows = await sql`SELECT id FROM public.questions WHERE id = ${parsed.data.questionId}::uuid LIMIT 1`
+  if (questionRows.length === 0) return { error: 'Question not found' }
+
+  await sql`
+    INSERT INTO public.question_issue_reports (question_id, user_id, reason)
+    VALUES (${parsed.data.questionId}::uuid, ${session.id}::uuid, ${parsed.data.reason})
+  `
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/question-reports')
+  return { success: true }
 }

@@ -1,3 +1,7 @@
+"use client"
+
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   grantPlusForRequest,
   resendPlusRequestEmail,
@@ -44,17 +48,27 @@ function formatDate(value: string | Date) {
 }
 
 function StatusButton({ id, status, label }: { id: string; status: PlusRequestStatus; label: string }) {
-  async function action(formData: FormData) {
-    'use server'
-    await updatePlusRequestStatus(formData)
+  const router = useRouter()
+  const [message, setMessage] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function action() {
+    setMessage(null)
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.set('id', id)
+      formData.set('status', status)
+      const result = await updatePlusRequestStatus(formData)
+      setMessage(result.error ?? 'Updated')
+      if (!result.error) router.refresh()
+    })
   }
 
   return (
-    <form action={action}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="status" value={status} />
-      <Button type="submit" size="sm" variant="outline">{label}</Button>
-    </form>
+    <div className="space-y-1">
+      <Button type="button" size="sm" variant="outline" onClick={action} disabled={isPending}>{isPending ? 'Saving…' : label}</Button>
+      {message && <p className="text-xs text-muted-foreground">{message}</p>}
+    </div>
   )
 }
 
@@ -69,43 +83,71 @@ function GrantButton({
   label: string
   primary?: boolean
 }) {
-  async function action(formData: FormData) {
-    'use server'
-    await grantPlusForRequest(formData)
+  const router = useRouter()
+  const [message, setMessage] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function action() {
+    setMessage(null)
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.set('id', id)
+      formData.set('grant', grant)
+      const result = await grantPlusForRequest(formData)
+      setMessage(result.error ?? 'Granted')
+      if (!result.error) router.refresh()
+    })
   }
 
   return (
-    <form action={action}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="grant" value={grant} />
-      <Button type="submit" size="sm" variant={primary ? 'default' : 'outline'}>{label}</Button>
-    </form>
+    <div className="space-y-1">
+      <Button type="button" size="sm" variant={primary ? 'default' : 'outline'} onClick={action} disabled={isPending}>{isPending ? 'Granting…' : label}</Button>
+      {message && <p className="text-xs text-muted-foreground">{message}</p>}
+    </div>
   )
 }
 
 function ResendEmailButton({ id }: { id: string }) {
-  async function action(formData: FormData) {
-    'use server'
-    await resendPlusRequestEmail(formData)
+  const router = useRouter()
+  const [message, setMessage] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function action() {
+    setMessage(null)
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.set('id', id)
+      const result = await resendPlusRequestEmail(formData)
+      setMessage(result.error ?? 'Email sent')
+      if (!result.error) router.refresh()
+    })
   }
 
   return (
-    <form action={action}>
-      <input type="hidden" name="id" value={id} />
-      <Button type="submit" size="sm" variant="secondary">Resend email</Button>
-    </form>
+    <div className="space-y-1">
+      <Button type="button" size="sm" variant="secondary" onClick={action} disabled={isPending}>{isPending ? 'Sending…' : 'Resend email'}</Button>
+      {message && <p className="text-xs text-muted-foreground">{message}</p>}
+    </div>
   )
 }
 
 function AdminNotesForm({ id, notes }: { id: string; notes: string | null }) {
-  async function action(formData: FormData) {
-    'use server'
-    await updatePlusRequestAdminNotes(formData)
+  const router = useRouter()
+  const [message, setMessage] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function action(formData: FormData) {
+    setMessage(null)
+    formData.set('id', id)
+    startTransition(async () => {
+      const result = await updatePlusRequestAdminNotes(formData)
+      setMessage(result.error ?? 'Note saved')
+      if (!result.error) router.refresh()
+    })
   }
 
   return (
     <form action={action} className="mt-3 space-y-2">
-      <input type="hidden" name="id" value={id} />
       <Textarea
         name="adminNotes"
         defaultValue={notes ?? ''}
@@ -115,7 +157,8 @@ function AdminNotesForm({ id, notes }: { id: string; notes: string | null }) {
         aria-label="Internal admin note"
         className="min-h-20 text-sm"
       />
-      <Button type="submit" size="sm" variant="outline">Save note</Button>
+      <Button type="submit" size="sm" variant="outline" disabled={isPending}>{isPending ? 'Saving…' : 'Save note'}</Button>
+      {message && <p className="text-xs text-muted-foreground">{message}</p>}
     </form>
   )
 }
@@ -211,6 +254,9 @@ export function PlusRequestsTable({ requests }: { requests: PlusRequest[] }) {
                         <GrantButton id={request.id} grant="lifetime" label="Lifetime" />
                       </>
                     )}
+                    {request.status !== 'waiting_payment' && <StatusButton id={request.id} status="waiting_payment" label="Waiting payment" />}
+                    {request.status !== 'waiting_account' && <StatusButton id={request.id} status="waiting_account" label="Waiting account" />}
+                    {request.status !== 'follow_up' && <StatusButton id={request.id} status="follow_up" label="Follow up" />}
                     {request.status !== 'approved' && <StatusButton id={request.id} status="approved" label="Approve" />}
                     {request.status !== 'completed' && <StatusButton id={request.id} status="completed" label="Complete" />}
                     {request.status !== 'rejected' && <StatusButton id={request.id} status="rejected" label="Reject" />}

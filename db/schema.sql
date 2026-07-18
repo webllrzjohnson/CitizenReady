@@ -145,7 +145,7 @@ CREATE TABLE public.plus_access_requests (
     requested_plan TEXT NOT NULL CHECK (requested_plan IN ('7day', '30day', '1year', 'lifetime')),
     message        TEXT,
     admin_notes    TEXT,
-    status         TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'approved', 'rejected', 'completed')),
+    status         TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'waiting_payment', 'waiting_account', 'follow_up', 'approved', 'rejected', 'completed')),
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -154,6 +154,24 @@ CREATE INDEX idx_plus_access_requests_status_created
     ON public.plus_access_requests (status, created_at DESC);
 CREATE INDEX idx_plus_access_requests_email
     ON public.plus_access_requests (email);
+
+-- =====================================================
+-- question_issue_reports
+-- =====================================================
+CREATE TABLE public.question_issue_reports (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID NOT NULL REFERENCES public.questions (id) ON DELETE CASCADE,
+    user_id     UUID REFERENCES public.profiles (id) ON DELETE SET NULL,
+    reason      TEXT NOT NULL,
+    status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'reviewing', 'resolved')),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_question_issue_reports_status_created
+    ON public.question_issue_reports (status, created_at DESC);
+CREATE INDEX idx_question_issue_reports_question_id
+    ON public.question_issue_reports (question_id);
 
 -- =====================================================
 -- security / abuse prevention

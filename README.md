@@ -23,6 +23,8 @@ Core assumptions:
 - Complete question bank and cheat sheet gated behind Plus access
 - Manual Plus access controls for early users and testers
 - Admin panel for question, topic, user, blog, contact, ad, and AI draft management
+- Admin question-issue report queue for learner feedback on confusing/outdated questions
+- Admin analytics snapshot for active learners, mock exams, Plus request conversion, and missed topics
 - Blog and public study pages for SEO/content growth
 - Health endpoint for deployment verification
 - Abuse protection for login, signup, and contact form submissions
@@ -100,7 +102,7 @@ Admin workflow:
 1. Users can submit manual Plus leads at `/plus-request`.
 2. Admins review them at `/admin/plus-requests`.
 3. If the request matches an existing account email, grant Plus directly from that row.
-4. Otherwise ask the user to create a free account first.
+4. Otherwise mark the request `waiting_account` and ask the user to create a free account first.
 5. You can still go to `/admin/users`, find the user, and use the Plus controls to grant:
    - 30 days
    - 90 days
@@ -108,6 +110,18 @@ Admin workflow:
    - Lifetime
 6. Use **Remove** to revoke Plus.
 7. Confirm the user badge changes to Free, Plus until date, Lifetime, Expired, or Admin Plus.
+
+Plus request workflow statuses:
+
+- `new` — request arrived and needs first review.
+- `waiting_payment` — manual payment/follow-up instructions have been sent.
+- `waiting_account` — user needs to create or confirm their CitizenReady account email.
+- `follow_up` — admin needs one more detail before approving/granting.
+- `approved` — request approved, grant still pending.
+- `completed` — access granted or request fully handled.
+- `rejected` — request closed without Plus access.
+
+Admin notes are internal only and are not included in requester emails.
 
 This is designed as the bridge until online checkout is ready. Future Stripe/PayPal webhooks should update the same fields instead of introducing a separate entitlement system.
 
@@ -133,6 +147,12 @@ ADMIN_NOTIFICATION_EMAIL=admin@example.com
 ```
 
 If these values are missing, submissions and admin actions still succeed and email sending is skipped. If SMTP fails, the app logs the email error but does not block the user submission or admin action.
+
+## Question quality workflow
+
+Logged-in learners can report a confusing, outdated, or incorrect practice question directly from the question card. Admins review reports at `/admin/question-reports`, edit the underlying question, and mark reports as `reviewing` or `resolved`.
+
+The backing table is `public.question_issue_reports`, added by migration `008_plus_workflow_and_question_reports.sql`.
 
 ## Abuse protection and audit logging
 
@@ -209,6 +229,9 @@ db/migrations/002_unique_question_attempts.sql
 db/migrations/003_profile_session_version.sql
 db/migrations/004_premium_expiry.sql
 db/migrations/005_security_abuse_protection.sql
+db/migrations/006_plus_access_requests.sql
+db/migrations/007_plus_request_admin_notes.sql
+db/migrations/008_plus_workflow_and_question_reports.sql
 ```
 
 Migration summary:
@@ -218,6 +241,9 @@ Migration summary:
 - `003` adds `profiles.session_version` and its index.
 - `004` adds `profiles.premium_expires_at`.
 - `005` adds `rate_limits` and `admin_audit_logs`.
+- `006` adds manual Plus access requests.
+- `007` adds internal admin notes to Plus requests.
+- `008` adds richer Plus workflow statuses and question issue reports.
 
 See `db/README.md` for backups, restore, and schema export notes.
 

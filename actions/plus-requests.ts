@@ -123,7 +123,7 @@ export async function updatePlusRequestStatus(formData: FormData) {
     },
   })
 
-  if (request.status === 'approved' || request.status === 'rejected' || request.status === 'completed') {
+  if (request.status !== 'new') {
     await sendUserNotification([request.email, request.account_email], buildPlusRequestStatusEmail({
       name: request.name,
       status: request.status,

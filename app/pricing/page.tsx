@@ -387,7 +387,7 @@ export default function PricingPage() {
         </h2>
         <p className="mb-10 text-center text-sm text-gray-500">
           Every Plus option unlocks all 900+ questions and every study tool. Until online
-          checkout is ready, contact us and an admin can grant access manually.
+          checkout is ready, create an account, request Plus, and an admin will send manual payment/follow-up instructions before granting access.
         </p>
 
         <div className="grid gap-6 sm:grid-cols-3">

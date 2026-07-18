@@ -4,7 +4,15 @@ import type { Badge } from '@/components/ui/badge'
 type BadgeVariant = NonNullable<ComponentProps<typeof Badge>['variant']>
 
 export const PLUS_REQUEST_PLANS = ['7day', '30day', '1year', 'lifetime'] as const
-export const PLUS_REQUEST_STATUSES = ['new', 'approved', 'rejected', 'completed'] as const
+export const PLUS_REQUEST_STATUSES = [
+  'new',
+  'waiting_payment',
+  'waiting_account',
+  'follow_up',
+  'approved',
+  'rejected',
+  'completed',
+] as const
 
 export type PlusRequestPlan = (typeof PLUS_REQUEST_PLANS)[number]
 export type PlusRequestStatus = (typeof PLUS_REQUEST_STATUSES)[number]
@@ -40,7 +48,7 @@ export function plusRequestPlanToPremiumGrant(plan: PlusRequestPlan): PlusReques
 
 export function getPlusRequestStatusBadgeVariant(status: PlusRequestStatus): BadgeVariant {
   if (status === 'new') return 'default'
-  if (status === 'approved') return 'secondary'
+  if (status === 'approved' || status === 'waiting_payment' || status === 'follow_up') return 'secondary'
   if (status === 'rejected') return 'destructive'
   return 'outline'
 }
