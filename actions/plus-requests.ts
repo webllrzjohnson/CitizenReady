@@ -7,8 +7,11 @@ import { requireAdminSession } from '@/lib/auth/session'
 import { checkRateLimit, getClientFingerprint } from '@/lib/security/rate-limit'
 import { writeAdminAuditLog } from '@/lib/security/audit'
 import {
+  buildPlusAccessGrantedEmail,
   buildPlusRequestNotificationEmail,
+  buildPlusRequestStatusEmail,
   sendAdminNotification,
+  sendUserNotification,
 } from '@/lib/email'
 import {
   formatPlusRequestPlanLabel,
@@ -93,7 +96,7 @@ export async function updatePlusRequestStatus(formData: FormData) {
     UPDATE public.plus_access_requests
     SET status = ${parsed.data.status}, updated_at = now()
     WHERE id = ${parsed.data.id}::uuid
-    RETURNING id, email, account_email, requested_plan, status
+    RETURNING id, name, email, account_email, requested_plan, status
   `
   const request = rows[0]
   if (!request) return { error: 'Request not found' }
@@ -109,6 +112,14 @@ export async function updatePlusRequestStatus(formData: FormData) {
       status: request.status,
     },
   })
+
+  if (request.status === 'approved' || request.status === 'rejected' || request.status === 'completed') {
+    await sendUserNotification(request.email, buildPlusRequestStatusEmail({
+      name: request.name,
+      status: request.status,
+      requestedPlanLabel: formatPlusRequestPlanLabel(request.requested_plan),
+    }))
+  }
 
   revalidatePath('/admin/plus-requests')
   revalidatePath('/admin/audit-logs')
@@ -128,6 +139,7 @@ export async function grantPlusForRequest(formData: FormData) {
   const rows = await sql`
     SELECT
       r.id,
+      r.name,
       r.email,
       r.account_email,
       r.requested_plan,
@@ -180,6 +192,12 @@ export async function grantPlusForRequest(formData: FormData) {
       grant,
     },
   })
+
+  await sendUserNotification(request.email, buildPlusAccessGrantedEmail({
+    name: request.name,
+    grantLabel: formatPlusRequestPlanLabel(request.requested_plan),
+    accountEmail: request.user_email,
+  }))
 
   revalidatePath('/admin/plus-requests')
   revalidatePath('/admin/users')

@@ -113,10 +113,12 @@ This is designed as the bridge until online checkout is ready. Future Stripe/Pay
 
 ## Admin email notifications
 
-Optional SMTP notifications can alert the admin when users submit:
+Optional SMTP notifications can alert the admin and keep Plus requesters informed. The app sends email when users submit:
 
 - contact messages
 - manual Plus access requests
+
+It also emails the requester when an admin approves, rejects, completes, or grants a manual Plus request.
 
 Configure these environment variables in Coolify to enable notifications:
 
@@ -130,7 +132,7 @@ SMTP_FROM="CitizenReady <your-email@gmail.com>"
 ADMIN_NOTIFICATION_EMAIL=admin@example.com
 ```
 
-If these values are missing, submissions still succeed and email sending is skipped. If SMTP fails, the app logs the email error but does not block the user submission.
+If these values are missing, submissions and admin actions still succeed and email sending is skipped. If SMTP fails, the app logs the email error but does not block the user submission or admin action.
 
 ## Abuse protection and audit logging
 

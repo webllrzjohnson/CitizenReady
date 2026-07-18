@@ -83,9 +83,9 @@ In your Coolify app → **Environment Variables**, set:
 
 Default provider/model can be set in **Admin → AI blog draft** and are stored in `site_settings`. Do **not** use retired Anthropic ids such as `claude-sonnet-4-20250514`.
 
-### Optional — admin email notifications
+### Optional — email notifications
 
-Set these when you want an email after a contact message or Plus access request is submitted.
+Set these when you want an email after a contact message or Plus access request is submitted. The same SMTP settings also email Plus requesters when an admin approves, rejects, completes, or grants Plus access.
 
 | Variable | Description |
 |----------|-------------|
@@ -95,9 +95,9 @@ Set these when you want an email after a contact message or Plus access request 
 | `SMTP_USER` | SMTP username / email account |
 | `SMTP_PASS` | SMTP password or Gmail app password |
 | `SMTP_FROM` | From header, e.g. `CitizenReady <your-email@gmail.com>` |
-| `ADMIN_NOTIFICATION_EMAIL` | Admin inbox that receives notifications |
+| `ADMIN_NOTIFICATION_EMAIL` | Admin inbox that receives contact and new Plus request notifications |
 
-If these are unset, submissions still work and notifications are skipped.
+If SMTP values are unset, submissions/admin actions still work and notifications are skipped.
 
 ### Optional — other features
 
@@ -147,7 +147,7 @@ Copy backups off-server. Details in `db/README.md`.
 - [ ] `NEXT_PUBLIC_SITE_URL` matches your public domain (HTTPS)
 - [ ] Reverse proxy / SSL configured in Coolify for your domain
 - [ ] Admin user has `role = 'admin'` in `profiles`
-- [ ] Optional notifications: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `ADMIN_NOTIFICATION_EMAIL` set if email alerts are desired
+- [ ] Optional notifications: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `ADMIN_NOTIFICATION_EMAIL` set if admin/requester email alerts are desired
 - [ ] For AI drafts: `ANTHROPIC_API_KEY` set; `ANTHROPIC_MODEL` unset or `claude-sonnet-4-6`
 - [ ] Coolify proxy timeout ≥ 180s if using AI blog drafts
 - [ ] `GET /api/health` returns `200` after deploy
