@@ -23,6 +23,7 @@ import {
 import {
   formatPlusRequestPlanLabel,
   getPlusRequestStatusBadgeVariant,
+  normalizePlusRequestAdminNotes,
   normalizePlusRequestPlan,
   plusRequestPlanToPremiumGrant,
 } from '../lib/plus-requests'
@@ -104,6 +105,13 @@ test('normalizes and labels Plus request plans', () => {
   assert.equal(plusRequestPlanToPremiumGrant('30day'), '30d')
   assert.equal(plusRequestPlanToPremiumGrant('1year'), '1y')
   assert.equal(plusRequestPlanToPremiumGrant('lifetime'), 'lifetime')
+})
+
+test('normalizes Plus request admin notes for storage', () => {
+  assert.equal(normalizePlusRequestAdminNotes('  Called user about payment.  '), 'Called user about payment.')
+  assert.equal(normalizePlusRequestAdminNotes('   '), null)
+  assert.equal(normalizePlusRequestAdminNotes(null), null)
+  assert.equal(normalizePlusRequestAdminNotes('x'.repeat(2001))?.length, 2000)
 })
 
 test('maps Plus request statuses to badge variants', () => {

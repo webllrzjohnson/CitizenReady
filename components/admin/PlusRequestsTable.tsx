@@ -1,4 +1,9 @@
-import { grantPlusForRequest, resendPlusRequestEmail, updatePlusRequestStatus } from '@/actions/plus-requests'
+import {
+  grantPlusForRequest,
+  resendPlusRequestEmail,
+  updatePlusRequestAdminNotes,
+  updatePlusRequestStatus,
+} from '@/actions/plus-requests'
 import {
   formatPlusRequestPlanLabel,
   getPlusRequestStatusBadgeVariant,
@@ -10,6 +15,7 @@ import {
 import { formatPremiumExpiry } from '@/lib/premium'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 type PlusRequest = {
   id: string
@@ -18,6 +24,7 @@ type PlusRequest = {
   account_email: string | null
   requested_plan: PlusRequestPlan
   message: string | null
+  admin_notes: string | null
   status: PlusRequestStatus
   created_at: string | Date
   matched_user_id: string | null
@@ -90,6 +97,29 @@ function ResendEmailButton({ id }: { id: string }) {
   )
 }
 
+function AdminNotesForm({ id, notes }: { id: string; notes: string | null }) {
+  async function action(formData: FormData) {
+    'use server'
+    await updatePlusRequestAdminNotes(formData)
+  }
+
+  return (
+    <form action={action} className="mt-3 space-y-2">
+      <input type="hidden" name="id" value={id} />
+      <Textarea
+        name="adminNotes"
+        defaultValue={notes ?? ''}
+        maxLength={2000}
+        rows={3}
+        placeholder="Internal admin note — not emailed to the user"
+        aria-label="Internal admin note"
+        className="min-h-20 text-sm"
+      />
+      <Button type="submit" size="sm" variant="outline">Save note</Button>
+    </form>
+  )
+}
+
 export function PlusRequestsTable({ requests }: { requests: PlusRequest[] }) {
   if (requests.length === 0) {
     return (
@@ -108,7 +138,7 @@ export function PlusRequestsTable({ requests }: { requests: PlusRequest[] }) {
             <th className="px-4 py-3">Account Email</th>
             <th className="px-4 py-3">Match</th>
             <th className="px-4 py-3">Plan</th>
-            <th className="px-4 py-3">Message</th>
+            <th className="px-4 py-3">Message / Notes</th>
             <th className="px-4 py-3">Date</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3">Actions</th>
@@ -149,8 +179,13 @@ export function PlusRequestsTable({ requests }: { requests: PlusRequest[] }) {
                 <td className="px-4 py-3 text-sm">
                   {formatPlusRequestPlanLabel(request.requested_plan)}
                 </td>
-                <td className="max-w-[320px] whitespace-pre-wrap px-4 py-3 text-sm text-muted-foreground">
-                  {request.message || '—'}
+                <td className="max-w-[320px] px-4 py-3 text-sm text-muted-foreground">
+                  <div className="whitespace-pre-wrap">{request.message || '—'}</div>
+                  <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs text-foreground">
+                    <p className="font-medium">Admin note</p>
+                    <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{request.admin_notes || 'No internal note yet.'}</p>
+                  </div>
+                  <AdminNotesForm id={request.id} notes={request.admin_notes} />
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
                   {formatDate(request.created_at)}

@@ -21,6 +21,12 @@ export function normalizePlusRequestPlan(value: unknown): PlusRequestPlan {
   return PLUS_REQUEST_PLANS.includes(value as PlusRequestPlan) ? value as PlusRequestPlan : '30day'
 }
 
+export function normalizePlusRequestAdminNotes(value: unknown): string | null {
+  const note = String(value ?? '').trim()
+  if (!note) return null
+  return note.slice(0, 2000)
+}
+
 export function formatPlusRequestPlanLabel(plan: PlusRequestPlan): string {
   return PLAN_LABELS[plan]
 }

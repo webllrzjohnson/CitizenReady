@@ -16,6 +16,7 @@ export default async function AdminPlusRequestsPage() {
       r.account_email,
       r.requested_plan,
       r.message,
+      r.admin_notes,
       r.status,
       r.created_at,
       p.id AS matched_user_id,

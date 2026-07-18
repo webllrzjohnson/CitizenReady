@@ -144,6 +144,7 @@ CREATE TABLE public.plus_access_requests (
     account_email  TEXT,
     requested_plan TEXT NOT NULL CHECK (requested_plan IN ('7day', '30day', '1year', 'lifetime')),
     message        TEXT,
+    admin_notes    TEXT,
     status         TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'approved', 'rejected', 'completed')),
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()

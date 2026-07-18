@@ -17,6 +17,7 @@ import {
   formatPlusRequestPlanLabel,
   PLUS_REQUEST_PLANS,
   PLUS_REQUEST_STATUSES,
+  normalizePlusRequestAdminNotes,
   normalizePlusRequestPlan,
   plusRequestPlanToPremiumGrant,
   type PlusRequestPremiumGrant,
@@ -42,6 +43,11 @@ const grantPlusRequestSchema = z.object({
 
 const resendPlusRequestEmailSchema = z.object({
   id: z.string().uuid('Invalid request id'),
+})
+
+const updateAdminNotesSchema = z.object({
+  id: z.string().uuid('Invalid request id'),
+  adminNotes: z.string().max(2000, 'Admin notes must be 2000 characters or less').optional(),
 })
 
 function premiumExpirySql(grant: PlusRequestPremiumGrant): string | null {
@@ -266,5 +272,40 @@ export async function resendPlusRequestEmail(formData: FormData) {
   revalidatePath('/admin/plus-requests')
   revalidatePath('/admin/audit-logs')
   if (!result.sent) return { error: result.error ?? 'Email could not be sent. Check SMTP configuration and app logs.' }
+  return { success: true }
+}
+
+export async function updatePlusRequestAdminNotes(formData: FormData) {
+  const admin = await requireAdminSession()
+  if ('error' in admin) return { error: admin.error }
+
+  const parsed = updateAdminNotesSchema.safeParse({
+    id: formData.get('id'),
+    adminNotes: formData.get('adminNotes') ?? '',
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validation error' }
+
+  const adminNotes = normalizePlusRequestAdminNotes(parsed.data.adminNotes)
+  const rows = await sql`
+    UPDATE public.plus_access_requests
+    SET admin_notes = ${adminNotes}, updated_at = now()
+    WHERE id = ${parsed.data.id}::uuid
+    RETURNING id, status
+  `
+  const request = rows[0]
+  if (!request) return { error: 'Request not found' }
+
+  await writeAdminAuditLog({
+    actorId: admin.userId,
+    action: 'plus_request.admin_notes_updated',
+    metadata: {
+      requestId: request.id,
+      status: request.status,
+      hasNotes: Boolean(adminNotes),
+    },
+  })
+
+  revalidatePath('/admin/plus-requests')
+  revalidatePath('/admin/audit-logs')
   return { success: true }
 }
