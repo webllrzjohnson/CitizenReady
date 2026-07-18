@@ -47,6 +47,22 @@ function safeLine(value: string | null | undefined): string {
   return String(value ?? '—').trim() || '—'
 }
 
+export function uniqueEmailRecipients(values: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>()
+  const recipients: string[] = []
+
+  for (const value of values) {
+    const recipient = String(value ?? '').trim()
+    if (!recipient) continue
+    const key = recipient.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    recipients.push(recipient)
+  }
+
+  return recipients
+}
+
 export function buildContactNotificationEmail(input: {
   name: string
   email: string
@@ -156,10 +172,17 @@ export function buildPlusAccessGrantedEmail(input: {
   }
 }
 
-async function sendNotificationTo(to: string, email: NotificationEmail, logLabel: string): Promise<void> {
+async function sendNotificationTo(to: string | string[], email: NotificationEmail, logLabel: string): Promise<void> {
   const config = getSmtpConfig()
-  const recipient = String(to ?? '').trim()
-  if (!config || !recipient) return
+  const recipients = Array.isArray(to) ? uniqueEmailRecipients(to) : uniqueEmailRecipients([to])
+  if (!config) {
+    console.warn(`[CitizenReady] Skipped ${logLabel} email: SMTP is not configured`)
+    return
+  }
+  if (recipients.length === 0) {
+    console.warn(`[CitizenReady] Skipped ${logLabel} email: no recipient`)
+    return
+  }
 
   try {
     const transporter = nodemailer.createTransport({
@@ -174,7 +197,7 @@ async function sendNotificationTo(to: string, email: NotificationEmail, logLabel
 
     await transporter.sendMail({
       from: config.from,
-      to: recipient,
+      to: recipients,
       subject: email.subject,
       text: email.text,
     })
@@ -189,6 +212,6 @@ export async function sendAdminNotification(email: NotificationEmail): Promise<v
   await sendNotificationTo(config.to, email, 'admin notification')
 }
 
-export async function sendUserNotification(to: string, email: NotificationEmail): Promise<void> {
+export async function sendUserNotification(to: string | string[], email: NotificationEmail): Promise<void> {
   await sendNotificationTo(to, email, 'user notification')
 }

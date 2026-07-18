@@ -114,7 +114,7 @@ export async function updatePlusRequestStatus(formData: FormData) {
   })
 
   if (request.status === 'approved' || request.status === 'rejected' || request.status === 'completed') {
-    await sendUserNotification(request.email, buildPlusRequestStatusEmail({
+    await sendUserNotification([request.email, request.account_email], buildPlusRequestStatusEmail({
       name: request.name,
       status: request.status,
       requestedPlanLabel: formatPlusRequestPlanLabel(request.requested_plan),
@@ -193,7 +193,7 @@ export async function grantPlusForRequest(formData: FormData) {
     },
   })
 
-  await sendUserNotification(request.email, buildPlusAccessGrantedEmail({
+  await sendUserNotification([request.email, request.account_email, request.user_email], buildPlusAccessGrantedEmail({
     name: request.name,
     grantLabel: formatPlusRequestPlanLabel(request.requested_plan),
     accountEmail: request.user_email,

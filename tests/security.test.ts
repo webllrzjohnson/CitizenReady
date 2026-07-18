@@ -33,6 +33,7 @@ import {
   buildPlusRequestNotificationEmail,
   buildPlusRequestStatusEmail,
   getEmailNotificationConfig,
+  uniqueEmailRecipients,
 } from '../lib/email'
 
 test('normalizes rate limit identities consistently', () => {
@@ -190,4 +191,11 @@ test('builds user notification emails for Plus request decisions', () => {
   assert.match(granted.subject, /Plus access is active/)
   assert.match(granted.text, /dashboard/)
   assert.match(granted.text, /sam@example.com/)
+})
+
+test('deduplicates requester notification recipients', () => {
+  assert.deepEqual(
+    uniqueEmailRecipients(['sam@example.com', ' SAM@example.com ', '', null, 'account@example.com']),
+    ['sam@example.com', 'account@example.com'],
+  )
 })
