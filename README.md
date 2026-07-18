@@ -21,6 +21,8 @@ Core assumptions:
 - Guest access for practice and limited mock exams
 - User accounts with saved progress
 - Complete question bank and cheat sheet gated behind Plus access
+- Today’s Study Plan and continue-card recommendations for returning learners
+- Learner question reporting from practice questions
 - Manual Plus access controls for early users and testers
 - Admin panel for question, topic, user, blog, contact, ad, and AI draft management
 - Admin question-issue report queue for learner feedback on confusing/outdated questions
@@ -61,6 +63,99 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 Optional settings for email, analytics, payments, and AI blog drafts are documented in `.env.example` and `DEPLOYMENT.md`.
+
+## How to operate CitizenReady
+
+Use this section as the day-to-day operating guide after deployment.
+
+### How to deploy a code update
+
+1. Push the verified change to `main`.
+2. Wait for the Coolify deployment to finish.
+3. If the update includes a migration, run this inside the Coolify app container:
+
+   ```bash
+   npm run db:migrate
+   ```
+
+4. Confirm app/database health:
+
+   ```bash
+   curl -i http://localhost:3000/api/health
+   ```
+
+5. Smoke-test the pages touched by the update.
+
+For the current deployed system, the most important smoke tests are:
+
+- `/admin/plus-requests`
+- `/admin/question-reports`
+- `/admin/settings`
+- `/dashboard`
+- `/plus-request`
+
+### How to handle a manual Plus request
+
+1. Open `/admin/plus-requests`.
+2. Review the requester name, contact email, account email, selected plan, and message.
+3. If the user does not have a matched account, mark the request `waiting_account` and ask them to create a free account with the same email.
+4. If payment or manual follow-up is needed, mark the request `waiting_payment` or `follow_up`.
+5. Use the internal admin note box for private tracking, such as:
+   - `Called user`
+   - `Waiting for payment`
+   - `Asked user to create account`
+   - `Resent email`
+6. When ready, grant the requested Plus duration from the request row.
+7. Confirm the row changes to `completed` and the user profile shows active Plus access.
+8. If needed, use **Resend email** from the request row.
+
+Admin notes are internal only. They are not sent to the user.
+
+### How to test email notifications
+
+1. Confirm SMTP variables are configured in Coolify:
+   - `SMTP_HOST`
+   - `SMTP_PORT`
+   - `SMTP_SECURE`
+   - `SMTP_USER`
+   - `SMTP_PASS`
+   - `SMTP_FROM`
+   - `ADMIN_NOTIFICATION_EMAIL`
+2. Open `/admin/settings`.
+3. Use **Send test email**.
+4. Confirm the admin inbox receives the message.
+5. If Gmail is used, `SMTP_PASS` must be a Gmail app password, not the normal Gmail password.
+
+### How to review learner question reports
+
+1. Open `/admin/question-reports`.
+2. Review open reports first.
+3. Mark a report `reviewing` while checking the question.
+4. Use **Edit question** to correct the question, answers, explanation, or active status.
+5. Mark the report `resolved` after the content is checked.
+6. Use the admin dashboard’s **Most Missed Topics** and **Question Reports** cards to prioritize cleanup.
+
+### How to monitor learner progress and demand
+
+Open `/admin` and watch:
+
+- Active users in the last 7 days
+- Completed sessions
+- Completed mock exams
+- Signup → Plus request conversion
+- Open question reports
+- Most missed topics
+
+These numbers should guide the next product phase. Avoid adding payment automation or complex reminders until real usage shows demand.
+
+### How learners should use the dashboard
+
+Logged-in learners should start at `/dashboard` and follow:
+
+1. **Continue where you left off** — resumes recent study activity.
+2. **Today’s Study Plan** — recommends missed-question review, weak-topic practice, or mock exams.
+3. **Progress** — checks topic performance and weak areas.
+4. **Mock exam** — verifies readiness under timed conditions.
 
 ## Authentication and session invalidation
 
